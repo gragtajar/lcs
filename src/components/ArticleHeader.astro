@@ -1,0 +1,105 @@
+---
+import Icon from './Icon.astro';
+import { t, formatDate } from '../lib/i18n';
+import type { Lesson } from '../lib/content';
+
+interface Props {
+  lesson: Lesson;
+}
+const { lesson } = Astro.props;
+---
+
+<header class="ah">
+  <h1 class="ah-title">{lesson.title}</h1>
+  <div class="ah-meta">
+    <span class={`ah-format ah-format-${lesson.format}`}>
+      {t(`article.format.${lesson.format}`)}
+    </span>
+    <span class="ah-meta-item">
+      <Icon name="schedule" /> {t('list.minRead', { n: lesson.length_min })}
+    </span>
+    {lesson.last_updated && (
+      <span class="ah-meta-item">
+        <Icon name="calendar" /> {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+      </span>
+    )}
+    {/*
+      Future-favorites insertion point (spec §15.4): a bookmark button slots in here.
+      Reserved as a placeholder so the layout doesn't shift when login + favorites land.
+    */}
+    <span class="ah-fav-slot" data-future-favorite hidden>
+      <Icon name="bookmark" label={t('article.favoritePlaceholder')} />
+    </span>
+  </div>
+  <div class="ah-image" aria-hidden="true">
+    <div class="ah-image-ph" />
+  </div>
+</header>
+
+<style>
+  .ah {
+    padding: var(--space-4) 0 var(--space-5);
+  }
+  .ah-title {
+    font-size: var(--text-3xl);
+    line-height: 1.2;
+    margin-bottom: var(--space-3);
+  }
+  @media (min-width: 768px) {
+    .ah-title {
+      font-size: 2.5rem;
+    }
+  }
+  .ah-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .ah-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .ah-meta-item :global(.icon) {
+    width: 15px;
+    height: 15px;
+  }
+  .ah-format {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .ah-format-scenario {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .ah-format-rule {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .ah-format-comparison {
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+    color: var(--color-text-secondary);
+  }
+  .ah-image {
+    margin-top: var(--space-5);
+    aspect-ratio: 16 / 9;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .ah-image-ph {
+    width: 100%;
+    height: 100%;
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface-alt)),
+        var(--color-surface-alt));
+  }
+</style>

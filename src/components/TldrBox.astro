@@ -1,0 +1,47 @@
+---
+import { t } from '../lib/i18n';
+import { renderInline } from '../lib/markdown';
+
+interface Props {
+  items: string[];
+}
+const { items } = Astro.props;
+---
+
+{items.length > 0 && (
+  <aside class="tldr" aria-label={t('article.tldr')}>
+    <p class="tldr-label">{t('article.tldr')}</p>
+    <ul class="tldr-list">
+      {items.map((item) => (
+        <li set:html={renderInline(item)} />
+      ))}
+    </ul>
+  </aside>
+)}
+
+<style>
+  .tldr {
+    background: var(--color-accent-soft);
+    border-left: 3px solid var(--color-accent);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-md);
+    margin: 0 0 var(--space-6);
+  }
+  .tldr-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+  }
+  .tldr-list {
+    margin: 0;
+    padding-left: var(--space-5);
+    color: var(--color-text);
+  }
+  .tldr-list li {
+    margin-block: var(--space-1);
+    line-height: 1.55;
+  }
+</style>

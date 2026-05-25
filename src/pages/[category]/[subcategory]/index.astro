@@ -1,0 +1,218 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import SidebarNav from '../../../components/SidebarNav.astro';
+import ArticleListItem from '../../../components/ArticleListItem.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import Icon from '../../../components/Icon.astro';
+import { buildClusterTree, getLessonsForSubtopic, categoryUrl } from '../../../lib/content';
+import { t } from '../../../lib/i18n';
+
+export function getStaticPaths() {
+  const paths: { params: { category: string; subcategory: string } }[] = [];
+  for (const c of buildClusterTree()) {
+    for (const s of c.subtopics) {
+      // We render a page even for empty subtopics so the user lands on a friendly
+      // "coming soon" instead of a 404 when clicking from the sidebar.
+      paths.push({ params: { category: c.id, subcategory: s.id } });
+    }
+  }
+  return paths;
+}
+
+const { category, subcategory } = Astro.params;
+const clusters = buildClusterTree();
+const cluster = clusters.find((c) => c.id === category);
+const sub = cluster?.subtopics.find((s) => s.id === subcategory);
+if (!cluster || !sub) return Astro.redirect('/');
+
+const lessons = getLessonsForSubtopic(cluster.id, sub.id);
+const pageTitle = `${sub.title} — ${cluster.title}`;
+---
+
+<BaseLayout title={pageTitle} width="flush">
+  <div class="page">
+    <button class="sidebar-toggle" type="button" data-drawer-toggle aria-expanded="false" aria-controls="sidebar-drawer">
+      <Icon name="menu" /> {t('list.allCategories')}
+    </button>
+
+    <div class="layout">
+      <div id="sidebar-drawer" class="sidebar-wrap" data-drawer>
+        <button class="sidebar-close" type="button" data-drawer-close aria-label="Close menu">
+          <Icon name="close" />
+        </button>
+        <SidebarNav clusters={clusters} activeCluster={cluster.id} activeSubtopic={sub.id} />
+      </div>
+
+      <main class="main-col">
+        <Breadcrumb
+          items={[
+            { label: t('nav.home'), href: '/' },
+            { label: cluster.title, href: categoryUrl(cluster.id) },
+            { label: sub.title },
+          ]}
+        />
+
+        <header class="head">
+          <p class="eyebrow">{cluster.title}</p>
+          <h1 class="head-title">{sub.title}</h1>
+        </header>
+
+        {lessons.length === 0 ? (
+          <div class="empty">
+            <p>{t('list.comingSoon')}</p>
+          </div>
+        ) : (
+          <ul class="article-list" role="list">
+            {lessons.map((l) => (
+              <li>
+                <ArticleListItem lesson={l} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // Drawer behavior for the sidebar on narrow viewports.
+  const toggle = document.querySelector<HTMLButtonElement>('[data-drawer-toggle]');
+  const drawer = document.querySelector<HTMLElement>('[data-drawer]');
+  const close = document.querySelector<HTMLButtonElement>('[data-drawer-close]');
+
+  function setOpen(open: boolean) {
+    if (!drawer || !toggle) return;
+    drawer.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  toggle?.addEventListener('click', () => setOpen(!drawer?.classList.contains('open')));
+  close?.addEventListener('click', () => setOpen(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer?.classList.contains('open')) setOpen(false);
+  });
+</script>
+
+<style>
+  .page {
+    max-width: var(--width-content);
+    margin-inline: auto;
+  }
+
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-4);
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+  }
+  @media (min-width: 960px) {
+    .sidebar-toggle {
+      display: none;
+    }
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 60vh;
+  }
+  @media (min-width: 960px) {
+    .layout {
+      grid-template-columns: var(--width-sidebar) 1fr;
+      gap: 0;
+    }
+  }
+
+  .sidebar-wrap {
+    display: none;
+  }
+  @media (min-width: 960px) {
+    .sidebar-wrap {
+      display: block;
+      position: sticky;
+      top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+    }
+    .sidebar-close { display: none; }
+  }
+
+  /* Mobile drawer */
+  @media (max-width: 959.98px) {
+    .sidebar-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: var(--color-bg);
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+      overflow-y: auto;
+    }
+    .sidebar-wrap.open {
+      transform: translateX(0);
+      display: block;
+    }
+    .sidebar-close {
+      position: absolute;
+      top: var(--space-3);
+      right: var(--space-3);
+      z-index: 1;
+      width: 38px;
+      height: 38px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+    }
+  }
+
+  .main-col {
+    padding: var(--space-4);
+    min-width: 0;
+  }
+  @media (min-width: 768px) {
+    .main-col {
+      padding: var(--space-5) var(--space-6);
+    }
+  }
+
+  .head {
+    margin: var(--space-3) 0 var(--space-5);
+  }
+  .eyebrow {
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--space-2);
+  }
+  .head-title {
+    font-size: var(--text-3xl);
+    line-height: 1.2;
+  }
+  .article-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+  .empty {
+    padding: var(--space-7) var(--space-5);
+    text-align: center;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+  }
+</style>

@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t } from '../lib/i18n';
+---
+
+<BaseLayout title={t('search.title')} width="narrow">
+  <h1 class="search-h1">{t('search.fullPageHeading')}</h1>
+  <p class="search-intro" data-pagefind-ignore>{t('search.prompt')}</p>
+
+  <div id="search-root" data-pagefind-ignore />
+</BaseLayout>
+
+<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+<script src="/pagefind/pagefind-ui.js" defer></script>
+<script is:inline>
+  /* The /search page hosts the Pagefind default UI as a no-JS-overlay fallback
+     and a shareable search URL surface (e.g. /search?q=honking). */
+  window.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.PagefindUI !== 'function') return;
+    var ui = new window.PagefindUI({
+      element: '#search-root',
+      showImages: false,
+      showSubResults: false,
+      excerptLength: 18,
+      resetStyles: false,
+      processResult: function (result) {
+        // Hide the body excerpts in keeping with spec §13.1 (titles-first).
+        // The default UI still shows them subtly; if undesired, drop the excerpt.
+        return result;
+      },
+    });
+    var qs = new URL(window.location.href).searchParams.get('q');
+    if (qs) {
+      // Pagefind UI inserts an input — find it and seed the query.
+      setTimeout(function () {
+        var input = document.querySelector('#search-root input[type="text"]');
+        if (input) {
+          input.value = qs;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }, 100);
+    }
+  });
+</script>
+
+<style>
+  .search-h1 {
+    font-size: var(--text-3xl);
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-3);
+  }
+  .search-intro {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+  }
+  #search-root {
+    margin-top: var(--space-3);
+  }
+</style>

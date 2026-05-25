@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t } from '../lib/i18n';
+---
+
+<BaseLayout title={t('errors.notFoundTitle')} width="narrow">
+  <section class="nf">
+    <p class="nf-tag">404</p>
+    <h1>{t('errors.notFoundTitle')}</h1>
+    <p class="nf-body">{t('errors.notFoundBody')}</p>
+    <p><a class="nf-cta" href="/">← Back to home</a></p>
+  </section>
+</BaseLayout>
+
+<style>
+  .nf {
+    padding: var(--space-8) 0;
+    text-align: center;
+  }
+  .nf-tag {
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: var(--space-2);
+  }
+  .nf h1 {
+    font-size: var(--text-3xl);
+    margin-bottom: var(--space-3);
+  }
+  .nf-body {
+    color: var(--color-text-secondary);
+    max-width: 480px;
+    margin: 0 auto var(--space-5);
+  }
+  .nf-cta {
+    font-weight: 500;
+  }
+</style>

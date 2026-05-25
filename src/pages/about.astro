@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t } from '../lib/i18n';
+---
+
+<BaseLayout title="About" width="narrow">
+  <article class="about">
+    <h1>About learncivicsense.in</h1>
+    <p class="lede">{t('siteTagline')}</p>
+
+    <h2>What this is</h2>
+    <p>
+      A free reading library for civic sense in India. Short lessons,
+      drawn from everyday public-space situations: roads, transport, queues,
+      markets, monuments, and the internet. No login. No accounts. No ads.
+    </p>
+
+    <h2>Who this is for</h2>
+    <p>
+      Adults and students in Indian cities, plus first-time travellers and
+      returning NRIs. The lessons assume you are a thoughtful person who has
+      not yet had the conversation in front of you.
+    </p>
+
+    <h2>What this is not</h2>
+    <p>
+      A lecture. A moral scoring system. A government tract. There are no quizzes
+      with grades, no streaks, no points. The reading is the entire product.
+    </p>
+
+    <h2>How the content is built</h2>
+    <p>
+      Each lesson is written from a real Indian situation, cross-checked against
+      published sources (government rules, peer-reviewed research, civic-society
+      reports), and edited for plain language. Sources are linked at the bottom of
+      every lesson.
+    </p>
+
+    <h2>Roadmap</h2>
+    <p>
+      The launch covers Traffic and Public Transport. The next phases add the other
+      9 categories, Hindi versions, and the other 6 Indian languages.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .about h1 {
+    font-size: var(--text-3xl);
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-3);
+  }
+  .about h2 {
+    font-size: var(--text-xl);
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-2);
+  }
+  .about .lede {
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+  }
+  .about p {
+    margin-bottom: var(--space-3);
+    max-width: var(--measure);
+  }
+</style>

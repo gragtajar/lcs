@@ -1,0 +1,68 @@
+{
+  "siteName": "learncivicsense.in",
+  "siteTagline": "Practical civic sense for India. Short lessons, real situations, no lectures.",
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "search": "Search"
+  },
+  "topbar": {
+    "searchPlaceholder": "Search lessons",
+    "openSearch": "Open search",
+    "closeSearch": "Close search",
+    "toggleTheme": "Toggle theme",
+    "menu": "Menu"
+  },
+  "home": {
+    "introTitle": "Learn civic sense, one lesson at a time.",
+    "introBody": "Short, practical lessons on how to share public space in India: roads, transport, queues, markets, monuments, and the internet.",
+    "categoriesHeading": "Browse by category",
+    "subcategoryCount_one": "{count} subcategory",
+    "subcategoryCount_other": "{count} subcategories",
+    "articleCount_one": "{count} article",
+    "articleCount_other": "{count} articles",
+    "soon": "soon"
+  },
+  "list": {
+    "minRead": "{n} min read",
+    "lastUpdated": "Updated {date}",
+    "comingSoon": "Lessons coming soon for this topic.",
+    "filterCategoriesPlaceholder": "Filter categories",
+    "allCategories": "All categories"
+  },
+  "article": {
+    "tldr": "TL;DR",
+    "contents": "Contents",
+    "sources": "Sources",
+    "related": "Related lessons",
+    "back": "Back",
+    "format": {
+      "scenario": "Scenario",
+      "comparison": "Comparison",
+      "rule": "Rule"
+    },
+    "favoritePlaceholder": "Save lesson (coming soon)"
+  },
+  "quiz": {
+    "title": "Quick check",
+    "selectAnswer": "Select an answer.",
+    "selectAllThatApply": "Select all that apply.",
+    "explanationLabel": "Why"
+  },
+  "search": {
+    "title": "Search all lessons",
+    "placeholder": "Search lessons",
+    "noResults": "No lessons found for “{query}”.",
+    "prompt": "Type to search across all lessons.",
+    "fullPageHeading": "Search"
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The lesson you’re looking for moved or doesn’t exist yet."
+  },
+  "footer": {
+    "tagline": "A free reading library for civic sense in India.",
+    "copy": "Free to read. No login. No ads.",
+    "openSource": "Content lives in the open."
+  }
+}

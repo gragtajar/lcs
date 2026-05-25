@@ -1,0 +1,186 @@
+---
+/**
+ * Inline SVG icon. Hand-drawn outline icons in the Material Symbols style.
+ * Self-hosted as inline paths (lighter than loading the full icon font).
+ * Add new icons here as needed — keep the catalogue minimal.
+ */
+type IconName =
+  | 'search'
+  | 'close'
+  | 'menu'
+  | 'expand_more'
+  | 'expand_less'
+  | 'chevron_right'
+  | 'arrow_back'
+  | 'light_mode'
+  | 'dark_mode'
+  | 'schedule'
+  | 'calendar'
+  | 'list'
+  | 'bookmark'
+  | 'traffic'
+  | 'train'
+  | 'droplet'
+  | 'map_pin'
+  | 'users'
+  | 'shield_check'
+  | 'plane'
+  | 'utensils'
+  | 'landmark'
+  | 'volume'
+  | 'smartphone'
+  | 'open_book'
+  | 'sparkle';
+
+interface Props {
+  name: IconName;
+  label?: string;
+  size?: number | string;
+  class?: string;
+}
+
+const { name, label, size, class: cls = '' } = Astro.props;
+const sizeStyle = size != null ? `width:${typeof size === 'number' ? `${size}px` : size};height:${typeof size === 'number' ? `${size}px` : size};` : '';
+const a11y = label
+  ? { role: 'img', 'aria-label': label }
+  : { 'aria-hidden': 'true', focusable: 'false' };
+---
+
+<svg
+  class={`icon ${cls}`.trim()}
+  viewBox="0 0 24 24"
+  style={sizeStyle}
+  {...a11y}
+>
+  {name === 'search' && (
+    <g>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </g>
+  )}
+  {name === 'close' && (
+    <g>
+      <path d="M6 6l12 12" />
+      <path d="M18 6l-12 12" />
+    </g>
+  )}
+  {name === 'menu' && (
+    <g>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </g>
+  )}
+  {name === 'expand_more' && <path d="M6 9l6 6 6-6" />}
+  {name === 'expand_less' && <path d="M6 15l6-6 6 6" />}
+  {name === 'chevron_right' && <path d="M9 6l6 6-6 6" />}
+  {name === 'arrow_back' && (
+    <g>
+      <path d="M19 12H5" />
+      <path d="M12 5l-7 7 7 7" />
+    </g>
+  )}
+  {name === 'light_mode' && (
+    <g>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4l1.4-1.4M17 7l1.4-1.4" />
+    </g>
+  )}
+  {name === 'dark_mode' && <path d="M21 13.5A9 9 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5z" />}
+  {name === 'schedule' && (
+    <g>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7v5l3 2" />
+    </g>
+  )}
+  {name === 'calendar' && (
+    <g>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </g>
+  )}
+  {name === 'list' && (
+    <g>
+      <path d="M8 6h12M8 12h12M8 18h12" />
+      <circle cx="4.5" cy="6" r="0.8" fill="currentColor" stroke="none" />
+      <circle cx="4.5" cy="12" r="0.8" fill="currentColor" stroke="none" />
+      <circle cx="4.5" cy="18" r="0.8" fill="currentColor" stroke="none" />
+    </g>
+  )}
+  {name === 'bookmark' && <path d="M7 4h10v17l-5-3.5L7 21z" />}
+  {name === 'traffic' && (
+    <g>
+      <path d="M7 21l5-17 5 17" />
+      <path d="M9 14h6" />
+    </g>
+  )}
+  {name === 'train' && (
+    <g>
+      <rect x="5" y="3.5" width="14" height="14" rx="3" />
+      <circle cx="9" cy="13" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="13" r="1" fill="currentColor" stroke="none" />
+      <path d="M5 9h14M8 17l-2 3M16 17l2 3" />
+    </g>
+  )}
+  {name === 'droplet' && <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />}
+  {name === 'map_pin' && (
+    <g>
+      <path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </g>
+  )}
+  {name === 'users' && (
+    <g>
+      <circle cx="9" cy="9" r="3.2" />
+      <path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6" />
+      <circle cx="17" cy="10" r="2.6" />
+      <path d="M16 14c3 0 5 2.3 5 5" />
+    </g>
+  )}
+  {name === 'shield_check' && (
+    <g>
+      <path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6z" />
+      <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+    </g>
+  )}
+  {name === 'plane' && (
+    <path d="M21 13l-7-2-2-7-2 1 .8 6L4 13l-1 2 6 1 1 6 2-1-1-5z" />
+  )}
+  {name === 'utensils' && (
+    <g>
+      <path d="M7 3v8a2 2 0 0 0 4 0V3M9 3v18" />
+      <path d="M14 3c0 6 0 11 3 11v7" />
+    </g>
+  )}
+  {name === 'landmark' && (
+    <g>
+      <path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10" />
+      <path d="M2 10l10-6 10 6" />
+    </g>
+  )}
+  {name === 'volume' && (
+    <g>
+      <path d="M4 9v6h4l5 4V5L8 9z" />
+      <path d="M16 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 6a9 9 0 0 1 0 12" />
+    </g>
+  )}
+  {name === 'smartphone' && (
+    <g>
+      <rect x="7" y="3" width="10" height="18" rx="2" />
+      <path d="M10 18h4" />
+    </g>
+  )}
+  {name === 'open_book' && (
+    <g>
+      <path d="M3 5c3-1 6-1 9 1v14c-3-2-6-2-9-1z" />
+      <path d="M21 5c-3-1-6-1-9 1v14c3-2 6-2 9-1z" />
+    </g>
+  )}
+  {name === 'sparkle' && (
+    <g>
+      <path d="M12 3v6M12 15v6M3 12h6M15 12h6" />
+      <path d="M6 6l3 3M15 15l3 3M6 18l3-3M15 9l3-3" />
+    </g>
+  )}
+</svg>

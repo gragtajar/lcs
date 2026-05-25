@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CategoryCard from '../components/CategoryCard.astro';
+import { buildClusterTree } from '../lib/content';
+import { t } from '../lib/i18n';
+
+const clusters = buildClusterTree();
+---
+
+<BaseLayout title={t('home.introTitle')} width="wide">
+  <section class="hero">
+    <h1 class="hero-title">{t('home.introTitle')}</h1>
+    <p class="hero-body">{t('home.introBody')}</p>
+  </section>
+
+  <section class="categories" aria-labelledby="categories-heading">
+    <h2 id="categories-heading" class="categories-heading">
+      {t('home.categoriesHeading')}
+    </h2>
+    <div class="cat-grid">
+      {clusters.map((c, i) => <CategoryCard cluster={c} openByDefault={i === 0} />)}
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+  /* Persist accordion open/close state across visits, per spec §10.2.
+     Native <details> handles toggling — we just persist the open id list. */
+  (function () {
+    var KEY = 'lcs-home-open';
+    var nodes = document.querySelectorAll('details[data-cat-id]');
+
+    // Apply saved state if the user has visited before. A missing key keeps the
+    // server default (first card open). An empty array means "closed everything"
+    // and is honored.
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) {}
+    if (raw !== null) {
+      try {
+        var saved = JSON.parse(raw);
+        if (Array.isArray(saved)) {
+          var openSet = new Set(saved);
+          nodes.forEach(function (d) {
+            d.open = openSet.has(d.getAttribute('data-cat-id'));
+          });
+        }
+      } catch (e) {}
+    }
+
+    function persist() {
+      var ids = [];
+      nodes.forEach(function (d) {
+        if (d.open) ids.push(d.getAttribute('data-cat-id'));
+      });
+      try { localStorage.setItem(KEY, JSON.stringify(ids)); } catch (e) {}
+    }
+    nodes.forEach(function (d) { d.addEventListener('toggle', persist); });
+  })();
+</script>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: var(--space-7) var(--space-2) var(--space-6);
+    max-width: 720px;
+    margin-inline: auto;
+  }
+  .hero-title {
+    font-size: var(--text-3xl);
+    margin-bottom: var(--space-3);
+  }
+  @media (min-width: 768px) {
+    .hero-title {
+      font-size: var(--text-4xl);
+    }
+  }
+  .hero-body {
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+  }
+  .categories {
+    margin-top: var(--space-4);
+  }
+  .categories-heading {
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    margin-bottom: var(--space-3);
+    padding-inline: var(--space-1);
+  }
+  .cat-grid {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px) {
+    .cat-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

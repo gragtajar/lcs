@@ -1,0 +1,130 @@
+---
+import Icon from './Icon.astro';
+import { t, formatDate } from '../lib/i18n';
+import { lessonUrl } from '../lib/content';
+import type { Lesson } from '../lib/content';
+
+interface Props {
+  lesson: Lesson;
+}
+const { lesson } = Astro.props;
+const url = lessonUrl(lesson);
+---
+
+<article class="li">
+  <a class="li-image" href={url} aria-hidden="true" tabindex="-1">
+    {/* Image placeholder — fixed aspect so layout doesn't shift when real art arrives. */}
+    <div class="li-image-ph" />
+  </a>
+  <div class="li-body">
+    <h3 class="li-title">
+      <a href={url}>{lesson.title}</a>
+    </h3>
+    <div class="li-meta">
+      <span class="li-meta-item">
+        <Icon name="schedule" />
+        {t('list.minRead', { n: lesson.length_min })}
+      </span>
+      {lesson.last_updated && (
+        <span class="li-meta-item">
+          <Icon name="calendar" />
+          {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+        </span>
+      )}
+      <span class={`li-format li-format-${lesson.format}`}>
+        {t(`article.format.${lesson.format}`)}
+      </span>
+    </div>
+  </div>
+</article>
+
+<style>
+  .li {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    transition: border-color 0.12s ease;
+  }
+  .li:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  }
+  @media (max-width: 520px) {
+    .li {
+      grid-template-columns: 72px 1fr;
+      padding: var(--space-3);
+      gap: var(--space-3);
+    }
+  }
+  .li-image {
+    display: block;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    background: var(--color-surface-alt);
+  }
+  .li-image-ph {
+    width: 100%;
+    height: 100%;
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--color-primary-soft) 60%, var(--color-surface-alt)),
+        var(--color-surface-alt));
+  }
+  .li-body {
+    min-width: 0;
+  }
+  .li-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0 0 var(--space-2);
+  }
+  .li-title a {
+    color: var(--color-text);
+  }
+  .li-title a:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+  .li-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    align-items: center;
+  }
+  .li-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .li-meta-item :global(.icon) {
+    width: 15px;
+    height: 15px;
+  }
+  .li-format {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .li-format-scenario {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .li-format-rule {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .li-format-comparison {
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+    color: var(--color-text-secondary);
+  }
+</style>

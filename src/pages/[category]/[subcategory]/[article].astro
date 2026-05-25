@@ -1,0 +1,408 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import ArticleHeader from '../../../components/ArticleHeader.astro';
+import TldrBox from '../../../components/TldrBox.astro';
+import SourcesList from '../../../components/SourcesList.astro';
+import RelatedLinks from '../../../components/RelatedLinks.astro';
+import TableOfContents from '../../../islands/TableOfContents.tsx';
+import LessonQuiz from '../../../islands/LessonQuiz.tsx';
+import {
+  buildClusterTree,
+  loadAllLessons,
+  findLessonBySlug,
+  resolveRelated,
+  categoryUrl,
+  subtopicUrl,
+  lessonUrl,
+} from '../../../lib/content';
+import { renderLessonBody } from '../../../lib/markdown';
+import { t } from '../../../lib/i18n';
+
+export function getStaticPaths() {
+  return loadAllLessons().map((l) => ({
+    params: { category: l.cluster, subcategory: l.subtopic, article: l.slug },
+  }));
+}
+
+const { category, subcategory, article } = Astro.params;
+const lesson = findLessonBySlug(category!, subcategory!, article!);
+if (!lesson) return Astro.redirect('/');
+
+const clusters = buildClusterTree();
+const cluster = clusters.find((c) => c.id === lesson.cluster);
+const sub = cluster?.subtopics.find((s) => s.id === lesson.subtopic);
+
+const { html, toc } = renderLessonBody(lesson.body);
+const related = resolveRelated(lesson.related);
+const canonical = lessonUrl(lesson);
+
+// Per Pagefind docs we tag the body element with `data-pagefind-body` so the
+// indexer picks up exactly this article's prose. `data-pagefind-meta` keys
+// surface in search results (used in SearchOverlay's breadcrumb line).
+---
+
+<BaseLayout
+  title={lesson.title}
+  description={lesson.tldr[0] ?? cluster?.description ?? ''}
+  width="flush"
+  canonical={canonical}
+>
+  <div
+    class="article-page"
+    data-pagefind-body
+    data-pagefind-meta={`cluster:${cluster?.title ?? lesson.cluster}, subtopic:${sub?.title ?? lesson.subtopic}`}
+  >
+    <Breadcrumb
+      items={[
+        { label: t('nav.home'), href: '/' },
+        { label: cluster?.title ?? lesson.cluster, href: categoryUrl(lesson.cluster) },
+        { label: sub?.title ?? lesson.subtopic, href: subtopicUrl(lesson.cluster, lesson.subtopic) },
+        { label: lesson.title },
+      ]}
+    />
+
+    <div class="article-grid">
+      <article class="article">
+        <ArticleHeader lesson={lesson} />
+        <TldrBox items={lesson.tldr} />
+
+        {/* Mobile-only TOC collapse, above the body. */}
+        {toc.length > 0 && (
+          <details class="toc-mobile" name="toc-mobile">
+            <summary>
+              <span>{t('article.contents')}</span>
+            </summary>
+            <ol>
+              {toc.map((it) => (
+                <li class={`toc-${it.level}`}>
+                  <a href={`#${it.id}`}>{it.text}</a>
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+
+        <div class="article-body" set:html={html} />
+
+        {lesson.quiz && lesson.quiz.length > 0 && (
+          <LessonQuiz
+            client:visible
+            questions={lesson.quiz}
+            strings={{
+              title: t('quiz.title'),
+              selectAnswer: t('quiz.selectAnswer'),
+              selectAllThatApply: t('quiz.selectAllThatApply'),
+              explanationLabel: t('quiz.explanationLabel'),
+            }}
+          />
+        )}
+
+        <SourcesList sources={lesson.sources} />
+        <RelatedLinks items={related} />
+      </article>
+
+      {/* Desktop floating TOC */}
+      {toc.length > 0 && (
+        <aside class="toc-side" aria-hidden="false">
+          <TableOfContents client:visible items={toc} label={t('article.contents')} />
+        </aside>
+      )}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .article-page {
+    max-width: var(--width-content);
+    margin-inline: auto;
+    padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+  @media (min-width: 768px) {
+    .article-page {
+      padding-inline: var(--space-6);
+    }
+  }
+
+  .article-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    margin-top: var(--space-3);
+  }
+  @media (min-width: 1024px) {
+    .article-grid {
+      grid-template-columns: minmax(0, 1fr) var(--width-toc);
+    }
+  }
+
+  .article {
+    max-width: var(--width-article);
+    width: 100%;
+    margin-inline: auto;
+    min-width: 0;
+  }
+
+  /* Floating right-rail TOC (desktop) */
+  .toc-side {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .toc-side {
+      display: block;
+      position: sticky;
+      top: calc(var(--topbar-h) + var(--space-4));
+      align-self: start;
+      max-height: calc(100vh - var(--topbar-h) - var(--space-6));
+      overflow-y: auto;
+    }
+  }
+
+  /* Mobile TOC */
+  .toc-mobile {
+    display: block;
+    margin-bottom: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+  @media (min-width: 1024px) {
+    .toc-mobile { display: none; }
+  }
+  .toc-mobile summary {
+    list-style: none;
+    cursor: pointer;
+    padding: var(--space-3) var(--space-4);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .toc-mobile summary::-webkit-details-marker { display: none; }
+  .toc-mobile ol {
+    margin: 0;
+    padding: 0 var(--space-4) var(--space-3) var(--space-5);
+    list-style: decimal;
+    color: var(--color-text-secondary);
+  }
+  .toc-mobile li {
+    padding: var(--space-1) 0;
+  }
+  .toc-mobile li.toc-3 {
+    padding-left: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .toc-mobile a {
+    color: var(--color-text-secondary);
+  }
+
+  /* TOC island styles — kept here so they apply when the island hydrates. */
+  :global(.toc) {
+    font-size: var(--text-sm);
+    border-left: 1px solid var(--color-border);
+    padding-left: var(--space-4);
+  }
+  :global(.toc-title) {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: 500;
+    margin-bottom: var(--space-3);
+  }
+  :global(.toc-list) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+  :global(.toc-item a) {
+    color: var(--color-text-secondary);
+    display: block;
+    padding: 4px 0;
+    line-height: 1.4;
+  }
+  :global(.toc-item.toc-3 a) {
+    padding-left: var(--space-3);
+    font-size: var(--text-xs);
+  }
+  :global(.toc-item.active a) {
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+  :global(.toc-item a:hover) {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  /* Body typography */
+  .article-body :global(h2) {
+    font-size: var(--text-2xl);
+    margin: var(--space-7) 0 var(--space-3);
+  }
+  .article-body :global(h3) {
+    font-size: var(--text-xl);
+    margin: var(--space-5) 0 var(--space-2);
+  }
+  .article-body :global(.anchor-link) {
+    color: inherit;
+  }
+  .article-body :global(.anchor-link:hover) {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+  .article-body :global(p) {
+    margin: 0 0 var(--space-4);
+    max-width: var(--measure);
+  }
+  .article-body :global(ul),
+  .article-body :global(ol) {
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-5);
+    max-width: var(--measure);
+  }
+  .article-body :global(li) {
+    margin-block: var(--space-2);
+  }
+  .article-body :global(blockquote) {
+    margin: var(--space-5) 0;
+    padding: var(--space-3) var(--space-5);
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-text);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    max-width: var(--measure);
+  }
+  .article-body :global(blockquote p) {
+    margin: 0;
+  }
+  .article-body :global(a) {
+    color: var(--color-primary);
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  .article-body :global(a:hover) {
+    border-bottom-color: var(--color-primary);
+  }
+
+  /* Comparison tables (and any table). Horizontal scroll on narrow viewports. */
+  .article-body :global(.table-wrap) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: var(--space-5) 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+  .article-body :global(.table-wrap table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    min-width: 540px;
+  }
+  .article-body :global(.table-wrap th),
+  .article-body :global(.table-wrap td) {
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .article-body :global(.table-wrap th) {
+    background: var(--color-surface-alt);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .article-body :global(.table-wrap tr:last-child td) {
+    border-bottom: 0;
+  }
+
+  /* Quiz island styles */
+  :global(.quiz) {
+    margin-top: var(--space-7);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+  :global(.quiz-title) {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-4);
+  }
+  :global(.quiz-q) {
+    margin-bottom: var(--space-6);
+  }
+  :global(.quiz-question) {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    margin-bottom: var(--space-2);
+    line-height: 1.45;
+  }
+  :global(.quiz-q-num) {
+    color: var(--color-primary);
+    margin-right: 4px;
+  }
+  :global(.quiz-hint) {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+  }
+  :global(.quiz-opts) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+  :global(.quiz-opt) {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    line-height: 1.45;
+    cursor: pointer;
+  }
+  :global(.quiz-opt:hover) {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  }
+  :global(.quiz-opt.picked) {
+    background: var(--color-surface-alt);
+  }
+  :global(.quiz-opt.correct) {
+    border-color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  }
+  :global(.quiz-opt.wrong) {
+    border-color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  }
+  :global(.quiz-opt-marker) {
+    width: 20px;
+    flex-shrink: 0;
+    text-align: center;
+    font-weight: 700;
+  }
+  :global(.quiz-feedback) {
+    margin: var(--space-2) var(--space-4) var(--space-3) 40px;
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+  :global(.quiz-feedback.good) {
+    color: var(--color-success);
+  }
+  :global(.quiz-explanation) {
+    margin-top: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-primary-soft);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    line-height: 1.55;
+  }
+</style>

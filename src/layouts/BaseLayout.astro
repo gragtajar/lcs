@@ -1,0 +1,129 @@
+---
+import '../styles/tokens.css';
+import '../styles/global.css';
+import TopBar from '../components/TopBar.astro';
+import Footer from '../components/Footer.astro';
+import { t } from '../lib/i18n';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Container width class. 'narrow' = article, 'wide' = full content, 'flush' = none (page handles its own). */
+  width?: 'narrow' | 'wide' | 'flush';
+  /** Where this page sits in the breadcrumb chain. Used for canonical URLs. */
+  canonical?: string;
+}
+
+const {
+  title,
+  description = t('siteTagline'),
+  width = 'wide',
+  canonical,
+} = Astro.props;
+
+const fullTitle = title ? `${title} — ${t('siteName')}` : `${t('siteName')} — ${t('siteTagline')}`;
+const canonicalUrl = canonical
+  ? new URL(canonical, Astro.site).toString()
+  : new URL(Astro.url.pathname, Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15181A" media="(prefers-color-scheme: dark)" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+
+    {/*
+      Theme init: pre-paint script that picks the saved or system theme and writes it
+      to <html data-theme>. Inlined so it runs before first paint (no flash of wrong theme).
+    */}
+    <script is:inline>
+      (function () {
+        try {
+          var saved = localStorage.getItem('lcs-theme');
+          var sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          var theme = saved === 'light' || saved === 'dark' ? saved : sys;
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+
+    {/*
+      Self-hosting Hind would require shipping the woff2 files. Until those are
+      placed in /public/fonts/, the system fallback stack defined in tokens.css
+      keeps the site readable. To enable Hind, drop the subsetted woff2 files in
+      /public/fonts/ and uncomment the @font-face + preload below.
+    */}
+    <style is:inline>
+      /*
+      @font-face {
+        font-family: 'Hind';
+        src: url('/fonts/hind-regular.woff2') format('woff2');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Hind';
+        src: url('/fonts/hind-medium.woff2') format('woff2');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Hind';
+        src: url('/fonts/hind-semibold.woff2') format('woff2');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
+      }
+      */
+    </style>
+    <slot name="head" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <TopBar />
+    <main id="main" class:list={['main', `width-${width}`]}>
+      <slot />
+    </main>
+    <Footer />
+
+    <style>
+      .main {
+        min-height: 70vh;
+      }
+      .main.width-wide {
+        max-width: var(--width-content);
+        margin-inline: auto;
+        padding: var(--space-5) var(--space-4) var(--space-7);
+      }
+      .main.width-narrow {
+        max-width: var(--width-article);
+        margin-inline: auto;
+        padding: var(--space-5) var(--space-4) var(--space-7);
+      }
+      .main.width-flush {
+        padding: 0;
+      }
+      @media (min-width: 768px) {
+        .main.width-wide,
+        .main.width-narrow {
+          padding-inline: var(--space-6);
+        }
+      }
+    </style>
+  </body>
+</html>

@@ -1,0 +1,103 @@
+/* Design tokens — palette, typography, spacing, layout.
+   Direct implementation of spec §7. Edit here, not in component files. */
+
+:root,
+[data-theme='light'] {
+  /* Backgrounds */
+  --color-bg: #faf8f3;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f2eee6;
+
+  /* Text */
+  --color-text: #1b1a17;
+  --color-text-secondary: #57534b;
+  --color-text-muted: #847e73;
+
+  /* Brand */
+  --color-primary: #0e6e62;
+  --color-primary-hover: #0a574d;
+  --color-primary-soft: #e1efec;
+
+  /* Accent */
+  --color-accent: #b5641e;
+  --color-accent-soft: #f6e9db;
+
+  /* Lines & states */
+  --color-border: #e4dfd5;
+  --color-focus: #0e6e62;
+  --color-success: #2e7d5b;
+  --color-warning: #b5641e;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] {
+  --color-bg: #15181a;
+  --color-surface: #1e2225;
+  --color-surface-alt: #262b2e;
+
+  --color-text: #ece8e0;
+  --color-text-secondary: #b0aaa0;
+  --color-text-muted: #8a847a;
+
+  --color-primary: #46b8a8;
+  --color-primary-hover: #5dc7b8;
+  --color-primary-soft: #173430;
+
+  --color-accent: #e0a35c;
+  --color-accent-soft: #3a2c1b;
+
+  --color-border: #2f3437;
+  --color-focus: #46b8a8;
+  --color-success: #5bbe8c;
+  --color-warning: #e0a35c;
+
+  /* In dark mode, prefer borders over shadows (shadows invisible on dark). */
+  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+:root {
+  /* Typography */
+  --font-family-base: 'Hind', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2.125rem;
+  --text-4xl: 2.5rem;
+
+  --leading-tight: 1.25;
+  --leading-body: 1.7;
+
+  --measure: 68ch;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Layout widths */
+  --width-content: 1200px;
+  --width-article: 760px;
+  --width-sidebar: 280px;
+  --width-toc: 240px;
+
+  /* Topbar height (sticky offset for anchor scrolls) */
+  --topbar-h: 60px;
+}
