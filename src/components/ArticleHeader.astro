@@ -1,27 +1,49 @@
 ---
 import Icon from './Icon.astro';
 import { t, formatDate } from '../lib/i18n';
-import type { Lesson } from '../lib/content';
+import type { LessonFormat, Lesson } from '../lib/content';
+
+// Header renders identically for published and coming-soon articles
+// (per addendum §2.2). The difference is in the metadata row:
+//   - published: reading time + last_updated date
+//   - coming-soon: "Coming soon" badge + outlined format chip
+//
+// The image placeholder is always shown; for coming-soon it's slightly
+// desaturated to soften the visual.
 
 interface Props {
-  lesson: Lesson;
+  title: string;
+  format: LessonFormat;
+  comingSoon: boolean;
+  /** When published, pass the parsed lesson to fill length_min + last_updated. */
+  lesson?: Lesson | null;
 }
-const { lesson } = Astro.props;
+
+const { title, format, comingSoon, lesson } = Astro.props;
 ---
 
-<header class="ah">
-  <h1 class="ah-title">{lesson.title}</h1>
+<header class={`ah ${comingSoon ? 'ah-soon' : ''}`}>
+  <h1 class="ah-title">{title}</h1>
   <div class="ah-meta">
-    <span class={`ah-format ah-format-${lesson.format}`}>
-      {t(`article.format.${lesson.format}`)}
+    <span class={`ah-format ah-format-${format} ${comingSoon ? 'ah-format-outline' : ''}`}>
+      {t(`article.format.${format}`)}
     </span>
-    <span class="ah-meta-item">
-      <Icon name="schedule" /> {t('list.minRead', { n: lesson.length_min })}
-    </span>
-    {lesson.last_updated && (
-      <span class="ah-meta-item">
-        <Icon name="calendar" /> {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+    {comingSoon ? (
+      <span class="ah-soon-badge">
+        <Icon name="schedule" />
+        {t('article.comingSoonBadge')}
       </span>
+    ) : (
+      <>
+        <span class="ah-meta-item">
+          <Icon name="schedule" /> {t('list.minRead', { n: lesson?.length_min ?? 3 })}
+        </span>
+        {lesson?.last_updated && (
+          <span class="ah-meta-item">
+            <Icon name="calendar" /> {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+          </span>
+        )}
+      </>
     )}
     {/*
       Future-favorites insertion point (spec §15.4): a bookmark button slots in here.
@@ -32,7 +54,7 @@ const { lesson } = Astro.props;
     </span>
   </div>
   <div class="ah-image" aria-hidden="true">
-    <div class="ah-image-ph" />
+    <div class={`ah-image-ph ${comingSoon ? 'ah-image-ph-soon' : ''}`} />
   </div>
 </header>
 
@@ -46,9 +68,7 @@ const { lesson } = Astro.props;
     margin-bottom: var(--space-3);
   }
   @media (min-width: 768px) {
-    .ah-title {
-      font-size: 2.5rem;
-    }
+    .ah-title { font-size: 2.5rem; }
   }
   .ah-meta {
     display: flex;
@@ -63,9 +83,23 @@ const { lesson } = Astro.props;
     align-items: center;
     gap: var(--space-1);
   }
-  .ah-meta-item :global(.icon) {
+  .ah-meta-item :global(.icon),
+  .ah-soon-badge :global(.icon) {
     width: 15px;
     height: 15px;
+  }
+  .ah-soon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
   .ah-format {
     font-size: var(--text-xs);
@@ -87,6 +121,11 @@ const { lesson } = Astro.props;
     background: color-mix(in srgb, var(--color-text) 8%, transparent);
     color: var(--color-text-secondary);
   }
+  .ah-format-outline {
+    background: transparent !important;
+    border: 1px solid currentColor;
+    color: var(--color-text-muted) !important;
+  }
   .ah-image {
     margin-top: var(--space-5);
     aspect-ratio: 16 / 9;
@@ -101,5 +140,9 @@ const { lesson } = Astro.props;
       linear-gradient(135deg,
         color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface-alt)),
         var(--color-surface-alt));
+  }
+  .ah-image-ph-soon {
+    filter: grayscale(0.7);
+    opacity: 0.65;
   }
 </style>

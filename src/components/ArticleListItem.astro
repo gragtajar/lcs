@@ -1,38 +1,50 @@
 ---
 import Icon from './Icon.astro';
 import { t, formatDate } from '../lib/i18n';
-import { lessonUrl } from '../lib/content';
-import type { Lesson } from '../lib/content';
+import { articleUrl } from '../lib/content';
+import type { PlannedArticle, Lesson } from '../lib/content';
 
 interface Props {
-  lesson: Lesson;
+  article: PlannedArticle;
+  /** When the article is published, pass the parsed lesson to fill in date + reading time. */
+  lesson?: Lesson | null;
 }
-const { lesson } = Astro.props;
-const url = lessonUrl(lesson);
+
+const { article, lesson } = Astro.props;
+const url = articleUrl(article);
+const isComingSoon = !article.published;
 ---
 
-<article class="li">
+<article class={`li ${isComingSoon ? 'li-soon' : ''}`}>
   <a class="li-image" href={url} aria-hidden="true" tabindex="-1">
-    {/* Image placeholder — fixed aspect so layout doesn't shift when real art arrives. */}
-    <div class="li-image-ph" />
+    <div class={`li-image-ph ${isComingSoon ? 'li-image-ph-soon' : ''}`} />
   </a>
   <div class="li-body">
     <h3 class="li-title">
-      <a href={url}>{lesson.title}</a>
+      <a href={url}>{article.title}</a>
     </h3>
     <div class="li-meta">
-      <span class="li-meta-item">
-        <Icon name="schedule" />
-        {t('list.minRead', { n: lesson.length_min })}
-      </span>
-      {lesson.last_updated && (
-        <span class="li-meta-item">
-          <Icon name="calendar" />
-          {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+      {isComingSoon ? (
+        <span class="li-meta-soon">
+          <Icon name="schedule" />
+          {t('list.comingSoonBadge')}
         </span>
+      ) : (
+        <>
+          <span class="li-meta-item">
+            <Icon name="schedule" />
+            {t('list.minRead', { n: lesson?.length_min ?? 3 })}
+          </span>
+          {lesson?.last_updated && (
+            <span class="li-meta-item">
+              <Icon name="calendar" />
+              {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+            </span>
+          )}
+        </>
       )}
-      <span class={`li-format li-format-${lesson.format}`}>
-        {t(`article.format.${lesson.format}`)}
+      <span class={`li-format li-format-${article.format} ${isComingSoon ? 'li-format-outline' : ''}`}>
+        {t(`article.format.${article.format}`)}
       </span>
     </div>
   </div>
@@ -51,6 +63,9 @@ const url = lessonUrl(lesson);
   }
   .li:hover {
     border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  }
+  .li-soon {
+    background: color-mix(in srgb, var(--color-surface) 96%, var(--color-text));
   }
   @media (max-width: 520px) {
     .li {
@@ -74,18 +89,21 @@ const url = lessonUrl(lesson);
         color-mix(in srgb, var(--color-primary-soft) 60%, var(--color-surface-alt)),
         var(--color-surface-alt));
   }
-  .li-body {
-    min-width: 0;
+  .li-image-ph-soon {
+    filter: grayscale(0.7);
+    opacity: 0.65;
   }
+  .li-body { min-width: 0; }
   .li-title {
     font-size: var(--text-lg);
     font-weight: 600;
     line-height: 1.35;
     margin: 0 0 var(--space-2);
   }
-  .li-title a {
-    color: var(--color-text);
+  .li-soon .li-title a {
+    color: var(--color-text-secondary);
   }
+  .li-title a { color: var(--color-text); }
   .li-title a:hover {
     color: var(--color-primary);
     text-decoration: none;
@@ -103,9 +121,23 @@ const url = lessonUrl(lesson);
     align-items: center;
     gap: var(--space-1);
   }
-  .li-meta-item :global(.icon) {
+  .li-meta-item :global(.icon),
+  .li-meta-soon :global(.icon) {
     width: 15px;
     height: 15px;
+  }
+  .li-meta-soon {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   .li-format {
     font-size: var(--text-xs);
@@ -126,5 +158,11 @@ const url = lessonUrl(lesson);
   .li-format-comparison {
     background: color-mix(in srgb, var(--color-text) 8%, transparent);
     color: var(--color-text-secondary);
+  }
+  /* Outlined variant used for coming-soon to read as "muted". */
+  .li-format-outline {
+    background: transparent !important;
+    border: 1px solid currentColor;
+    color: var(--color-text-muted) !important;
   }
 </style>

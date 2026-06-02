@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import Icon from '../../components/Icon.astro';
+import { categoryIconName } from '../../lib/icons';
+import { loadVisitorsModule } from '../../lib/content';
+import { t } from '../../lib/i18n';
+
+const visitors = loadVisitorsModule();
+---
+
+<BaseLayout title={visitors.title} description={visitors.description} width="wide">
+  <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: visitors.title }]} />
+
+  <section class="vhero">
+    <div class="vhero-icon">
+      <Icon name={categoryIconName(visitors.icon)} />
+    </div>
+    <div class="vhero-text">
+      <p class="vhero-eyebrow">{t('home.phaseBadge', { n: visitors.phase })}</p>
+      <h1 class="vhero-title">{visitors.title}</h1>
+      <p class="vhero-body">{visitors.description}</p>
+      <p class="vhero-note">
+        <Icon name="schedule" />
+        {t('visitors.phaseNote')}
+      </p>
+    </div>
+  </section>
+
+  <section class="varea">
+    <h2 class="varea-h">{t('visitors.areasHeading')}</h2>
+    <ul class="varea-list" role="list">
+      {visitors.subtopics.map((s) => (
+        <li class="varea-row">
+          <span class="varea-title">{s.title}</span>
+          <span class="varea-count">
+            {t('visitors.lessonsPlanned', { count: s.estimatedLessons })}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .vhero {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: var(--space-4);
+    padding: var(--space-5) 0 var(--space-6);
+    max-width: 800px;
+  }
+  .vhero-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .vhero-icon :global(.icon) {
+    width: 28px;
+    height: 28px;
+  }
+  .vhero-eyebrow {
+    color: var(--color-accent);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--space-2);
+  }
+  .vhero-title {
+    font-size: var(--text-3xl);
+    line-height: 1.2;
+    margin-bottom: var(--space-3);
+  }
+  .vhero-body {
+    color: var(--color-text-secondary);
+    font-size: var(--text-lg);
+    line-height: 1.55;
+    margin-bottom: var(--space-4);
+    max-width: var(--measure);
+  }
+  .vhero-note {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+  }
+  .vhero-note :global(.icon) {
+    width: 16px;
+    height: 16px;
+  }
+  @media (max-width: 560px) {
+    .vhero {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .varea {
+    margin-top: var(--space-6);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+  .varea-h {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+  }
+  .varea-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+    max-width: 800px;
+  }
+  .varea-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+  .varea-title {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .varea-count {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+</style>

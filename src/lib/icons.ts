@@ -3,7 +3,8 @@
 
 export type IconName =
   | 'traffic' | 'train' | 'droplet' | 'map_pin' | 'users' | 'shield_check'
-  | 'plane' | 'utensils' | 'landmark' | 'volume' | 'smartphone' | 'open_book';
+  | 'plane' | 'utensils' | 'landmark' | 'volume' | 'smartphone' | 'open_book'
+  | 'sparkle';
 
 const map: Record<string, IconName> = {
   'traffic-cone': 'traffic',
@@ -17,6 +18,7 @@ const map: Record<string, IconName> = {
   'landmark': 'landmark',
   'volume-2': 'volume',
   'smartphone': 'smartphone',
+  'explore': 'sparkle',
 };
 
 export function categoryIconName(taxonomyIcon: string): IconName {

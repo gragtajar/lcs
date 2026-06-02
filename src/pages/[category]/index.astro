@@ -2,29 +2,29 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CategoryCard from '../../components/CategoryCard.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
-import { buildClusterTree } from '../../lib/content';
+import { getNavCategories, getCategory } from '../../lib/content';
 import { t } from '../../lib/i18n';
 
+// Static path generation covers all 14 navigable categories (clusters + abroad packs).
 export function getStaticPaths() {
-  return buildClusterTree().map((c) => ({ params: { category: c.id } }));
+  return getNavCategories().map((c) => ({ params: { category: c.id } }));
 }
 
 const { category } = Astro.params;
-const all = buildClusterTree();
-const cluster = all.find((c) => c.id === category);
-if (!cluster) return Astro.redirect('/');
+const cat = getCategory(category!);
+if (!cat) return Astro.redirect('/');
 ---
 
-<BaseLayout title={cluster.title} description={cluster.description} width="wide">
-  <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cluster.title }]} />
+<BaseLayout title={cat.title} description={cat.description} width="wide">
+  <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cat.title }]} />
 
   <section class="cat-hero">
-    <h1 class="cat-hero-title">{cluster.title}</h1>
-    <p class="cat-hero-body">{cluster.description}</p>
+    <h1 class="cat-hero-title">{cat.title}</h1>
+    <p class="cat-hero-body">{cat.description}</p>
   </section>
 
   <section class="cat-grid">
-    <CategoryCard cluster={cluster} openByDefault={true} />
+    <CategoryCard category={cat} openByDefault={true} />
   </section>
 </BaseLayout>
 
@@ -42,7 +42,5 @@ if (!cluster) return Astro.redirect('/');
     font-size: var(--text-lg);
     line-height: 1.55;
   }
-  .cat-grid {
-    margin-top: var(--space-3);
-  }
+  .cat-grid { margin-top: var(--space-3); }
 </style>

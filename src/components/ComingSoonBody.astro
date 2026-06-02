@@ -1,0 +1,79 @@
+---
+// The placeholder body shown when a planned article has no .md file yet.
+// Per addendum §2.3 / §2.4: calm amber-soft block, schedule icon, phase line,
+// link back to the subcategory. No newsletter, no "notify me" form.
+
+import Icon from './Icon.astro';
+import { t } from '../lib/i18n';
+import { subtopicUrl } from '../lib/content';
+
+interface Props {
+  /** Phase number (2 for clusters + abroad packs; 4 for visitors). */
+  phase: number;
+  categoryId: string;
+  subtopicId: string;
+  subtopicTitle: string;
+}
+
+const { phase, categoryId, subtopicId, subtopicTitle } = Astro.props;
+const backUrl = subtopicUrl(categoryId, subtopicId);
+const backLabel = t('article.comingSoonBack', { subtopic: subtopicTitle });
+---
+
+<section class="cs">
+  <div class="cs-card">
+    <span class="cs-icon">
+      <Icon name="schedule" />
+    </span>
+    <p class="cs-heading">{t('article.comingSoonHeading')}</p>
+    <p class="cs-phase">{t('article.comingSoonPhase', { n: phase })}</p>
+    <a class="cs-back" href={backUrl}>{backLabel}</a>
+  </div>
+</section>
+
+<style>
+  .cs {
+    margin: var(--space-5) 0 var(--space-7);
+    display: flex;
+    justify-content: center;
+  }
+  .cs-card {
+    text-align: center;
+    background: var(--color-accent-soft);
+    border-radius: var(--radius-lg);
+    padding: var(--space-7) var(--space-5);
+    max-width: 460px;
+    width: 100%;
+  }
+  .cs-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-accent) 18%, var(--color-accent-soft));
+    color: var(--color-accent);
+    margin-bottom: var(--space-3);
+  }
+  .cs-icon :global(.icon) {
+    width: 22px;
+    height: 22px;
+  }
+  .cs-heading {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+    line-height: 1.4;
+  }
+  .cs-phase {
+    color: var(--color-accent);
+    font-weight: 500;
+    margin-bottom: var(--space-5);
+  }
+  .cs-back {
+    display: inline-block;
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+</style>

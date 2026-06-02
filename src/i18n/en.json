@@ -17,18 +17,37 @@
     "introTitle": "Learn civic sense, one lesson at a time.",
     "introBody": "Short, practical lessons on how to share public space in India: roads, transport, queues, markets, monuments, and the internet.",
     "categoriesHeading": "Browse by category",
+    "sectionIndia": "In and around India",
+    "sectionIndiaBlurb": "Eleven categories covering daily public-space behavior in India.",
+    "sectionAbroad": "For your trip abroad",
+    "sectionAbroadBlurb": "Pre-trip packs for travel beyond India.",
+    "sectionVisitors": "For visitors to India",
+    "sectionVisitorsBlurb": "A respectful guide for foreign visitors to Indian civic culture.",
     "subcategoryCount_one": "{count} subcategory",
     "subcategoryCount_other": "{count} subcategories",
     "articleCount_one": "{count} article",
     "articleCount_other": "{count} articles",
+    "areaCount_one": "{count} area",
+    "areaCount_other": "{count} areas",
+    "lessonsPlanned": "~{count} lessons planned",
+    "categoryMeta": "{subs} · {arts}",
+    "phaseBadge": "Phase {n}",
     "soon": "soon"
   },
   "list": {
     "minRead": "{n} min read",
     "lastUpdated": "Updated {date}",
     "comingSoon": "Lessons coming soon for this topic.",
+    "comingSoonBadge": "Coming soon",
     "filterCategoriesPlaceholder": "Filter categories",
     "allCategories": "All categories"
+  },
+  "visitors": {
+    "heroTitle": "For visitors to India",
+    "phaseNote": "This module is in design. Detailed lessons are scheduled for Phase 4.",
+    "areasHeading": "Areas of focus",
+    "lessonsPlanned_one": "~{count} lesson planned",
+    "lessonsPlanned_other": "~{count} lessons planned"
   },
   "article": {
     "tldr": "TL;DR",
@@ -41,7 +60,11 @@
       "comparison": "Comparison",
       "rule": "Rule"
     },
-    "favoritePlaceholder": "Save lesson (coming soon)"
+    "favoritePlaceholder": "Save lesson (coming soon)",
+    "comingSoonBadge": "Coming soon",
+    "comingSoonHeading": "This lesson is being written.",
+    "comingSoonPhase": "Expected in Phase {n}.",
+    "comingSoonBack": "← All lessons in {subtopic}"
   },
   "quiz": {
     "title": "Quick check",
@@ -53,8 +76,9 @@
     "title": "Search all lessons",
     "placeholder": "Search lessons",
     "noResults": "No lessons found for “{query}”.",
-    "prompt": "Type to search across all lessons.",
-    "fullPageHeading": "Search"
+    "prompt": "Type to search across all lessons — including ones we haven’t written yet.",
+    "fullPageHeading": "Search",
+    "comingSoonChip": "Coming soon"
   },
   "errors": {
     "notFoundTitle": "Page not found",

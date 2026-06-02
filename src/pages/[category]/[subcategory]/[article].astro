@@ -5,107 +5,139 @@ import ArticleHeader from '../../../components/ArticleHeader.astro';
 import TldrBox from '../../../components/TldrBox.astro';
 import SourcesList from '../../../components/SourcesList.astro';
 import RelatedLinks from '../../../components/RelatedLinks.astro';
+import ComingSoonBody from '../../../components/ComingSoonBody.astro';
 import TableOfContents from '../../../islands/TableOfContents.tsx';
 import LessonQuiz from '../../../islands/LessonQuiz.tsx';
 import {
-  buildClusterTree,
-  loadAllLessons,
-  findLessonBySlug,
+  getNavCategories,
+  findPlannedArticle,
+  loadLessonForArticle,
   resolveRelated,
   categoryUrl,
   subtopicUrl,
-  lessonUrl,
+  articleUrl,
 } from '../../../lib/content';
 import { renderLessonBody } from '../../../lib/markdown';
 import { t } from '../../../lib/i18n';
 
+// Generate ONE page per planned article — published or not.
+// That's how the volumetric view gets every article a working URL
+// (acceptance criterion in addendum §11).
 export function getStaticPaths() {
-  return loadAllLessons().map((l) => ({
-    params: { category: l.cluster, subcategory: l.subtopic, article: l.slug },
-  }));
+  const out: { params: { category: string; subcategory: string; article: string } }[] = [];
+  for (const c of getNavCategories()) {
+    for (const s of c.subtopics) {
+      for (const a of s.articles) {
+        out.push({ params: { category: c.id, subcategory: s.id, article: a.slug } });
+      }
+    }
+  }
+  return out;
 }
 
 const { category, subcategory, article } = Astro.params;
-const lesson = findLessonBySlug(category!, subcategory!, article!);
-if (!lesson) return Astro.redirect('/');
+const planned = findPlannedArticle(category!, subcategory!, article!);
+if (!planned) return Astro.redirect('/');
 
-const clusters = buildClusterTree();
-const cluster = clusters.find((c) => c.id === lesson.cluster);
-const sub = cluster?.subtopics.find((s) => s.id === lesson.subtopic);
+const cat = planned.category;
+const sub = planned.subtopic;
 
-const { html, toc } = renderLessonBody(lesson.body);
-const related = resolveRelated(lesson.related);
-const canonical = lessonUrl(lesson);
+// Only fetch a Lesson when the article is actually live; otherwise we render
+// the coming-soon variant.
+const lesson = planned.published ? loadLessonForArticle(planned) : null;
+const isComingSoon = !planned.published || !lesson;
 
-// Per Pagefind docs we tag the body element with `data-pagefind-body` so the
-// indexer picks up exactly this article's prose. `data-pagefind-meta` keys
-// surface in search results (used in SearchOverlay's breadcrumb line).
+// For coming-soon articles we still need the breadcrumb, title, and a "back to
+// subcategory" link. No body parsing, no related, no quiz.
+const rendered = isComingSoon ? null : renderLessonBody(lesson!.body);
+const related = isComingSoon ? [] : resolveRelated(lesson!.related);
+
+const canonical = articleUrl(planned);
+const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
+
+// Pagefind only parses ONE key:value per `data-pagefind-meta` attribute, so we
+// render each meta as a separate hidden span (see the article template below).
 ---
 
-<BaseLayout
-  title={lesson.title}
-  description={lesson.tldr[0] ?? cluster?.description ?? ''}
-  width="flush"
-  canonical={canonical}
->
+<BaseLayout title={planned.title} description={description} width="flush" canonical={canonical}>
   <div
-    class="article-page"
+    class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`}
     data-pagefind-body
-    data-pagefind-meta={`cluster:${cluster?.title ?? lesson.cluster}, subtopic:${sub?.title ?? lesson.subtopic}`}
   >
+    {/* Pagefind meta — one attribute per key, kept hidden from layout. */}
+    <span data-pagefind-meta={`cluster:${cat.title}`} hidden />
+    <span data-pagefind-meta={`subtopic:${sub.title}`} hidden />
+    {isComingSoon && <span data-pagefind-meta="status:coming-soon" hidden />}
+
     <Breadcrumb
       items={[
         { label: t('nav.home'), href: '/' },
-        { label: cluster?.title ?? lesson.cluster, href: categoryUrl(lesson.cluster) },
-        { label: sub?.title ?? lesson.subtopic, href: subtopicUrl(lesson.cluster, lesson.subtopic) },
-        { label: lesson.title },
+        { label: cat.title, href: categoryUrl(cat.id) },
+        { label: sub.title, href: subtopicUrl(cat.id, sub.id) },
+        { label: planned.title },
       ]}
     />
 
     <div class="article-grid">
       <article class="article">
-        <ArticleHeader lesson={lesson} />
-        <TldrBox items={lesson.tldr} />
+        <ArticleHeader
+          title={planned.title}
+          format={planned.format}
+          comingSoon={isComingSoon}
+          lesson={lesson}
+        />
 
-        {/* Mobile-only TOC collapse, above the body. */}
-        {toc.length > 0 && (
-          <details class="toc-mobile" name="toc-mobile">
-            <summary>
-              <span>{t('article.contents')}</span>
-            </summary>
-            <ol>
-              {toc.map((it) => (
-                <li class={`toc-${it.level}`}>
-                  <a href={`#${it.id}`}>{it.text}</a>
-                </li>
-              ))}
-            </ol>
-          </details>
-        )}
-
-        <div class="article-body" set:html={html} />
-
-        {lesson.quiz && lesson.quiz.length > 0 && (
-          <LessonQuiz
-            client:visible
-            questions={lesson.quiz}
-            strings={{
-              title: t('quiz.title'),
-              selectAnswer: t('quiz.selectAnswer'),
-              selectAllThatApply: t('quiz.selectAllThatApply'),
-              explanationLabel: t('quiz.explanationLabel'),
-            }}
+        {isComingSoon ? (
+          <ComingSoonBody
+            phase={2}
+            categoryId={cat.id}
+            subtopicId={sub.id}
+            subtopicTitle={sub.title}
           />
-        )}
+        ) : (
+          <>
+            <TldrBox items={lesson!.tldr} />
 
-        <SourcesList sources={lesson.sources} />
-        <RelatedLinks items={related} />
+            {/* Mobile-only TOC collapse, above the body. */}
+            {rendered!.toc.length > 0 && (
+              <details class="toc-mobile" name="toc-mobile">
+                <summary>
+                  <span>{t('article.contents')}</span>
+                </summary>
+                <ol>
+                  {rendered!.toc.map((it) => (
+                    <li class={`toc-${it.level}`}>
+                      <a href={`#${it.id}`}>{it.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )}
+
+            <div class="article-body" set:html={rendered!.html} />
+
+            {lesson!.quiz && lesson!.quiz.length > 0 && (
+              <LessonQuiz
+                client:visible
+                questions={lesson!.quiz}
+                strings={{
+                  title: t('quiz.title'),
+                  selectAnswer: t('quiz.selectAnswer'),
+                  selectAllThatApply: t('quiz.selectAllThatApply'),
+                  explanationLabel: t('quiz.explanationLabel'),
+                }}
+              />
+            )}
+
+            <SourcesList sources={lesson!.sources} />
+            <RelatedLinks items={related} />
+          </>
+        )}
       </article>
 
-      {/* Desktop floating TOC */}
-      {toc.length > 0 && (
+      {!isComingSoon && rendered!.toc.length > 0 && (
         <aside class="toc-side" aria-hidden="false">
-          <TableOfContents client:visible items={toc} label={t('article.contents')} />
+          <TableOfContents client:visible items={rendered!.toc} label={t('article.contents')} />
         </aside>
       )}
     </div>
@@ -119,9 +151,7 @@ const canonical = lessonUrl(lesson);
     padding: var(--space-5) var(--space-4) var(--space-7);
   }
   @media (min-width: 768px) {
-    .article-page {
-      padding-inline: var(--space-6);
-    }
+    .article-page { padding-inline: var(--space-6); }
   }
 
   .article-grid {
@@ -134,6 +164,10 @@ const canonical = lessonUrl(lesson);
     .article-grid {
       grid-template-columns: minmax(0, 1fr) var(--width-toc);
     }
+    .article-page-soon .article-grid {
+      /* No TOC on coming-soon — use full width. */
+      grid-template-columns: 1fr;
+    }
   }
 
   .article {
@@ -144,9 +178,7 @@ const canonical = lessonUrl(lesson);
   }
 
   /* Floating right-rail TOC (desktop) */
-  .toc-side {
-    display: none;
-  }
+  .toc-side { display: none; }
   @media (min-width: 1024px) {
     .toc-side {
       display: block;
@@ -183,18 +215,10 @@ const canonical = lessonUrl(lesson);
     list-style: decimal;
     color: var(--color-text-secondary);
   }
-  .toc-mobile li {
-    padding: var(--space-1) 0;
-  }
-  .toc-mobile li.toc-3 {
-    padding-left: var(--space-3);
-    font-size: var(--text-sm);
-  }
-  .toc-mobile a {
-    color: var(--color-text-secondary);
-  }
+  .toc-mobile li { padding: var(--space-1) 0; }
+  .toc-mobile li.toc-3 { padding-left: var(--space-3); font-size: var(--text-sm); }
+  .toc-mobile a { color: var(--color-text-secondary); }
 
-  /* TOC island styles — kept here so they apply when the island hydrates. */
   :global(.toc) {
     font-size: var(--text-sm);
     border-left: 1px solid var(--color-border);
@@ -234,7 +258,6 @@ const canonical = lessonUrl(lesson);
     text-decoration: none;
   }
 
-  /* Body typography */
   .article-body :global(h2) {
     font-size: var(--text-2xl);
     margin: var(--space-7) 0 var(--space-3);
@@ -243,9 +266,7 @@ const canonical = lessonUrl(lesson);
     font-size: var(--text-xl);
     margin: var(--space-5) 0 var(--space-2);
   }
-  .article-body :global(.anchor-link) {
-    color: inherit;
-  }
+  .article-body :global(.anchor-link) { color: inherit; }
   .article-body :global(.anchor-link:hover) {
     color: var(--color-primary);
     text-decoration: none;
@@ -260,9 +281,7 @@ const canonical = lessonUrl(lesson);
     padding-left: var(--space-5);
     max-width: var(--measure);
   }
-  .article-body :global(li) {
-    margin-block: var(--space-2);
-  }
+  .article-body :global(li) { margin-block: var(--space-2); }
   .article-body :global(blockquote) {
     margin: var(--space-5) 0;
     padding: var(--space-3) var(--space-5);
@@ -272,19 +291,14 @@ const canonical = lessonUrl(lesson);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     max-width: var(--measure);
   }
-  .article-body :global(blockquote p) {
-    margin: 0;
-  }
+  .article-body :global(blockquote p) { margin: 0; }
   .article-body :global(a) {
     color: var(--color-primary);
     text-decoration: none;
     border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   }
-  .article-body :global(a:hover) {
-    border-bottom-color: var(--color-primary);
-  }
+  .article-body :global(a:hover) { border-bottom-color: var(--color-primary); }
 
-  /* Comparison tables (and any table). Horizontal scroll on narrow viewports. */
   .article-body :global(.table-wrap) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -312,11 +326,8 @@ const canonical = lessonUrl(lesson);
     font-weight: 600;
     color: var(--color-text);
   }
-  .article-body :global(.table-wrap tr:last-child td) {
-    border-bottom: 0;
-  }
+  .article-body :global(.table-wrap tr:last-child td) { border-bottom: 0; }
 
-  /* Quiz island styles */
   :global(.quiz) {
     margin-top: var(--space-7);
     padding-top: var(--space-5);
@@ -326,19 +337,14 @@ const canonical = lessonUrl(lesson);
     font-size: var(--text-xl);
     margin-bottom: var(--space-4);
   }
-  :global(.quiz-q) {
-    margin-bottom: var(--space-6);
-  }
+  :global(.quiz-q) { margin-bottom: var(--space-6); }
   :global(.quiz-question) {
     font-size: var(--text-lg);
     font-weight: 500;
     margin-bottom: var(--space-2);
     line-height: 1.45;
   }
-  :global(.quiz-q-num) {
-    color: var(--color-primary);
-    margin-right: 4px;
-  }
+  :global(.quiz-q-num) { color: var(--color-primary); margin-right: 4px; }
   :global(.quiz-hint) {
     font-size: var(--text-xs);
     text-transform: uppercase;
@@ -370,9 +376,7 @@ const canonical = lessonUrl(lesson);
   :global(.quiz-opt:hover) {
     border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
   }
-  :global(.quiz-opt.picked) {
-    background: var(--color-surface-alt);
-  }
+  :global(.quiz-opt.picked) { background: var(--color-surface-alt); }
   :global(.quiz-opt.correct) {
     border-color: var(--color-success);
     background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
@@ -393,9 +397,7 @@ const canonical = lessonUrl(lesson);
     line-height: 1.5;
     color: var(--color-text-secondary);
   }
-  :global(.quiz-feedback.good) {
-    color: var(--color-success);
-  }
+  :global(.quiz-feedback.good) { color: var(--color-success); }
   :global(.quiz-explanation) {
     margin-top: var(--space-3);
     padding: var(--space-3) var(--space-4);

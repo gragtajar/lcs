@@ -1,5 +1,14 @@
-// Content loader. Reads the sibling learncivicsense-content repo at build time.
-// Exposes: taxonomy, lessons (filtered to launch), counts, lookups, related-resolver.
+// Content loader (v2).
+//
+// Source-of-truth contract per WEBSITE-BUILD-SPEC-v2-ADDENDUM.md §1:
+//   - taxonomy.json drives navigation. Every planned_lessons[] entry has
+//     {id, slug, title, format} and is rendered — either as a real article
+//     (file exists + status published, or in the launch allowlist) or as a
+//     coming-soon placeholder.
+//   - 11 India clusters AND 3 abroad packs share the article routing shape
+//     /{category}/{subtopic}/{slug}. The visitors module is a separate flow.
+//   - All counts come from taxonomy. We never recompute "published vs planned"
+//     for navigation — only for the "is this single article live?" check.
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -9,10 +18,8 @@ import yaml from 'js-yaml';
 import {
   CONTENT_REPO_PATH,
   DEFAULT_LOCALE,
-  HIDE_EMPTY_CATEGORIES,
   LAUNCH_LESSON_IDS,
   PUBLISH_MODE,
-  SHOW_EMPTY_SUBCATEGORIES,
   type Locale,
 } from '../config.ts';
 
@@ -20,12 +27,24 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_ROOT = path.resolve(HERE, '..', '..', CONTENT_REPO_PATH);
 const TAXONOMY_PATH = path.join(CONTENT_ROOT, '01-taxonomy', 'taxonomy.json');
 const CLUSTERS_ROOT = path.join(CONTENT_ROOT, '02-clusters');
+const ABROAD_ROOT = path.join(CONTENT_ROOT, '03-abroad');
 
-// ---------- Taxonomy types ----------
+// ---------- Raw taxonomy shapes (v2) ----------
 
-export interface RawTaxonomy {
-  platform: { name: string; default_locale: string };
-  clusters: RawCluster[];
+export interface RawPlannedLesson {
+  id: string;
+  slug: string;
+  title: string;
+  format: LessonFormat;
+}
+
+export interface RawSubtopic {
+  id: string;
+  title: Record<string, string>;
+  default_format: LessonFormat;
+  estimated_lessons: number;
+  planned_lessons: RawPlannedLesson[];
+  lesson_count?: number;
 }
 
 export interface RawCluster {
@@ -36,17 +55,38 @@ export interface RawCluster {
   estimated_lessons: number;
   description: Record<string, string>;
   subtopics: RawSubtopic[];
+  lesson_count?: number;
+  subtopic_count?: number;
 }
 
-export interface RawSubtopic {
+export interface RawVisitorsSubtopic {
   id: string;
   title: Record<string, string>;
-  default_format: string;
+  planned_lessons: RawPlannedLesson[];
   estimated_lessons: number;
-  planned_lessons: string[];
 }
 
-// ---------- Lesson types ----------
+export interface RawVisitorsModule {
+  id: string;
+  title: Record<string, string>;
+  icon: string;
+  phase: number;
+  status: string;
+  description: Record<string, string>;
+  subtopics: RawVisitorsSubtopic[];
+  lesson_count?: number;
+  subtopic_count?: number;
+}
+
+export interface RawTaxonomy {
+  version: string;
+  platform: { name: string; default_locale: string };
+  clusters: RawCluster[];
+  abroad_packs: RawCluster[];
+  visitors_module: RawVisitorsModule;
+}
+
+// ---------- Lesson shapes (parsed from .md frontmatter) ----------
 
 export type LessonFormat = 'scenario' | 'comparison' | 'rule';
 
@@ -91,12 +131,12 @@ export interface Lesson {
   sources: LessonSource[];
   related: string[];
   tags: string[];
-  body: string; // markdown body, without the quiz block
+  body: string;
   quiz: QuizQuestion[] | null;
   filename: string;
 }
 
-// ---------- Loader ----------
+// ---------- Loading the taxonomy ----------
 
 let cachedTaxonomy: RawTaxonomy | null = null;
 
@@ -107,57 +147,266 @@ export function loadTaxonomy(): RawTaxonomy {
   return cachedTaxonomy;
 }
 
-let cachedLessons: Lesson[] | null = null;
+// ---------- Navigable Category (cluster OR abroad pack) ----------
+//
+// Both India clusters and abroad packs share the same {category}/{subtopic}/{slug}
+// routing. We unify them as `NavCategory` for the sidebar, category page, and
+// article route. The visitors module is intentionally NOT a NavCategory.
 
-/**
- * Walk every cluster's lessons/ folder, parse frontmatter + markdown,
- * filter to publishable per PUBLISH_MODE, return the launch lesson set.
- */
-export function loadAllLessons(): Lesson[] {
-  if (cachedLessons) return cachedLessons;
+export type NavCategoryGroup = 'india' | 'abroad';
 
-  const lessons: Lesson[] = [];
+export interface NavCategory {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  lessonIdPrefix: string;
+  /** Directory under content repo where .md files for this category live. */
+  contentDir: string;
+  /** Which homepage section / sidebar group this belongs to. */
+  group: NavCategoryGroup;
+  subtopics: NavSubtopic[];
+  /** Total planned articles across all subtopics. */
+  lessonCount: number;
+  /** Total subtopics (taxonomy-derived). */
+  subtopicCount: number;
+}
 
-  if (!existsSync(CLUSTERS_ROOT)) {
-    console.warn(`[content] Clusters root not found: ${CLUSTERS_ROOT}`);
-    return [];
-  }
+export interface NavSubtopic {
+  id: string;
+  title: string;
+  defaultFormat: LessonFormat;
+  estimatedLessons: number;
+  /** Planned articles, enriched with `published` (real .md) detection. */
+  articles: PlannedArticle[];
+}
 
-  for (const clusterDir of readdirSync(CLUSTERS_ROOT)) {
-    const clusterPath = path.join(CLUSTERS_ROOT, clusterDir);
-    if (!statSync(clusterPath).isDirectory()) continue;
+export interface PlannedArticle {
+  id: string;
+  slug: string;
+  title: string;
+  format: LessonFormat;
+  /** True if a backing .md file exists AND it counts as published. */
+  published: boolean;
+  /** Parent links — handy for ArticleListItem / search index meta. */
+  category: NavCategory;
+  subtopic: NavSubtopic;
+}
 
-    const lessonsDir = path.join(clusterPath, 'lessons');
-    if (!existsSync(lessonsDir)) continue;
+// ---------- File-existence detection ----------
+//
+// Filenames in the content repo don't always match the taxonomy slug 1:1.
+// E.g. taxonomy says `queue-001.slug = the-gate-rush-and-why-the-plane-...`
+// but the file on disk is `queue-001-the-gate-rush.en.md`. So we can't build
+// the path from the slug alone — we scan the lessons/ dir per category and
+// map by lesson id (`{prefix}-{NNN}`), which is the stable key.
 
-    for (const file of readdirSync(lessonsDir)) {
-      if (!file.endsWith('.md')) continue;
-      const filePath = path.join(lessonsDir, file);
-      const lesson = parseLessonFile(filePath, file);
-      if (!lesson) continue;
-      if (!isPublishable(lesson)) continue;
-      if (lesson.tldr.length === 0) {
-        console.warn(`[content] Warning: ${lesson.id} (publishable) has no tldr field (spec §17.1)`);
-      }
-      lessons.push(lesson);
+/** Numeric ID part from "traffic-001" → "001". */
+function lessonNumber(id: string): string {
+  const m = id.match(/-(\d+)$/);
+  return m ? m[1] : '';
+}
+
+/** Cache: `category.id::locale` → ( `lesson_id` → full file path ). */
+const lessonFileIndex = new Map<string, Map<string, string>>();
+
+function getLessonFileIndex(cat: NavCategory, locale: Locale): Map<string, string> {
+  const cacheKey = `${cat.id}::${locale}`;
+  const cached = lessonFileIndex.get(cacheKey);
+  if (cached) return cached;
+
+  const index = new Map<string, string>();
+  const dir = path.join(cat.contentDir, 'lessons');
+  if (existsSync(dir)) {
+    // Match `{prefix}-{digits}-anything.{locale}.md` — the id is `{prefix}-{NNN}`.
+    const idRegex = new RegExp(
+      `^(${escapeRegex(cat.lessonIdPrefix)}-\\d+)-.*\\.${escapeRegex(locale)}\\.md$`,
+    );
+    for (const file of readdirSync(dir)) {
+      const m = file.match(idRegex);
+      if (m) index.set(m[1], path.join(dir, file));
     }
   }
-
-  cachedLessons = lessons;
-  return lessons;
+  lessonFileIndex.set(cacheKey, index);
+  return index;
 }
 
-function isPublishable(lesson: Lesson): boolean {
-  if (lesson.status === 'published') return true;
-  if (PUBLISH_MODE === 'allowlist' && LAUNCH_LESSON_IDS.has(lesson.id)) return true;
-  return false;
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function parseLessonFile(filePath: string, filename: string): Lesson | null {
-  // Filename: `{prefix}-{NNN}-{slug}.{locale}.md`
-  const m = filename.match(/\.([a-z]{2,3})\.md$/);
-  const locale = (m ? m[1] : DEFAULT_LOCALE) as Locale;
+/**
+ * "Is this planned article actually live?" per addendum §2.1:
+ *   - allowlist mode + id in LAUNCH_LESSON_IDS → yes (handles the 6 draft launch lessons)
+ *   - a backing .md file (matched by id, not by exact slug) exists AND its
+ *     frontmatter has status: published → yes
+ *   - else no
+ */
+function isArticlePublished(
+  cat: NavCategory,
+  planned: RawPlannedLesson,
+  locale: Locale,
+): boolean {
+  if (PUBLISH_MODE === 'allowlist' && LAUNCH_LESSON_IDS.has(planned.id)) return true;
+  const fp = getLessonFileIndex(cat, locale).get(planned.id);
+  if (!fp) return false;
+  try {
+    const raw = readFileSync(fp, 'utf8');
+    const fm = matter(raw).data as Record<string, unknown>;
+    return fm.status === 'published';
+  } catch {
+    return false;
+  }
+}
 
+// ---------- Building the nav tree ----------
+
+let cachedNav: NavCategory[] | null = null;
+
+function buildNavCategory(
+  raw: RawCluster,
+  group: NavCategoryGroup,
+  contentRoot: string,
+  locale: Locale,
+): NavCategory {
+  const contentDir = path.join(contentRoot, raw.id);
+  // Build the category shell first so subtopic→article construction can reference it.
+  const cat: NavCategory = {
+    id: raw.id,
+    title: raw.title[locale] ?? raw.title.en,
+    description: raw.description[locale] ?? raw.description.en,
+    icon: raw.icon,
+    lessonIdPrefix: raw.lesson_id_prefix,
+    contentDir,
+    group,
+    subtopics: [],
+    lessonCount: 0,
+    subtopicCount: raw.subtopic_count ?? raw.subtopics.length,
+  };
+
+  let total = 0;
+  for (const s of raw.subtopics) {
+    const sub: NavSubtopic = {
+      id: s.id,
+      title: s.title[locale] ?? s.title.en,
+      defaultFormat: s.default_format,
+      estimatedLessons: s.estimated_lessons,
+      articles: [],
+    };
+    for (const p of s.planned_lessons) {
+      sub.articles.push({
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        format: p.format,
+        published: isArticlePublished(cat, p, locale),
+        category: cat,
+        subtopic: sub,
+      });
+    }
+    total += sub.articles.length;
+    cat.subtopics.push(sub);
+  }
+  cat.lessonCount = raw.lesson_count ?? total;
+  return cat;
+}
+
+/**
+ * All navigable categories (11 India clusters + 3 abroad packs), in taxonomy order.
+ * Excludes the visitors module by design.
+ */
+export function getNavCategories(locale: Locale = DEFAULT_LOCALE): NavCategory[] {
+  if (cachedNav) return cachedNav;
+  const tax = loadTaxonomy();
+  const out: NavCategory[] = [];
+  for (const c of tax.clusters) out.push(buildNavCategory(c, 'india', CLUSTERS_ROOT, locale));
+  for (const p of tax.abroad_packs) out.push(buildNavCategory(p, 'abroad', ABROAD_ROOT, locale));
+  cachedNav = out;
+  return out;
+}
+
+export function getCategory(id: string, locale: Locale = DEFAULT_LOCALE): NavCategory | undefined {
+  return getNavCategories(locale).find((c) => c.id === id);
+}
+
+export function getSubtopic(
+  categoryId: string,
+  subtopicId: string,
+  locale: Locale = DEFAULT_LOCALE,
+): { category: NavCategory; subtopic: NavSubtopic } | undefined {
+  const cat = getCategory(categoryId, locale);
+  if (!cat) return undefined;
+  const sub = cat.subtopics.find((s) => s.id === subtopicId);
+  if (!sub) return undefined;
+  return { category: cat, subtopic: sub };
+}
+
+export function findPlannedArticle(
+  categoryId: string,
+  subtopicId: string,
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): PlannedArticle | undefined {
+  return getSubtopic(categoryId, subtopicId, locale)?.subtopic.articles.find((a) => a.slug === slug);
+}
+
+// ---------- Visitors module (separate flow) ----------
+
+export interface VisitorsView {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  phase: number;
+  subtopics: Array<{ id: string; title: string; estimatedLessons: number }>;
+  lessonCount: number;
+  subtopicCount: number;
+}
+
+export function loadVisitorsModule(locale: Locale = DEFAULT_LOCALE): VisitorsView {
+  const vm = loadTaxonomy().visitors_module;
+  return {
+    id: vm.id,
+    title: vm.title[locale] ?? vm.title.en,
+    description: vm.description[locale] ?? vm.description.en,
+    icon: vm.icon,
+    phase: vm.phase,
+    subtopics: vm.subtopics.map((s) => ({
+      id: s.id,
+      title: s.title[locale] ?? s.title.en,
+      estimatedLessons: s.estimated_lessons,
+    })),
+    lessonCount: vm.lesson_count ?? vm.subtopics.reduce((n, s) => n + s.estimated_lessons, 0),
+    subtopicCount: vm.subtopic_count ?? vm.subtopics.length,
+  };
+}
+
+// ---------- Lesson file loading (for real articles only) ----------
+
+const lessonCache = new Map<string, Lesson | null>();
+
+/**
+ * Parse the .md file that backs a given planned article. Returns null when there's
+ * no file or the file is unreadable. The caller is responsible for first checking
+ * `planned.published` before deciding how to render.
+ */
+export function loadLessonForArticle(planned: PlannedArticle, locale: Locale = DEFAULT_LOCALE): Lesson | null {
+  const cacheKey = `${planned.category.id}/${planned.id}/${locale}`;
+  if (lessonCache.has(cacheKey)) return lessonCache.get(cacheKey) ?? null;
+
+  const fp = getLessonFileIndex(planned.category, locale).get(planned.id);
+  let parsed: Lesson | null = null;
+  if (fp) {
+    parsed = parseLessonFile(fp, path.basename(fp), locale);
+    if (parsed && parsed.tldr.length === 0) {
+      console.warn(`[content] Published lesson ${parsed.id} has no tldr (spec §17.1)`);
+    }
+  }
+  lessonCache.set(cacheKey, parsed);
+  return parsed;
+}
+
+function parseLessonFile(filePath: string, filename: string, locale: Locale): Lesson | null {
   let raw: string;
   try {
     raw = readFileSync(filePath, 'utf8');
@@ -168,9 +417,6 @@ function parseLessonFile(filePath: string, filename: string): Lesson | null {
   const parsed = matter(raw);
   const fm = parsed.data as Record<string, unknown>;
 
-  // The lesson body may contain a second YAML block (the quiz) appended after a `---`.
-  // gray-matter only parses the *first* frontmatter at the very top, so the quiz block
-  // ends up as text in parsed.content. Split it out.
   const { markdownBody, quiz } = splitBodyAndQuiz(parsed.content);
 
   if (!fm.id || !fm.slug || !fm.title) {
@@ -178,7 +424,7 @@ function parseLessonFile(filePath: string, filename: string): Lesson | null {
     return null;
   }
 
-  const lesson: Lesson = {
+  return {
     id: String(fm.id),
     slug: String(fm.slug),
     title: String(fm.title),
@@ -197,29 +443,19 @@ function parseLessonFile(filePath: string, filename: string): Lesson | null {
     quiz,
     filename,
   };
-
-  return lesson;
 }
 
-/**
- * Split a lesson's content into the prose body and the quiz YAML block.
- * The quiz block is recognized as a `---`-fenced YAML doc starting with `quiz:`.
- */
 function splitBodyAndQuiz(content: string): {
   markdownBody: string;
   quiz: QuizQuestion[] | null;
 } {
-  // The pattern used in the launch lessons: prose, then `\n---\n`, then `quiz:\n  - ...`
-  // Find the last `---` followed (perhaps after whitespace) by `quiz:`.
   const fenceRegex = /\n---\s*\n([\s\S]*?quiz:[\s\S]*)$/;
   const m = content.match(fenceRegex);
   if (!m) {
     return { markdownBody: content.trimEnd(), quiz: null };
   }
-
   const markdownBody = content.slice(0, m.index).trimEnd();
   const quizYaml = m[1];
-
   try {
     const obj = yaml.load(quizYaml) as { quiz?: QuizQuestion[] };
     return { markdownBody, quiz: obj?.quiz ?? null };
@@ -229,134 +465,50 @@ function splitBodyAndQuiz(content: string): {
   }
 }
 
-// ---------- Derived helpers ----------
+// ---------- Related-link resolution ----------
 
-export interface ClusterView {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  subtopics: SubtopicView[];
-  publishedCount: number; // total published lessons in this cluster
-}
-
-export interface SubtopicView {
-  id: string;
-  title: string;
-  publishedCount: number;
-  empty: boolean;
-}
-
-/** Build the cluster/subcategory tree for the launch locale, in taxonomy order. */
-export function buildClusterTree(locale: Locale = DEFAULT_LOCALE): ClusterView[] {
-  const taxonomy = loadTaxonomy();
-  const lessons = loadAllLessons().filter((l) => l.locale === locale);
-
-  const lessonsByCluster = new Map<string, Lesson[]>();
-  for (const l of lessons) {
-    const arr = lessonsByCluster.get(l.cluster) ?? [];
-    arr.push(l);
-    lessonsByCluster.set(l.cluster, arr);
-  }
-
-  const views: ClusterView[] = [];
-  for (const c of taxonomy.clusters) {
-    const clusterLessons = lessonsByCluster.get(c.id) ?? [];
-    const publishedCount = clusterLessons.length;
-    if (HIDE_EMPTY_CATEGORIES && publishedCount === 0) continue;
-
-    const subs: SubtopicView[] = [];
-    for (const s of c.subtopics) {
-      const subPublishedCount = clusterLessons.filter((l) => l.subtopic === s.id).length;
-      const empty = subPublishedCount === 0;
-      if (empty && !SHOW_EMPTY_SUBCATEGORIES) continue;
-      subs.push({
-        id: s.id,
-        title: s.title[locale] ?? s.title.en,
-        publishedCount: subPublishedCount,
-        empty,
-      });
-    }
-
-    views.push({
-      id: c.id,
-      title: c.title[locale] ?? c.title.en,
-      description: c.description[locale] ?? c.description.en,
-      icon: c.icon,
-      subtopics: subs,
-      publishedCount,
-    });
-  }
-
-  return views;
-}
-
-export function getLessonsForSubtopic(
-  clusterId: string,
-  subtopicId: string,
-  locale: Locale = DEFAULT_LOCALE,
-): Lesson[] {
-  return loadAllLessons()
-    .filter(
-      (l) => l.locale === locale && l.cluster === clusterId && l.subtopic === subtopicId,
-    )
-    .sort((a, b) => a.id.localeCompare(b.id));
-}
-
-export function findLessonBySlug(
-  clusterId: string,
-  subtopicId: string,
-  slug: string,
-  locale: Locale = DEFAULT_LOCALE,
-): Lesson | undefined {
-  return loadAllLessons().find(
-    (l) =>
-      l.locale === locale &&
-      l.cluster === clusterId &&
-      l.subtopic === subtopicId &&
-      l.slug === slug,
-  );
-}
-
-export function findLessonById(id: string, locale: Locale = DEFAULT_LOCALE): Lesson | undefined {
-  return loadAllLessons().find((l) => l.locale === locale && l.id === id);
-}
-
-/**
- * Resolve related lesson IDs into linkable views. Drops IDs that aren't published
- * (so we never render dead links from the published 6 to the unpublished rest).
- */
 export interface RelatedLink {
   id: string;
   title: string;
   url: string;
 }
 
+/**
+ * Resolve a lesson's `related: [id, ...]` to linkable views by looking up each id
+ * in the taxonomy (any category). Drops unknown IDs silently.
+ */
 export function resolveRelated(
   related: string[],
   locale: Locale = DEFAULT_LOCALE,
 ): RelatedLink[] {
+  if (!related?.length) return [];
+  const nav = getNavCategories(locale);
+  const byId = new Map<string, PlannedArticle>();
+  for (const cat of nav) for (const s of cat.subtopics) for (const a of s.articles) byId.set(a.id, a);
+
   const out: RelatedLink[] = [];
   for (const id of related) {
-    const l = findLessonById(id, locale);
-    if (!l) continue;
-    out.push({
-      id: l.id,
-      title: l.title,
-      url: lessonUrl(l),
-    });
+    const a = byId.get(id);
+    if (!a) continue;
+    out.push({ id: a.id, title: a.title, url: articleUrl(a) });
   }
   return out;
 }
 
-export function lessonUrl(l: Lesson): string {
-  return `/${l.cluster}/${l.subtopic}/${l.slug}/`;
+// ---------- URL helpers ----------
+
+export function articleUrl(a: { category: NavCategory; subtopic: NavSubtopic; slug: string }): string {
+  return `/${a.category.id}/${a.subtopic.id}/${a.slug}/`;
 }
 
-export function subtopicUrl(clusterId: string, subtopicId: string): string {
-  return `/${clusterId}/${subtopicId}/`;
+export function subtopicUrl(categoryId: string, subtopicId: string): string {
+  return `/${categoryId}/${subtopicId}/`;
 }
 
-export function categoryUrl(clusterId: string): string {
-  return `/${clusterId}/`;
+export function categoryUrl(categoryId: string): string {
+  return `/${categoryId}/`;
+}
+
+export function visitorsUrl(): string {
+  return `/visitors/`;
 }

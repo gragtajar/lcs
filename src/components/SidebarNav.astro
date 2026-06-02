@@ -3,14 +3,23 @@ import { subtopicUrl } from '../lib/content';
 import { categoryIconName } from '../lib/icons';
 import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
-import type { ClusterView } from '../lib/content';
+import type { NavCategory } from '../lib/content';
 
 interface Props {
-  clusters: ClusterView[];
-  activeCluster: string;
+  /** All 14 navigable categories (11 India + 3 abroad). Visitors is excluded. */
+  categories: NavCategory[];
+  activeCategory: string;
   activeSubtopic: string;
 }
-const { clusters, activeCluster, activeSubtopic } = Astro.props;
+const { categories, activeCategory, activeSubtopic } = Astro.props;
+
+// Two visual groups inside the sidebar, mirroring the homepage.
+const indiaCats = categories.filter((c) => c.group === 'india');
+const abroadCats = categories.filter((c) => c.group === 'abroad');
+const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
+  { key: 'india', label: t('home.sectionIndia'), items: indiaCats },
+  { key: 'abroad', label: t('home.sectionAbroad'), items: abroadCats },
+];
 ---
 
 <aside class="sidebar" aria-label={t('list.allCategories')}>
@@ -27,90 +36,95 @@ const { clusters, activeCluster, activeSubtopic } = Astro.props;
   </label>
 
   <nav class="sidebar-nav">
-    <ul role="list">
-      {clusters.map((c) => {
-        const isActiveCluster = c.id === activeCluster;
-        return (
-          <li class="sb-cluster" data-search-haystack={c.title.toLowerCase()}>
-            <details open={isActiveCluster}>
-              <summary class="sb-cluster-header">
-                <span class="sb-cluster-icon">
-                  <Icon name={categoryIconName(c.icon)} />
-                </span>
-                <span class="sb-cluster-title">{c.title}</span>
-                <Icon name="expand_more" class="sb-chevron" />
-              </summary>
-              <ul role="list" class="sb-sub-list">
-                {c.subtopics.map((s) => {
-                  const isActive = isActiveCluster && s.id === activeSubtopic;
-                  const haystack = `${c.title} ${s.title}`.toLowerCase();
-                  if (s.empty) {
-                    return (
-                      <li class="sb-sub sb-sub-empty" data-search-haystack={haystack}>
-                        <span>{s.title}</span>
-                        <span class="sb-sub-soon">{t('home.soon')}</span>
-                      </li>
-                    );
-                  }
-                  return (
-                    <li data-search-haystack={haystack}>
-                      <a
-                        class={`sb-sub ${isActive ? 'active' : ''}`}
-                        href={subtopicUrl(c.id, s.id)}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        <span>{s.title}</span>
-                        <span class="sb-sub-count">{s.publishedCount}</span>
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </details>
-          </li>
-        );
-      })}
-    </ul>
+    {groups.map((g) => (
+      <div class="sb-group" data-group={g.key}>
+        <p class="sb-group-label">{g.label}</p>
+        <ul role="list">
+          {g.items.map((c) => {
+            const isActiveCategory = c.id === activeCategory;
+            return (
+              <li class="sb-cluster" data-search-haystack={c.title.toLowerCase()}>
+                <details open={isActiveCategory}>
+                  <summary class="sb-cluster-header">
+                    <span class="sb-cluster-icon">
+                      <Icon name={categoryIconName(c.icon)} />
+                    </span>
+                    <span class="sb-cluster-title">{c.title}</span>
+                    <Icon name="expand_more" class="sb-chevron" />
+                  </summary>
+                  <ul role="list" class="sb-sub-list">
+                    {c.subtopics.map((s) => {
+                      const isActive = isActiveCategory && s.id === activeSubtopic;
+                      const haystack = `${c.title} ${s.title}`.toLowerCase();
+                      return (
+                        <li data-search-haystack={haystack}>
+                          <a
+                            class={`sb-sub ${isActive ? 'active' : ''}`}
+                            href={subtopicUrl(c.id, s.id)}
+                            aria-current={isActive ? 'page' : undefined}
+                          >
+                            <span>{s.title}</span>
+                            <span class="sb-sub-count">{s.articles.length}</span>
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))}
     <p class="sidebar-empty" data-sidebar-empty hidden>No categories match.</p>
   </nav>
 </aside>
 
 <script>
   /* Sidebar name-only filter (spec §11.2). Filters categories AND their subtopics
-     by string match on their titles. Pure client-side, no Pagefind required. */
+     by string match on their titles. Pure client-side, no Pagefind required.
+     Also hides whole groups whose categories all filter out. */
   document.querySelectorAll<HTMLInputElement>('[data-sidebar-filter]').forEach((input) => {
     const root = input.closest('.sidebar') as HTMLElement | null;
     if (!root) return;
     const emptyMsg = root.querySelector<HTMLElement>('[data-sidebar-empty]');
-    const clusters = root.querySelectorAll<HTMLDetailsElement>('details');
+    const groups = root.querySelectorAll<HTMLElement>('.sb-group');
 
     input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
-      let visibleClusters = 0;
+      let totalVisibleClusters = 0;
 
-      clusters.forEach((cluster) => {
-        const clusterLi = cluster.parentElement as HTMLElement;
-        const clusterTitle = clusterLi.dataset.searchHaystack ?? '';
-        const subs = cluster.querySelectorAll<HTMLElement>('.sb-sub-list > li');
+      groups.forEach((groupEl) => {
+        let groupVisibleClusters = 0;
+        const clusters = groupEl.querySelectorAll<HTMLDetailsElement>('details');
 
-        let anySubVisible = false;
-        subs.forEach((li) => {
-          const hay = li.dataset.searchHaystack ?? '';
-          const match = !q || hay.includes(q);
-          li.hidden = !match;
-          if (match) anySubVisible = true;
+        clusters.forEach((cluster) => {
+          const clusterLi = cluster.parentElement as HTMLElement;
+          const clusterTitle = clusterLi.dataset.searchHaystack ?? '';
+          const subs = cluster.querySelectorAll<HTMLElement>('.sb-sub-list > li');
+
+          let anySubVisible = false;
+          subs.forEach((li) => {
+            const hay = li.dataset.searchHaystack ?? '';
+            const match = !q || hay.includes(q);
+            li.hidden = !match;
+            if (match) anySubVisible = true;
+          });
+
+          const clusterMatches = !q || clusterTitle.includes(q) || anySubVisible;
+          clusterLi.hidden = !clusterMatches;
+          if (clusterMatches) {
+            groupVisibleClusters++;
+            if (q) cluster.open = true;
+          }
         });
 
-        const clusterMatches = !q || clusterTitle.includes(q) || anySubVisible;
-        clusterLi.hidden = !clusterMatches;
-        if (clusterMatches) {
-          visibleClusters++;
-          // Auto-expand when filtering so matches are immediately visible.
-          if (q) cluster.open = true;
-        }
+        groupEl.hidden = groupVisibleClusters === 0;
+        totalVisibleClusters += groupVisibleClusters;
       });
 
-      if (emptyMsg) emptyMsg.hidden = visibleClusters > 0;
+      if (emptyMsg) emptyMsg.hidden = totalVisibleClusters > 0;
     });
   });
 </script>
@@ -135,10 +149,7 @@ const { clusters, activeCluster, activeSubtopic } = Astro.props;
     margin-bottom: var(--space-4);
     color: var(--color-text-muted);
   }
-  .sidebar-search :global(.icon) {
-    width: 18px;
-    height: 18px;
-  }
+  .sidebar-search :global(.icon) { width: 18px; height: 18px; }
   .sidebar-search input {
     border: 0;
     background: transparent;
@@ -154,8 +165,22 @@ const { clusters, activeCluster, activeSubtopic } = Astro.props;
     margin: 0;
     padding: 0;
   }
+  .sb-group + .sb-group {
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+  .sb-group-label {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    margin-bottom: var(--space-2);
+    padding-inline: var(--space-1);
+  }
   .sb-cluster + .sb-cluster {
-    margin-top: var(--space-2);
+    margin-top: var(--space-1);
   }
   .sb-cluster-header {
     display: flex;
@@ -169,30 +194,20 @@ const { clusters, activeCluster, activeSubtopic } = Astro.props;
     color: var(--color-text);
   }
   .sb-cluster-header::-webkit-details-marker { display: none; }
-  .sb-cluster-header:hover {
-    background: var(--color-surface);
-  }
+  .sb-cluster-header:hover { background: var(--color-surface); }
   .sb-cluster-icon {
     color: var(--color-primary);
     display: inline-flex;
   }
-  .sb-cluster-icon :global(.icon) {
-    width: 18px;
-    height: 18px;
-  }
-  .sb-cluster-title {
-    flex: 1;
-    font-size: var(--text-sm);
-  }
+  .sb-cluster-icon :global(.icon) { width: 18px; height: 18px; }
+  .sb-cluster-title { flex: 1; font-size: var(--text-sm); }
   .sb-chevron {
     color: var(--color-text-muted);
     transition: transform 0.15s ease;
     width: 18px;
     height: 18px;
   }
-  details[open] .sb-chevron {
-    transform: rotate(180deg);
-  }
+  details[open] .sb-chevron { transform: rotate(180deg); }
   .sb-sub-list {
     padding-left: var(--space-5);
     border-left: 1px solid var(--color-border);
@@ -232,24 +247,6 @@ const { clusters, activeCluster, activeSubtopic } = Astro.props;
     background: transparent;
     border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
     color: var(--color-primary);
-  }
-  .sb-sub-empty {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    font-style: italic;
-  }
-  .sb-sub-soon {
-    font-size: var(--text-xs);
-    background: var(--color-accent-soft);
-    color: var(--color-accent);
-    padding: 1px 6px;
-    border-radius: 999px;
-    font-style: normal;
   }
   .sidebar-empty {
     color: var(--color-text-muted);

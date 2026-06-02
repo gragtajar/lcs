@@ -7,6 +7,7 @@ interface Strings {
   placeholder: string;
   prompt: string;
   noResults: string; // contains {query}
+  comingSoonChip: string;
 }
 
 interface PagefindResult {
@@ -52,6 +53,7 @@ interface ResultRow {
   url: string;
   title: string;
   breadcrumb: string;
+  comingSoon: boolean;
 }
 
 export default function SearchOverlay({ strings }: { strings: Strings }) {
@@ -123,7 +125,11 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
         url: d.url,
         title: d.meta.title ?? d.url,
         breadcrumb: extractBreadcrumb(d),
+        comingSoon: (d.meta.status ?? '').toLowerCase().includes('coming-soon'),
       }));
+      // Sort coming-soon below published when relevance is similar (preserve Pagefind
+      // order within each bucket).
+      rows.sort((a, b) => Number(a.comingSoon) - Number(b.comingSoon));
       setResults(rows);
       setActiveIdx(0);
       setLoading(false);
@@ -180,12 +186,17 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
             <a
               key={r.url}
               href={r.url}
-              class={`search-result ${i === activeIdx ? 'active' : ''}`}
+              class={`search-result ${i === activeIdx ? 'active' : ''} ${r.comingSoon ? 'soon' : ''}`}
               onMouseEnter={() => setActiveIdx(i)}
               role="option"
               aria-selected={i === activeIdx}
             >
-              <span class="search-result-title">{r.title}</span>
+              <span class="search-result-title-row">
+                <span class="search-result-title">{r.title}</span>
+                {r.comingSoon && (
+                  <span class="search-result-chip">{strings.comingSoonChip}</span>
+                )}
+              </span>
               {r.breadcrumb && <span class="search-result-breadcrumb">{r.breadcrumb}</span>}
             </a>
           ))}
@@ -196,8 +207,8 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
 }
 
 function extractBreadcrumb(d: PagefindResultData): string {
-  // We tagged each lesson with data-pagefind-meta="cluster:..." / "subtopic:..." in the
-  // article template. Pagefind surfaces those as `meta` keys.
+  // We tag each article with data-pagefind-meta="cluster:..., subtopic:..., status:..."
+  // in the article template. Pagefind surfaces those as `meta` keys.
   const cluster = d.meta.cluster ?? '';
   const subtopic = d.meta.subtopic ?? '';
   if (cluster && subtopic) return `${cluster} → ${subtopic}`;

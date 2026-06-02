@@ -4,15 +4,19 @@ import SidebarNav from '../../../components/SidebarNav.astro';
 import ArticleListItem from '../../../components/ArticleListItem.astro';
 import Breadcrumb from '../../../components/Breadcrumb.astro';
 import Icon from '../../../components/Icon.astro';
-import { buildClusterTree, getLessonsForSubtopic, categoryUrl } from '../../../lib/content';
+import {
+  getNavCategories,
+  getSubtopic,
+  loadLessonForArticle,
+  categoryUrl,
+} from '../../../lib/content';
 import { t } from '../../../lib/i18n';
 
+// Generate one page per (category, subtopic) pair across all 14 categories.
 export function getStaticPaths() {
   const paths: { params: { category: string; subcategory: string } }[] = [];
-  for (const c of buildClusterTree()) {
+  for (const c of getNavCategories()) {
     for (const s of c.subtopics) {
-      // We render a page even for empty subtopics so the user lands on a friendly
-      // "coming soon" instead of a 404 when clicking from the sidebar.
       paths.push({ params: { category: c.id, subcategory: s.id } });
     }
   }
@@ -20,13 +24,18 @@ export function getStaticPaths() {
 }
 
 const { category, subcategory } = Astro.params;
-const clusters = buildClusterTree();
-const cluster = clusters.find((c) => c.id === category);
-const sub = cluster?.subtopics.find((s) => s.id === subcategory);
-if (!cluster || !sub) return Astro.redirect('/');
+const ctx = getSubtopic(category!, subcategory!);
+if (!ctx) return Astro.redirect('/');
+const { category: cat, subtopic: sub } = ctx;
+const categories = getNavCategories();
 
-const lessons = getLessonsForSubtopic(cluster.id, sub.id);
-const pageTitle = `${sub.title} — ${cluster.title}`;
+const articles = sub.articles;
+const lessonsByArticleId = new Map<string, Awaited<ReturnType<typeof loadLessonForArticle>>>();
+for (const a of articles) {
+  if (a.published) lessonsByArticleId.set(a.id, loadLessonForArticle(a));
+}
+
+const pageTitle = `${sub.title} — ${cat.title}`;
 ---
 
 <BaseLayout title={pageTitle} width="flush">
@@ -40,32 +49,32 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
         <button class="sidebar-close" type="button" data-drawer-close aria-label="Close menu">
           <Icon name="close" />
         </button>
-        <SidebarNav clusters={clusters} activeCluster={cluster.id} activeSubtopic={sub.id} />
+        <SidebarNav categories={categories} activeCategory={cat.id} activeSubtopic={sub.id} />
       </div>
 
       <main class="main-col">
         <Breadcrumb
           items={[
             { label: t('nav.home'), href: '/' },
-            { label: cluster.title, href: categoryUrl(cluster.id) },
+            { label: cat.title, href: categoryUrl(cat.id) },
             { label: sub.title },
           ]}
         />
 
         <header class="head">
-          <p class="eyebrow">{cluster.title}</p>
+          <p class="eyebrow">{cat.title}</p>
           <h1 class="head-title">{sub.title}</h1>
         </header>
 
-        {lessons.length === 0 ? (
+        {articles.length === 0 ? (
           <div class="empty">
             <p>{t('list.comingSoon')}</p>
           </div>
         ) : (
           <ul class="article-list" role="list">
-            {lessons.map((l) => (
+            {articles.map((a) => (
               <li>
-                <ArticleListItem lesson={l} />
+                <ArticleListItem article={a} lesson={lessonsByArticleId.get(a.id)} />
               </li>
             ))}
           </ul>
@@ -76,7 +85,6 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
 </BaseLayout>
 
 <script>
-  // Drawer behavior for the sidebar on narrow viewports.
   const toggle = document.querySelector<HTMLButtonElement>('[data-drawer-toggle]');
   const drawer = document.querySelector<HTMLElement>('[data-drawer]');
   const close = document.querySelector<HTMLButtonElement>('[data-drawer-close]');
@@ -87,7 +95,6 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
     toggle.setAttribute('aria-expanded', String(open));
     document.body.style.overflow = open ? 'hidden' : '';
   }
-
   toggle?.addEventListener('click', () => setOpen(!drawer?.classList.contains('open')));
   close?.addEventListener('click', () => setOpen(false));
   document.addEventListener('keydown', (e) => {
@@ -100,7 +107,6 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
     max-width: var(--width-content);
     margin-inline: auto;
   }
-
   .sidebar-toggle {
     display: inline-flex;
     align-items: center;
@@ -114,9 +120,7 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
     font-size: var(--text-sm);
   }
   @media (min-width: 960px) {
-    .sidebar-toggle {
-      display: none;
-    }
+    .sidebar-toggle { display: none; }
   }
 
   .layout {
@@ -127,13 +131,10 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
   @media (min-width: 960px) {
     .layout {
       grid-template-columns: var(--width-sidebar) 1fr;
-      gap: 0;
     }
   }
 
-  .sidebar-wrap {
-    display: none;
-  }
+  .sidebar-wrap { display: none; }
   @media (min-width: 960px) {
     .sidebar-wrap {
       display: block;
@@ -144,7 +145,6 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
     .sidebar-close { display: none; }
   }
 
-  /* Mobile drawer */
   @media (max-width: 959.98px) {
     .sidebar-wrap {
       position: fixed;
@@ -180,14 +180,9 @@ const pageTitle = `${sub.title} — ${cluster.title}`;
     min-width: 0;
   }
   @media (min-width: 768px) {
-    .main-col {
-      padding: var(--space-5) var(--space-6);
-    }
+    .main-col { padding: var(--space-5) var(--space-6); }
   }
-
-  .head {
-    margin: var(--space-3) 0 var(--space-5);
-  }
+  .head { margin: var(--space-3) 0 var(--space-5); }
   .eyebrow {
     color: var(--color-primary);
     font-size: var(--text-sm);
