@@ -18,6 +18,12 @@
     "lhci": "lhci autorun --config=lighthouserc.json",
     "lhci:mobile": "lhci autorun --config=lighthouserc.mobile.json",
     "size": "size-limit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -43,8 +49,10 @@
     "@commitlint/cli": "^19.6.0",
     "@commitlint/config-conventional": "^19.6.0",
     "@lhci/cli": "^0.14.0",
+    "@playwright/test": "^1.49.1",
     "@size-limit/file": "^11.1.6",
     "@types/js-yaml": "^4.0.9",
+    "@vitest/coverage-v8": "^2.1.8",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "astro-eslint-parser": "^1.1.0",
@@ -55,10 +63,12 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
     "prettier": "^3.4.2",
+    "happy-dom": "^15.11.7",
     "prettier-plugin-astro": "^0.14.1",
     "size-limit": "^11.1.6",
     "stylelint": "^16.12.0",
     "stylelint-config-standard": "^36.0.1",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
   }
 }
