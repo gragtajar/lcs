@@ -1,12 +1,42 @@
 import { defineConfig } from 'astro/config';
 import preact from '@astrojs/preact';
+import sentry from '@sentry/astro';
 
-// learncivicsense.in — Astro config
+// learncivicsense.in — Astro config.
 // Zero-JS by default. Preact only for the few interactive islands.
+//
+// Sentry is conditionally included only when SENTRY_DSN is set, so local dev
+// and forked CI builds don't drag in the Sentry runtime. Source-map upload
+// happens only when SENTRY_AUTH_TOKEN is also present (i.e. production deploys).
+
+const SENTRY_DSN = process.env.SENTRY_DSN;
+const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
+const NODE_ENV = process.env.NODE_ENV ?? 'development';
+
+const integrations = [preact()];
+
+if (SENTRY_DSN) {
+  integrations.push(
+    sentry({
+      dsn: SENTRY_DSN,
+      environment: NODE_ENV,
+      tracesSampleRate: 0.1,
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0.1,
+      sourceMapsUploadOptions: SENTRY_AUTH_TOKEN
+        ? {
+            project: 'learncivicsense',
+            authToken: SENTRY_AUTH_TOKEN,
+          }
+        : undefined,
+    }),
+  );
+}
+
 export default defineConfig({
   site: 'https://learncivicsense.in',
   output: 'static',
-  integrations: [preact()],
+  integrations,
   prefetch: {
     prefetchAll: false,
     defaultStrategy: 'viewport',

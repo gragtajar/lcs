@@ -1,0 +1,75 @@
+name: Perf budgets
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+# Lighthouse CI + size-limit run after the CI build artifact is available.
+# This keeps the main CI workflow fast and lets perf checks gate independently.
+jobs:
+  size-limit:
+    name: Size limit
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run size-limit
+        run: npx size-limit
+
+  lighthouse-desktop:
+    name: Lighthouse (desktop)
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lighthouse CI (desktop)
+        run: npx lhci autorun --config=lighthouserc.json
+
+  lighthouse-mobile:
+    name: Lighthouse (mobile)
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lighthouse CI (mobile)
+        run: npx lhci autorun --config=lighthouserc.mobile.json

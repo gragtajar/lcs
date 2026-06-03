@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Astro islands runtime + chunks (worst-case page = article)",
+    "path": "dist/_astro/*.js",
+    "limit": "40 KB",
+    "gzip": true
+  },
+  {
+    "name": "All CSS (shared + per-component scoped)",
+    "path": "dist/_astro/*.css",
+    "limit": "30 KB",
+    "gzip": true
+  },
+  {
+    "name": "Pagefind core (loaded on demand when user opens search)",
+    "path": "dist/pagefind/pagefind.js",
+    "limit": "20 KB",
+    "gzip": true
+  }
+]
