@@ -1,78 +1,64 @@
 # learncivicsense.in — website
 
-Astro-based static site for the learncivicsense.in launch (2 modules: Traffic + Public Transport).
+A free, fast, multilingual reading library for civic sense in India.
+Built with Astro, Pagefind, and a tiny set of Preact islands.
 
-Built to the spec in [`WEBSITE-BUILD-SPEC.md`](./WEBSITE-BUILD-SPEC.md).
+[![CI](https://github.com/gragtajar/lcs/actions/workflows/ci.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/ci.yml)
+[![E2E](https://github.com/gragtajar/lcs/actions/workflows/e2e.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/e2e.yml)
+[![Perf](https://github.com/gragtajar/lcs/actions/workflows/perf.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/perf.yml)
 
 ## Quick start
 
 ```bash
-npm install
-npm run dev        # local dev server (http://localhost:4321)
-npm run build      # static build -> ./dist (also builds the Pagefind index)
-npm run preview    # serve the built site locally
+npm install --legacy-peer-deps    # uses Node 20 — see .nvmrc
+npm run dev                       # http://localhost:4321
+npm run build                     # static build to ./dist + Pagefind index
+npm run preview                   # serve the built site at :4321
 ```
 
-## Content source
+Search and JSON-LD only render against the production build (`npm run build` then
+`npm run preview`). The dev server skips the Pagefind index step.
 
-The site reads its content from the sibling `../learncivicsense-content/` repo
-at build time. The path is set in [`src/config.ts`](src/config.ts) as
-`CONTENT_REPO_PATH`. There is no copy of the content inside this repo.
+## What's in this repo
 
-The launch lessons currently carry `status: draft` in the content repo
-(per spec §17.3). To ship without modifying that repo, this build uses an
-`allowlist` publish mode in `src/config.ts` — the six launch lesson IDs are
-opted in by id. Flip `PUBLISH_MODE` to `'published'` once the content repo
-promotes them.
+- **Pages, components, layouts** in `src/`
+- **Design tokens** (palette, type scale, spacing) in `src/styles/tokens.css`
+- **Content** is read from the sibling `../learncivicsense-content/` repo at build time
+- **Pagefind** indexes every article (real + coming-soon stubs) post-build
+- **All Phase-1 production hardening** wired up: TypeScript strict, ESLint,
+  Prettier, Stylelint, husky pre-commit + pre-push hooks, Vitest unit tests
+  (44 specs / ≥80% coverage), Playwright smoke suite (12 specs × 2 devices),
+  Lighthouse CI (desktop + mobile), size-limit budgets, Cloudflare Web
+  Analytics + Sentry (env-gated), sitemap, JSON-LD, OG/Twitter meta
 
-## Architecture in one screen
+## Where to read next
 
-| Layer                                                                  | Where                          |
-| ---------------------------------------------------------------------- | ------------------------------ |
-| Pages (homepage, category, article, search, about, 404)                | `src/pages/`                   |
-| Reusable Astro components                                              | `src/components/`              |
-| Preact interactivity islands (theme toggle, search overlay, TOC, quiz) | `src/islands/`                 |
-| Layout shell with font preload + theme init                            | `src/layouts/BaseLayout.astro` |
-| Design tokens (palette, type scale, spacing)                           | `src/styles/tokens.css`        |
-| Content loader + taxonomy parser                                       | `src/lib/content.ts`           |
-| Markdown renderer with anchor IDs + TOC                                | `src/lib/markdown.ts`          |
-| Tiny i18n helper                                                       | `src/lib/i18n.ts`              |
-| UI strings                                                             | `src/i18n/en.json`             |
-| Build-time config flags                                                | `src/config.ts`                |
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — system shape, data flow, tech stack
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — dev workflow, branching, commit conventions
+- [`docs/adrs/`](./docs/adrs/) — architecture decision records
+- [`docs/runbooks/`](./docs/runbooks/) — branch protection, observability setup, rollback
+- [`WEBSITE-BUILD-SPEC.md`](./WEBSITE-BUILD-SPEC.md) — original v1 spec (what we built)
+- [`WEBSITE-BUILD-SPEC-v2-ADDENDUM.md`](./WEBSITE-BUILD-SPEC-v2-ADDENDUM.md) — v2 volumetric nav
+- [`PRODUCTION-READINESS-SPEC.md`](./PRODUCTION-READINESS-SPEC.md) — the Phase 1 hardening plan
 
-## Search
+## Scripts
 
-Powered by [Pagefind](https://pagefind.app). The build script runs
-`pagefind --site dist` after `astro build`, producing a static index under
-`dist/pagefind/`. The `SearchOverlay` island loads it on demand from
-`/pagefind/pagefind.js`; the `/search` page hosts the default Pagefind UI as
-a no-JS-overlay fallback.
+| Command                 | What it does                             |
+| ----------------------- | ---------------------------------------- |
+| `npm run dev`           | Astro dev server, HMR, no Pagefind index |
+| `npm run build`         | Static build to `dist/` + Pagefind index |
+| `npm run preview`       | Serve the production build locally       |
+| `npm run lint`          | ESLint (zero-warnings gate)              |
+| `npm run format:check`  | Prettier check (CI) / `format` to fix    |
+| `npm run stylelint`     | Stylelint over `src/styles/**/*.css`     |
+| `npm run typecheck`     | `astro sync && tsc --noEmit`             |
+| `npm run test`          | Vitest unit tests                        |
+| `npm run test:coverage` | Vitest + coverage with thresholds        |
+| `npm run test:e2e`      | Playwright (auto-starts `preview`)       |
+| `npm run lhci`          | Lighthouse CI desktop preset             |
+| `npm run size`          | size-limit budget check                  |
 
-In `npm run dev`, Pagefind is NOT generated — the global search overlay will
-appear but show no results. Use `npm run build && npm run preview` to try
-search locally.
+## License
 
-## Self-hosting Hind
-
-The CSS preloads system fonts as the fallback stack. To enable the proper
-Hind webfont per spec §7.2, drop subsetted woff2 files into
-`public/fonts/` and uncomment the `@font-face` block + `<link rel="preload">`
-inside `src/layouts/BaseLayout.astro`.
-
-## Deploy
-
-Cloudflare Pages, with:
-
-- Build command: `npm run build`
-- Output dir: `dist`
-- The Pages project must also have the sibling `learncivicsense-content` repo
-  checked out into the build container — either as a submodule or via a
-  pre-build `git clone` step.
-
-## Future hooks (NOT built)
-
-- User accounts / login
-- Favorites + reading lists — a placeholder slot lives in
-  `src/components/ArticleHeader.astro` (`data-future-favorite`).
-- Civic-action toolkit widgets (`toolkit_widgets` frontmatter is ignored at launch).
-- Hindi (and the other 6 Indian languages) — routing is locale-aware already.
+Source: MIT (see `LICENSE` once added).
+Content: CC BY-SA 4.0 (see `/terms` page on the live site).
