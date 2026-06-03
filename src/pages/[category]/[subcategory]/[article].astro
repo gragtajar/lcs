@@ -19,6 +19,7 @@ import {
 } from '../../../lib/content';
 import { renderLessonBody } from '../../../lib/markdown';
 import { t } from '../../../lib/i18n';
+import { articleJsonLd, breadcrumbJsonLd } from '../../../lib/seo';
 
 // Generate ONE page per planned article — published or not.
 // That's how the volumetric view gets every article a working URL
@@ -55,11 +56,39 @@ const related = isComingSoon ? [] : resolveRelated(lesson!.related);
 const canonical = articleUrl(planned);
 const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
 
+// JSON-LD: real articles get a schema.org Article + BreadcrumbList.
+// Coming-soon stubs only emit the breadcrumb (no Article — there's no body to describe).
+const breadcrumbLd = breadcrumbJsonLd([
+  { name: 'Home', url: '/' },
+  { name: cat.title, url: categoryUrl(cat.id) },
+  { name: sub.title, url: subtopicUrl(cat.id, sub.id) },
+  { name: planned.title, url: canonical },
+]);
+const articleLd =
+  !isComingSoon && lesson
+    ? articleJsonLd({
+        category: cat,
+        subtopic: sub,
+        lesson,
+        url: new URL(canonical, 'https://learncivicsense.in').toString(),
+      })
+    : null;
+
 // Pagefind only parses ONE key:value per `data-pagefind-meta` attribute, so we
 // render each meta as a separate hidden span (see the article template below).
 ---
 
-<BaseLayout title={planned.title} description={description} width="flush" canonical={canonical}>
+<BaseLayout
+  title={planned.title}
+  description={description}
+  width="flush"
+  canonical={canonical}
+  type="article"
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
+    {articleLd && <script type="application/ld+json" set:html={JSON.stringify(articleLd)} />}
+  </Fragment>
   <div class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`} data-pagefind-body>
     {/* Pagefind meta — one attribute per key, kept hidden from layout. */}
     <span data-pagefind-meta={`cluster:${cat.title}`} hidden></span>

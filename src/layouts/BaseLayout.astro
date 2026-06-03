@@ -4,22 +4,37 @@ import '../styles/global.css';
 import TopBar from '../components/TopBar.astro';
 import Footer from '../components/Footer.astro';
 import { t } from '../lib/i18n';
+import { buildMeta } from '../lib/seo';
 
 interface Props {
   title?: string;
   description?: string;
   /** Container width class. 'narrow' = article, 'wide' = full content, 'flush' = none (page handles its own). */
   width?: 'narrow' | 'wide' | 'flush';
-  /** Where this page sits in the breadcrumb chain. Used for canonical URLs. */
+  /** Optional override for canonical path; defaults to the request URL. */
   canonical?: string;
+  /** Page semantic type; influences og:type + JSON-LD. */
+  type?: 'website' | 'article';
+  /** Absolute URL of the OG/Twitter card image (when set, uses summary_large_image). */
+  image?: string;
 }
 
-const { title, description = t('siteTagline'), width = 'wide', canonical } = Astro.props;
+const {
+  title,
+  description = t('siteTagline'),
+  width = 'wide',
+  canonical,
+  type = 'website',
+  image,
+} = Astro.props;
 
-const fullTitle = title ? `${title} — ${t('siteName')}` : `${t('siteName')} — ${t('siteTagline')}`;
-const canonicalUrl = canonical
-  ? new URL(canonical, Astro.site).toString()
-  : new URL(Astro.url.pathname, Astro.site).toString();
+const meta = buildMeta({
+  title: title ?? '',
+  description,
+  path: canonical ?? Astro.url.pathname,
+  type,
+  image,
+});
 
 // Analytics: only inject the Cloudflare Web Analytics beacon when a token is
 // present in the build env. Local dev and forked PRs run without it.
@@ -34,13 +49,34 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#15181A" media="(prefers-color-scheme: dark)" />
-    <title>{fullTitle}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalUrl} />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={fullTitle} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalUrl} />
+    <title>{meta.fullTitle}</title>
+    <meta name="description" content={meta.description} />
+    <link rel="canonical" href={meta.canonicalUrl} />
+
+    {/* Open Graph */}
+    <meta property="og:type" content={meta.ogType} />
+    <meta property="og:title" content={meta.fullTitle} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:url" content={meta.canonicalUrl} />
+    <meta property="og:site_name" content="learncivicsense.in" />
+    <meta property="og:locale" content="en_IN" />
+    {meta.ogImage && <meta property="og:image" content={meta.ogImage} />}
+
+    {/* Twitter */}
+    <meta name="twitter:card" content={meta.twitterCard} />
+    <meta name="twitter:title" content={meta.fullTitle} />
+    <meta name="twitter:description" content={meta.description} />
+    {meta.ogImage && <meta name="twitter:image" content={meta.ogImage} />}
+
+    {
+      /*
+      Icons + PWA manifest. PNG variants (favicon-32, apple-touch-icon) are added
+      when real brand artwork lands; for now the SVG favicon scales fine on modern
+      browsers, and the manifest gives Android home-screen colour cues.
+    */
+    }
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     {
       /*

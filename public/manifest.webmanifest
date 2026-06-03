@@ -1,0 +1,14 @@
+{
+  "name": "learncivicsense.in",
+  "short_name": "civic sense",
+  "description": "Practical civic sense for India. Short lessons, real situations, no lectures.",
+  "lang": "en-IN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#FAF8F3",
+  "theme_color": "#0E6E62",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

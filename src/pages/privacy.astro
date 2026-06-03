@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Privacy"
+  description="What learncivicsense.in does and does not collect."
+  width="narrow"
+>
+  <article class="legal">
+    <h1>Privacy policy</h1>
+    <p class="lede">A short, honest accounting of the data this site touches.</p>
+
+    <h2>What is collected</h2>
+    <ul>
+      <li>
+        <strong>Page views</strong>, aggregated by Cloudflare Web Analytics. Country-level
+        geography, browser, referrer, Core Web Vitals. No cookies, no fingerprinting, no cross-site
+        tracking.
+      </li>
+      <li>
+        <strong>JavaScript errors</strong>, sampled by Sentry, only when the interactive islands
+        (search overlay, theme toggle, table-of-contents, quiz) throw. Stack traces, browser, page
+        URL. No personal data attached.
+      </li>
+    </ul>
+
+    <h2>What is NOT collected</h2>
+    <ul>
+      <li>No accounts, logins, or profiles.</li>
+      <li>No cookies set by us.</li>
+      <li>No third-party trackers (no Google Analytics, no Facebook Pixel, no ad networks).</li>
+      <li>No newsletter sign-ups, contact forms, or any PII collection at launch.</li>
+    </ul>
+
+    <h2>Data retention</h2>
+    <p>
+      Cloudflare Web Analytics holds aggregate metrics for 6 months. Sentry error events are
+      retained 30 days on the free tier.
+    </p>
+
+    <h2>How to remove your data</h2>
+    <p>
+      Since we don't collect anything that identifies you, there's nothing to remove. If you'd still
+      like Cloudflare's aggregated metrics excluded, install
+      <a href="https://privacybadger.org/" rel="noopener noreferrer">Privacy Badger</a> or a similar request-blocker
+      and visits will stop reaching the beacon.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      For privacy questions, file an issue at
+      <a href="https://github.com/gragtajar/lcs/issues" rel="noopener noreferrer"
+        >our GitHub repository</a
+      > using the <em>content issue</em> template.
+    </p>
+
+    <p class="meta">Last updated: 2026-06-03.</p>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal h1 {
+    font-size: var(--text-3xl);
+    margin: var(--space-5) 0 var(--space-3);
+  }
+  .legal h2 {
+    font-size: var(--text-xl);
+    margin: var(--space-6) 0 var(--space-2);
+  }
+  .legal .lede {
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+  }
+  .legal p,
+  .legal ul {
+    margin-bottom: var(--space-3);
+    max-width: var(--measure);
+  }
+  .legal ul {
+    padding-left: var(--space-5);
+  }
+  .legal li {
+    margin-block: var(--space-2);
+  }
+  .legal .meta {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    margin-top: var(--space-6);
+  }
+</style>

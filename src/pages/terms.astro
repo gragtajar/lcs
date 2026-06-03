@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Terms" description="Content license and platform usage." width="narrow">
+  <article class="legal">
+    <h1>Terms of use</h1>
+    <p class="lede">
+      learncivicsense.in is a free reading library. The terms below cover content licensing,
+      acceptable use, and the limits of what we can promise.
+    </p>
+
+    <h2>Content license</h2>
+    <p>
+      All lessons on this site are published under the
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">
+        Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+      </a>
+      license. You may copy, adapt, and redistribute the lessons, including for commercial purposes, as
+      long as you credit learncivicsense.in and share derivatives under the same license.
+    </p>
+
+    <h2>Source code</h2>
+    <p>
+      The website code is open source. See the
+      <a href="https://github.com/gragtajar/lcs" rel="noopener noreferrer">GitHub repository</a>
+      for the license that applies to the codebase (separate from the content license above).
+    </p>
+
+    <h2>Acceptable use</h2>
+    <ul>
+      <li>You may read, share, and link to lessons freely.</li>
+      <li>You may quote and adapt content under the CC BY-SA 4.0 terms.</li>
+      <li>You may not misrepresent the site as your own, or strip attribution.</li>
+      <li>You may not deploy automated abuse (scraping at scale that strains the CDN).</li>
+    </ul>
+
+    <h2>No warranty</h2>
+    <p>
+      Lessons aim for accuracy and cite their sources, but the site is not professional legal,
+      medical, or safety advice. Where a lesson references Indian law or a regulation, treat the
+      citation as a pointer to the source, not a final authority.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+      We may update these terms. The current version is always at this URL with the "last updated"
+      date below.
+    </p>
+
+    <p class="meta">Last updated: 2026-06-03.</p>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal h1 {
+    font-size: var(--text-3xl);
+    margin: var(--space-5) 0 var(--space-3);
+  }
+  .legal h2 {
+    font-size: var(--text-xl);
+    margin: var(--space-6) 0 var(--space-2);
+  }
+  .legal .lede {
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+  }
+  .legal p,
+  .legal ul {
+    margin-bottom: var(--space-3);
+    max-width: var(--measure);
+  }
+  .legal ul {
+    padding-left: var(--space-5);
+  }
+  .legal li {
+    margin-block: var(--space-2);
+  }
+  .legal .meta {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    margin-top: var(--space-6);
+  }
+</style>
