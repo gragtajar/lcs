@@ -44,7 +44,7 @@ export function renderLessonBody(md: string): RenderedMarkdown {
     const text = tokens
       .map((t) => ('text' in t ? String((t as { text: unknown }).text) : ''))
       .join('');
-    let base = slugify(text || `section-${toc.length + 1}`) || `section-${toc.length + 1}`;
+    const base = slugify(text || `section-${toc.length + 1}`) || `section-${toc.length + 1}`;
     let candidate = base;
     let n = 2;
     while (usedIds.has(candidate)) candidate = `${base}-${n++}`;

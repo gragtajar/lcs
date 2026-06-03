@@ -36,47 +36,49 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
   </label>
 
   <nav class="sidebar-nav">
-    {groups.map((g) => (
-      <div class="sb-group" data-group={g.key}>
-        <p class="sb-group-label">{g.label}</p>
-        <ul role="list">
-          {g.items.map((c) => {
-            const isActiveCategory = c.id === activeCategory;
-            return (
-              <li class="sb-cluster" data-search-haystack={c.title.toLowerCase()}>
-                <details open={isActiveCategory}>
-                  <summary class="sb-cluster-header">
-                    <span class="sb-cluster-icon">
-                      <Icon name={categoryIconName(c.icon)} />
-                    </span>
-                    <span class="sb-cluster-title">{c.title}</span>
-                    <Icon name="expand_more" class="sb-chevron" />
-                  </summary>
-                  <ul role="list" class="sb-sub-list">
-                    {c.subtopics.map((s) => {
-                      const isActive = isActiveCategory && s.id === activeSubtopic;
-                      const haystack = `${c.title} ${s.title}`.toLowerCase();
-                      return (
-                        <li data-search-haystack={haystack}>
-                          <a
-                            class={`sb-sub ${isActive ? 'active' : ''}`}
-                            href={subtopicUrl(c.id, s.id)}
-                            aria-current={isActive ? 'page' : undefined}
-                          >
-                            <span>{s.title}</span>
-                            <span class="sb-sub-count">{s.articles.length}</span>
-                          </a>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </details>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    ))}
+    {
+      groups.map((g) => (
+        <div class="sb-group" data-group={g.key}>
+          <p class="sb-group-label">{g.label}</p>
+          <ul>
+            {g.items.map((c) => {
+              const isActiveCategory = c.id === activeCategory;
+              return (
+                <li class="sb-cluster" data-search-haystack={c.title.toLowerCase()}>
+                  <details open={isActiveCategory}>
+                    <summary class="sb-cluster-header">
+                      <span class="sb-cluster-icon">
+                        <Icon name={categoryIconName(c.icon)} />
+                      </span>
+                      <span class="sb-cluster-title">{c.title}</span>
+                      <Icon name="expand_more" class="sb-chevron" />
+                    </summary>
+                    <ul class="sb-sub-list">
+                      {c.subtopics.map((s) => {
+                        const isActive = isActiveCategory && s.id === activeSubtopic;
+                        const haystack = `${c.title} ${s.title}`.toLowerCase();
+                        return (
+                          <li data-search-haystack={haystack}>
+                            <a
+                              class={`sb-sub ${isActive ? 'active' : ''}`}
+                              href={subtopicUrl(c.id, s.id)}
+                              aria-current={isActive ? 'page' : undefined}
+                            >
+                              <span>{s.title}</span>
+                              <span class="sb-sub-count">{s.articles.length}</span>
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))
+    }
     <p class="sidebar-empty" data-sidebar-empty hidden>No categories match.</p>
   </nav>
 </aside>
@@ -149,7 +151,10 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     margin-bottom: var(--space-4);
     color: var(--color-text-muted);
   }
-  .sidebar-search :global(.icon) { width: 18px; height: 18px; }
+  .sidebar-search :global(.icon) {
+    width: 18px;
+    height: 18px;
+  }
   .sidebar-search input {
     border: 0;
     background: transparent;
@@ -193,21 +198,33 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     font-weight: 500;
     color: var(--color-text);
   }
-  .sb-cluster-header::-webkit-details-marker { display: none; }
-  .sb-cluster-header:hover { background: var(--color-surface); }
+  .sb-cluster-header::-webkit-details-marker {
+    display: none;
+  }
+  .sb-cluster-header:hover {
+    background: var(--color-surface);
+  }
   .sb-cluster-icon {
     color: var(--color-primary);
     display: inline-flex;
   }
-  .sb-cluster-icon :global(.icon) { width: 18px; height: 18px; }
-  .sb-cluster-title { flex: 1; font-size: var(--text-sm); }
+  .sb-cluster-icon :global(.icon) {
+    width: 18px;
+    height: 18px;
+  }
+  .sb-cluster-title {
+    flex: 1;
+    font-size: var(--text-sm);
+  }
   .sb-chevron {
     color: var(--color-text-muted);
     transition: transform 0.15s ease;
     width: 18px;
     height: 18px;
   }
-  details[open] .sb-chevron { transform: rotate(180deg); }
+  details[open] .sb-chevron {
+    transform: rotate(180deg);
+  }
   .sb-sub-list {
     padding-left: var(--space-5);
     border-left: 1px solid var(--color-border);

@@ -65,18 +65,18 @@ These come directly from the platform owner. Treat them as acceptance gates.
 
 ## 3. Tech stack and rationale
 
-| Layer | Choice | Why |
-|---|---|---|
-| **Framework / SSG** | **Astro** (latest stable) | Ships zero JavaScript by default. Renders static HTML at build time. Perfect for a content site that must work on 2G. Islands architecture lets us add interactivity (search, theme toggle, sidebar accordion) only where needed. |
-| **Content source** | Markdown files in `../learncivicsense-content/` via Astro Content Collections | The content repo is the source of truth. Astro reads markdown + frontmatter natively. |
-| **Search** | **Pagefind** | Static full-text search. Builds an index at build time, served as static files. No server, no API key, no running cost. Loads index chunks on demand, so it scales and stays fast even on slow connections. Indexes title + body + metadata. |
-| **Styling** | Plain CSS with custom properties (design tokens) | No Tailwind runtime, no CSS-in-JS. Hand-authored CSS using the token system in section 7 keeps the payload tiny. Astro scopes component styles automatically. |
-| **Icons** | Material Symbols (Outlined), self-hosted subset | See 7.3. Self-host only the glyphs used, as an inline SVG sprite or subsetted font, to avoid loading the entire icon font. |
-| **Fonts** | Hind superfamily, self-hosted woff2, subsetted | See 7.2. |
-| **Interactivity** | Minimal vanilla JS (Astro islands) | Theme toggle, search UI, sidebar accordion, scroll-spy TOC. No heavy framework needed. If a component genuinely needs reactivity, use a lightweight island (Preact via @astrojs/preact), not React. |
-| **Hosting** | Cloudflare Pages | Free tier, excellent India edge presence (Mumbai, Delhi, Chennai, Bengaluru, Kolkata, Hyderabad PoPs), automatic HTTP/3, Brotli compression, global CDN. Alternative: Netlify or Vercel if preferred, but Cloudflare has the best India latency. |
-| **Analytics** | Cloudflare Web Analytics or Plausible | Privacy-respecting, no cookies, lightweight. No Google Analytics (heavy, cookie-based). |
-| **Build/CI** | Cloudflare Pages Git integration | Push to main → auto build → deploy. Content repo updates trigger website rebuild via webhook. |
+| Layer               | Choice                                                                        | Why                                                                                                                                                                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Framework / SSG** | **Astro** (latest stable)                                                     | Ships zero JavaScript by default. Renders static HTML at build time. Perfect for a content site that must work on 2G. Islands architecture lets us add interactivity (search, theme toggle, sidebar accordion) only where needed.                |
+| **Content source**  | Markdown files in `../learncivicsense-content/` via Astro Content Collections | The content repo is the source of truth. Astro reads markdown + frontmatter natively.                                                                                                                                                            |
+| **Search**          | **Pagefind**                                                                  | Static full-text search. Builds an index at build time, served as static files. No server, no API key, no running cost. Loads index chunks on demand, so it scales and stays fast even on slow connections. Indexes title + body + metadata.     |
+| **Styling**         | Plain CSS with custom properties (design tokens)                              | No Tailwind runtime, no CSS-in-JS. Hand-authored CSS using the token system in section 7 keeps the payload tiny. Astro scopes component styles automatically.                                                                                    |
+| **Icons**           | Material Symbols (Outlined), self-hosted subset                               | See 7.3. Self-host only the glyphs used, as an inline SVG sprite or subsetted font, to avoid loading the entire icon font.                                                                                                                       |
+| **Fonts**           | Hind superfamily, self-hosted woff2, subsetted                                | See 7.2.                                                                                                                                                                                                                                         |
+| **Interactivity**   | Minimal vanilla JS (Astro islands)                                            | Theme toggle, search UI, sidebar accordion, scroll-spy TOC. No heavy framework needed. If a component genuinely needs reactivity, use a lightweight island (Preact via @astrojs/preact), not React.                                              |
+| **Hosting**         | Cloudflare Pages                                                              | Free tier, excellent India edge presence (Mumbai, Delhi, Chennai, Bengaluru, Kolkata, Hyderabad PoPs), automatic HTTP/3, Brotli compression, global CDN. Alternative: Netlify or Vercel if preferred, but Cloudflare has the best India latency. |
+| **Analytics**       | Cloudflare Web Analytics or Plausible                                         | Privacy-respecting, no cookies, lightweight. No Google Analytics (heavy, cookie-based).                                                                                                                                                          |
+| **Build/CI**        | Cloudflare Pages Git integration                                              | Push to main → auto build → deploy. Content repo updates trigger website rebuild via webhook.                                                                                                                                                    |
 
 **Why not Next.js:** heavier JS baseline, React runtime shipped to client by default, overkill for a static content site. Astro is purpose-built for this.
 
@@ -99,24 +99,24 @@ The website reads from the content repository. Do not duplicate content into the
 Every lesson `.md` file begins with YAML frontmatter. Parse these fields:
 
 ```yaml
-id: traffic-001                  # stable unique ID
-slug: the-case-against-honking   # URL slug
-title: "..."                     # article title
-cluster: traffic                 # category ID (matches taxonomy.json)
-subtopic: honking-discipline     # subcategory ID (matches taxonomy.json)
-format: scenario                 # scenario | comparison | rule (affects body rendering)
+id: traffic-001 # stable unique ID
+slug: the-case-against-honking # URL slug
+title: '...' # article title
+cluster: traffic # category ID (matches taxonomy.json)
+subtopic: honking-discipline # subcategory ID (matches taxonomy.json)
+format: scenario # scenario | comparison | rule (affects body rendering)
 audience: [adults, students]
-length_min: 3                    # reading time in minutes (use this directly)
-languages: [en]                  # locale codes available
-status: draft                    # ONLY render status: published in production builds
+length_min: 3 # reading time in minutes (use this directly)
+languages: [en] # locale codes available
+status: draft # ONLY render status: published in production builds
 version: 0.1
-last_updated: 2026-05-11          # show as "last updated" date on article + list
-tldr:                            # NEW FIELD — 3-4 bullet quick summary (see section 17)
-  - "First takeaway"
-  - "Second takeaway"
-sources: [...]                   # citations array; render in a Sources section
-related: [traffic-002]           # related lesson IDs; render as "Related" links
-toolkit_widgets: [...]           # civic action widgets; NOT built at launch, ignore gracefully
+last_updated: 2026-05-11 # show as "last updated" date on article + list
+tldr: # NEW FIELD — 3-4 bullet quick summary (see section 17)
+  - 'First takeaway'
+  - 'Second takeaway'
+sources: [...] # citations array; render in a Sources section
+related: [traffic-002] # related lesson IDs; render as "Related" links
+toolkit_widgets: [...] # civic action widgets; NOT built at launch, ignore gracefully
 tags: [honking, urban]
 ```
 
@@ -151,11 +151,11 @@ At launch (2 modules), only Traffic and Public Transport categories should appea
 
 The owner's vocabulary maps to the content repo's vocabulary:
 
-| Owner's term | Content repo term | Example |
-|---|---|---|
-| Category | Cluster | Traffic |
-| Sub-category | Subtopic | Honking discipline |
-| Article | Lesson | "The case against honking" |
+| Owner's term | Content repo term | Example                    |
+| ------------ | ----------------- | -------------------------- |
+| Category     | Cluster           | Traffic                    |
+| Sub-category | Subtopic          | Honking discipline         |
+| Article      | Lesson            | "The case against honking" |
 
 Use the owner's terms in the UI ("Categories," "Articles"). Use the repo's IDs internally.
 
@@ -190,54 +190,55 @@ A calm, civic, trustworthy palette. Deep teal primary, warm amber accent, warm-n
 
 ```css
 /* ===== LIGHT THEME (default) ===== */
-:root, [data-theme="light"] {
+:root,
+[data-theme='light'] {
   /* Backgrounds */
-  --color-bg:            #FAF8F3;  /* warm paper, easy on eyes */
-  --color-surface:       #FFFFFF;  /* cards, article body */
-  --color-surface-alt:   #F2EEE6;  /* sidebar, subtle panels */
+  --color-bg: #faf8f3; /* warm paper, easy on eyes */
+  --color-surface: #ffffff; /* cards, article body */
+  --color-surface-alt: #f2eee6; /* sidebar, subtle panels */
 
   /* Text */
-  --color-text:          #1B1A17;  /* near-black warm ink, ~15:1 on bg */
-  --color-text-secondary:#57534B;  /* ~7:1 on bg */
-  --color-text-muted:    #847E73;  /* ~4.6:1 on bg, metadata */
+  --color-text: #1b1a17; /* near-black warm ink, ~15:1 on bg */
+  --color-text-secondary: #57534b; /* ~7:1 on bg */
+  --color-text-muted: #847e73; /* ~4.6:1 on bg, metadata */
 
   /* Brand */
-  --color-primary:       #0E6E62;  /* deep teal, links + primary actions */
-  --color-primary-hover: #0A574D;
-  --color-primary-soft:  #E1EFEC;  /* teal tint for backgrounds/badges */
+  --color-primary: #0e6e62; /* deep teal, links + primary actions */
+  --color-primary-hover: #0a574d;
+  --color-primary-soft: #e1efec; /* teal tint for backgrounds/badges */
 
   /* Accent */
-  --color-accent:        #B5641E;  /* burnt amber, TL;DR badge, highlights */
-  --color-accent-soft:   #F6E9DB;
+  --color-accent: #b5641e; /* burnt amber, TL;DR badge, highlights */
+  --color-accent-soft: #f6e9db;
 
   /* Lines & states */
-  --color-border:        #E4DFD5;
-  --color-focus:         #0E6E62;
-  --color-success:       #2E7D5B;
-  --color-warning:       #B5641E;
+  --color-border: #e4dfd5;
+  --color-focus: #0e6e62;
+  --color-success: #2e7d5b;
+  --color-warning: #b5641e;
 }
 
 /* ===== DARK THEME ===== */
-[data-theme="dark"] {
-  --color-bg:            #15181A;  /* warm charcoal, not pure black */
-  --color-surface:       #1E2225;
-  --color-surface-alt:   #262B2E;
+[data-theme='dark'] {
+  --color-bg: #15181a; /* warm charcoal, not pure black */
+  --color-surface: #1e2225;
+  --color-surface-alt: #262b2e;
 
-  --color-text:          #ECE8E0;  /* warm off-white, ~14:1 on bg */
-  --color-text-secondary:#B0AAA0;
-  --color-text-muted:    #8A847A;
+  --color-text: #ece8e0; /* warm off-white, ~14:1 on bg */
+  --color-text-secondary: #b0aaa0;
+  --color-text-muted: #8a847a;
 
-  --color-primary:       #46B8A8;  /* brighter teal for dark bg */
-  --color-primary-hover: #5DC7B8;
-  --color-primary-soft:  #173430;
+  --color-primary: #46b8a8; /* brighter teal for dark bg */
+  --color-primary-hover: #5dc7b8;
+  --color-primary-soft: #173430;
 
-  --color-accent:        #E0A35C;  /* brightened amber */
-  --color-accent-soft:   #3A2C1B;
+  --color-accent: #e0a35c; /* brightened amber */
+  --color-accent-soft: #3a2c1b;
 
-  --color-border:        #2F3437;
-  --color-focus:         #46B8A8;
-  --color-success:       #5BBE8C;
-  --color-warning:       #E0A35C;
+  --color-border: #2f3437;
+  --color-focus: #46b8a8;
+  --color-success: #5bbe8c;
+  --color-warning: #e0a35c;
 }
 ```
 
@@ -262,21 +263,21 @@ Contrast: all text colors meet WCAG AA (4.5:1 body, 3:1 large). Verify with a co
 **Type scale (rem, 16px base):**
 
 ```css
---font-family-base: "Hind", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+--font-family-base: 'Hind', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
---text-xs:   0.8125rem;  /* 13px — metadata, chips */
---text-sm:   0.9375rem;  /* 15px — secondary, captions */
---text-base: 1.0625rem;  /* 17px — body, comfortable reading */
---text-lg:   1.1875rem;  /* 19px — lead paragraph, TL;DR */
---text-xl:   1.375rem;   /* 22px — h3 */
---text-2xl:  1.625rem;   /* 26px — h2 */
---text-3xl:  2.125rem;   /* 34px — h1 / article title */
---text-4xl:  2.5rem;     /* 40px — homepage hero (desktop) */
+--text-xs: 0.8125rem; /* 13px — metadata, chips */
+--text-sm: 0.9375rem; /* 15px — secondary, captions */
+--text-base: 1.0625rem; /* 17px — body, comfortable reading */
+--text-lg: 1.1875rem; /* 19px — lead paragraph, TL;DR */
+--text-xl: 1.375rem; /* 22px — h3 */
+--text-2xl: 1.625rem; /* 26px — h2 */
+--text-3xl: 2.125rem; /* 34px — h1 / article title */
+--text-4xl: 2.5rem; /* 40px — homepage hero (desktop) */
 
---leading-tight: 1.25;   /* headings */
---leading-body:  1.7;    /* body, reading comfort */
+--leading-tight: 1.25; /* headings */
+--leading-body: 1.7; /* body, reading comfort */
 
---measure: 68ch;         /* max line length for body text */
+--measure: 68ch; /* max line length for body text */
 ```
 
 Body text is `--text-base` at `--leading-body`. Article body constrained to `--measure` for readability.
@@ -293,15 +294,22 @@ Body text is `--text-base` at `--leading-body`. Article body constrained to `--m
 ### 7.4 Spacing, radius, shadows
 
 ```css
---space-1: 0.25rem;  --space-2: 0.5rem;   --space-3: 0.75rem;
---space-4: 1rem;     --space-5: 1.5rem;   --space-6: 2rem;
---space-7: 3rem;     --space-8: 4rem;
+--space-1: 0.25rem;
+--space-2: 0.5rem;
+--space-3: 0.75rem;
+--space-4: 1rem;
+--space-5: 1.5rem;
+--space-6: 2rem;
+--space-7: 3rem;
+--space-8: 4rem;
 
---radius-sm: 6px;    --radius-md: 10px;   --radius-lg: 16px;
+--radius-sm: 6px;
+--radius-md: 10px;
+--radius-lg: 16px;
 
 /* Shadows: minimal, for performance and calm aesthetic */
---shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
---shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+--shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
 /* In dark mode, prefer borders over shadows (shadows are invisible on dark). */
 ```
 
@@ -310,10 +318,10 @@ Design language: generous whitespace, subtle borders over heavy shadows, moderat
 ### 7.5 Layout widths
 
 ```css
---width-content: 1200px;   /* max site width */
---width-article: 760px;    /* article text column */
---width-sidebar: 280px;    /* category page left sidebar */
---width-toc: 240px;        /* article page right TOC */
+--width-content: 1200px; /* max site width */
+--width-article: 760px; /* article text column */
+--width-sidebar: 280px; /* category page left sidebar */
+--width-toc: 240px; /* article page right TOC */
 ```
 
 ---
@@ -322,28 +330,28 @@ Design language: generous whitespace, subtle borders over heavy shadows, moderat
 
 Build these as Astro components (`.astro`), using small Preact/vanilla islands only where interactivity is required (marked [island]).
 
-| Component | Purpose | Island? |
-|---|---|---|
-| `BaseLayout.astro` | HTML shell, head, theme init, font preload | no |
-| `TopBar.astro` | Logo + global search trigger + theme toggle | partial |
-| `ThemeToggle` | Light/dark switch | [island] |
-| `SearchOverlay` | Global search UI (Pagefind) | [island] |
-| `Homepage` (page) | Category list with expandable subcategories | partial |
-| `CategoryAccordion` | Expand/collapse category to show subcategories | [island] |
-| `CategoryCard.astro` | One category with subcategory count | no |
-| `SubcategoryRow.astro` | One subcategory with article count | no |
-| `CategoryPage` (page) | Left sidebar + article list | partial |
-| `SidebarNav` | Accordion of all categories/subcategories + its own name-only filter | [island] |
-| `ArticleListItem.astro` | Title, last-updated, reading time, image placeholder | no |
-| `ArticlePage` (page) | Full article layout | partial |
-| `ArticleHeader.astro` | Title, date, reading time, image placeholder, format chip | no |
-| `TldrBox.astro` | The TL;DR block | no |
-| `ArticleBody.astro` | Rendered markdown body | no |
-| `TableOfContents` | Floating right-side outline, scroll-spy, click-to-anchor | [island] |
-| `LessonQuiz` | Interactive quiz | [island] |
-| `SourcesList.astro` | Citations | no |
-| `RelatedLinks.astro` | Related article links | no |
-| `Footer.astro` | Minimal footer | no |
+| Component               | Purpose                                                              | Island?  |
+| ----------------------- | -------------------------------------------------------------------- | -------- |
+| `BaseLayout.astro`      | HTML shell, head, theme init, font preload                           | no       |
+| `TopBar.astro`          | Logo + global search trigger + theme toggle                          | partial  |
+| `ThemeToggle`           | Light/dark switch                                                    | [island] |
+| `SearchOverlay`         | Global search UI (Pagefind)                                          | [island] |
+| `Homepage` (page)       | Category list with expandable subcategories                          | partial  |
+| `CategoryAccordion`     | Expand/collapse category to show subcategories                       | [island] |
+| `CategoryCard.astro`    | One category with subcategory count                                  | no       |
+| `SubcategoryRow.astro`  | One subcategory with article count                                   | no       |
+| `CategoryPage` (page)   | Left sidebar + article list                                          | partial  |
+| `SidebarNav`            | Accordion of all categories/subcategories + its own name-only filter | [island] |
+| `ArticleListItem.astro` | Title, last-updated, reading time, image placeholder                 | no       |
+| `ArticlePage` (page)    | Full article layout                                                  | partial  |
+| `ArticleHeader.astro`   | Title, date, reading time, image placeholder, format chip            | no       |
+| `TldrBox.astro`         | The TL;DR block                                                      | no       |
+| `ArticleBody.astro`     | Rendered markdown body                                               | no       |
+| `TableOfContents`       | Floating right-side outline, scroll-spy, click-to-anchor             | [island] |
+| `LessonQuiz`            | Interactive quiz                                                     | [island] |
+| `SourcesList.astro`     | Citations                                                            | no       |
+| `RelatedLinks.astro`    | Related article links                                                | no       |
+| `Footer.astro`          | Minimal footer                                                       | no       |
 
 Keep islands tiny. The whole point of Astro is that most of this ships as zero-JS HTML.
 
@@ -529,15 +537,15 @@ URL: `/{category}/{subcategory}/{article-slug}`.
 
 Targets (measured on a simulated 2G / slow-3G connection, mid-range Android):
 
-| Metric | Target |
-|---|---|
-| First Contentful Paint (FCP) | < 2.5s on slow 3G |
-| Largest Contentful Paint (LCP) | < 4s on slow 3G |
-| Total JS shipped (homepage) | < 30KB gzipped |
-| Total JS shipped (article page) | < 40KB gzipped (incl. TOC + quiz islands) |
-| Total page weight (article, no images) | < 120KB gzipped |
-| Lighthouse Performance | ≥ 95 (desktop), ≥ 90 (mobile) |
-| Lighthouse Accessibility | ≥ 95 |
+| Metric                                 | Target                                    |
+| -------------------------------------- | ----------------------------------------- |
+| First Contentful Paint (FCP)           | < 2.5s on slow 3G                         |
+| Largest Contentful Paint (LCP)         | < 4s on slow 3G                           |
+| Total JS shipped (homepage)            | < 30KB gzipped                            |
+| Total JS shipped (article page)        | < 40KB gzipped (incl. TOC + quiz islands) |
+| Total page weight (article, no images) | < 120KB gzipped                           |
+| Lighthouse Performance                 | ≥ 95 (desktop), ≥ 90 (mobile)             |
+| Lighthouse Accessibility               | ≥ 95                                      |
 
 Strategies:
 
@@ -601,27 +609,32 @@ The owner plans to add (later): mark articles favorite, create reading lists. Bu
 The launch build is done when ALL of these are true:
 
 **Content & data**
+
 - [ ] Reads categories/subcategories from `taxonomy.json` and articles from the content repo's Traffic + Public Transport lesson files.
 - [ ] Only `status: published` articles render in the production build. (For the launch, treat the 6 launch lessons as published; see section 17.)
 - [ ] Counts are correct: each category shows its subcategory count; each subcategory shows its article count.
 - [ ] Empty/unpublished categories are hidden (or greyed per config).
 
 **Top bar**
+
 - [ ] Identical across all pages, sticky, with logo (top-left), global search, theme toggle.
 
 **Homepage**
+
 - [ ] Lists categories with subcategory counts.
 - [ ] Clicking a category expands to show its subcategories with article counts.
 - [ ] Subcategory rows link to the category page.
 - [ ] Expand/collapse state persists in localStorage.
 
 **Category page**
+
 - [ ] Left sidebar accordion of all categories/subcategories, selected subcategory highlighted, parent expanded.
 - [ ] Sidebar has its own name-only filter search.
 - [ ] Right side lists articles with name, last-updated, reading time, image placeholder.
 - [ ] Sidebar collapses to a drawer on mobile.
 
 **Article page**
+
 - [ ] Centered layout, wide text column left, floating TOC right.
 - [ ] Header with title, last-updated, reading time, image placeholder, format chip.
 - [ ] TL;DR box on every article.
@@ -632,23 +645,27 @@ The launch build is done when ALL of these are true:
 - [ ] On mobile, TOC collapses gracefully; text goes full width.
 
 **Search**
+
 - [ ] Global search indexes category/subcategory names, article titles, and full body text.
 - [ ] Global search results show article names, fast, as-you-type.
 - [ ] Sidebar search filters only category/subcategory names.
 
 **Design & modes**
+
 - [ ] Light and dark modes both work, toggle persists, no flash of wrong theme on load.
 - [ ] Hind font self-hosted, subsetted, with swap fallback.
 - [ ] Material Symbols (outlined), subsetted.
 - [ ] Palette matches section 7.1 tokens.
 
 **Performance & a11y**
+
 - [ ] Lighthouse Performance ≥ 90 mobile, ≥ 95 desktop.
 - [ ] Lighthouse Accessibility ≥ 95.
 - [ ] Usable on simulated 2G (content readable quickly).
 - [ ] JS budgets in section 14 met.
 
 **i18n & future**
+
 - [ ] Routing is locale-aware (en default, no prefix).
 - [ ] UI strings in `i18n/en.json`, not hardcoded.
 - [ ] Future-favorites insertion points documented in code.
@@ -663,10 +680,10 @@ The article page requires a TL;DR on every article (owner requirement 10.4). The
 
 ```yaml
 tldr:
-  - "First quick takeaway (one line)"
-  - "Second takeaway"
-  - "Third takeaway"
-  - "Optional fourth"
+  - 'First quick takeaway (one line)'
+  - 'Second takeaway'
+  - 'Third takeaway'
+  - 'Optional fourth'
 ```
 
 The 6 launch lessons (traffic-001, traffic-005, traffic-009, transit-001, transit-003, transit-013) have been given `tldr` fields as part of this work. All future lessons must include it (the lesson template and content README frontmatter contract have been updated).
@@ -678,11 +695,13 @@ If a lesson lacks `tldr`, the build should not crash; it should render no TL;DR 
 These are the published articles for launch:
 
 **Traffic** (`/traffic/...`):
+
 - `traffic-001-the-case-against-honking.en.md` — subtopic: honking-discipline — format: scenario
 - `traffic-005-yellow-is-not-go-faster.en.md` — subtopic: signal-rules — format: rule
 - `traffic-009-the-zebra-crossing-is-not-optional.en.md` — subtopic: pedestrian-rights — format: scenario
 
 **Public Transport** (`/public-transport-and-elevators/...`):
+
 - `transit-001-let-people-exit-before-you-enter.en.md` — subtopic: metro-entry-and-exit — format: scenario
 - `transit-003-stand-right-walk-left.en.md` — subtopic: escalator-rules — format: rule
 - `transit-013-eating-on-the-metro.en.md` — subtopic: eating-on-transport — format: comparison
@@ -741,6 +760,7 @@ learncivicsense-website/
 ### 18.2 Connecting to the content repo
 
 Two options:
+
 - **Option A (recommended for now):** Astro content collection reads from the sibling `../learncivicsense-content/` folder directly at build time. Simple for local dev.
 - **Option B (for CI):** content repo as a git submodule or a build-time fetch. Use this when wiring Cloudflare Pages CI so the build has access to content.
 

@@ -306,6 +306,7 @@ No lesson files changed.
 The v1 acceptance criteria still apply. Add these:
 
 **Volumetric navigation**
+
 - [ ] Homepage shows 15 categories grouped into 3 sections (India, Abroad, Visitors).
 - [ ] Each category card shows correct subtopic count and lesson count from taxonomy.
 - [ ] Visitors category card has a "Phase 4" badge.
@@ -313,6 +314,7 @@ The v1 acceptance criteria still apply. Add these:
 - [ ] Category pages list ALL planned articles, not just published ones.
 
 **Coming-soon articles**
+
 - [ ] Every planned article (211 total) has a working URL.
 - [ ] Articles without a corresponding markdown file render the coming-soon variant.
 - [ ] Coming-soon header layout matches published-article header layout (title, format chip, breadcrumb, image placeholder).
@@ -320,15 +322,18 @@ The v1 acceptance criteria still apply. Add these:
 - [ ] No quiz/TOC/sources/related shown on coming-soon pages.
 
 **Visitors module**
+
 - [ ] `/visitors` renders the placeholder landing page with the 10 subtopic groups and estimated counts.
 - [ ] Visitors module is NOT included in the category-page sidebar accordion.
 
 **Search**
+
 - [ ] Global search finds coming-soon articles by title.
 - [ ] Search results flag coming-soon articles with a "Coming soon" chip.
 - [ ] Sidebar filter on category pages already works (no change).
 
 **Performance**
+
 - [ ] Lighthouse performance scores remain within the v1 targets (90 mobile, 95 desktop).
 - [ ] Build time stays reasonable (target: under 60 seconds end to end).
 
@@ -338,18 +343,18 @@ The v1 acceptance criteria still apply. Add these:
 
 Rough breakdown of work to apply this addendum to the current localhost build:
 
-| Task | Estimated effort |
-|---|---|
-| Update content collection logic to parse new taxonomy v2 shape | small |
-| Build "is published" detection (file existence + frontmatter check) | small |
-| Add coming-soon article page variant (component + route) | medium |
-| Update homepage to render all 15 categories in 3 sections | medium |
-| Update category page sidebar to show all categories | small |
-| Update category page article list to include coming-soon items | small |
-| Add visitors module landing page | small |
-| Generate stub HTML for Pagefind indexing of coming-soon titles | small |
-| Add "Coming soon" chip styling to search results and list items | small |
-| Verify Lighthouse, build times, all acceptance criteria | medium |
+| Task                                                                | Estimated effort |
+| ------------------------------------------------------------------- | ---------------- |
+| Update content collection logic to parse new taxonomy v2 shape      | small            |
+| Build "is published" detection (file existence + frontmatter check) | small            |
+| Add coming-soon article page variant (component + route)            | medium           |
+| Update homepage to render all 15 categories in 3 sections           | medium           |
+| Update category page sidebar to show all categories                 | small            |
+| Update category page article list to include coming-soon items      | small            |
+| Add visitors module landing page                                    | small            |
+| Generate stub HTML for Pagefind indexing of coming-soon titles      | small            |
+| Add "Coming soon" chip styling to search results and list items     | small            |
+| Verify Lighthouse, build times, all acceptance criteria             | medium           |
 
 Total: a single focused day of implementation. No blockers.
 

@@ -153,12 +153,23 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
 
   return (
     <div class="search-overlay" role="dialog" aria-modal="true" aria-label={strings.title}>
-      <div class="search-backdrop" onClick={() => setOpen(false)} />
+      <button
+        type="button"
+        class="search-backdrop"
+        aria-label={strings.close}
+        onClick={() => setOpen(false)}
+      />
       <div class="search-panel">
         <div class="search-input-row">
           <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-            <path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            <path
+              d="M16 16l4.5 4.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            />
           </svg>
           <input
             ref={inputRef}
@@ -193,9 +204,7 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
             >
               <span class="search-result-title-row">
                 <span class="search-result-title">{r.title}</span>
-                {r.comingSoon && (
-                  <span class="search-result-chip">{strings.comingSoonChip}</span>
-                )}
+                {r.comingSoon && <span class="search-result-chip">{strings.comingSoonChip}</span>}
               </span>
               {r.breadcrumb && <span class="search-result-breadcrumb">{r.breadcrumb}</span>}
             </a>

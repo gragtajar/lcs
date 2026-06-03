@@ -27,18 +27,18 @@ promotes them.
 
 ## Architecture in one screen
 
-| Layer | Where |
-|---|---|
-| Pages (homepage, category, article, search, about, 404) | `src/pages/` |
-| Reusable Astro components | `src/components/` |
-| Preact interactivity islands (theme toggle, search overlay, TOC, quiz) | `src/islands/` |
-| Layout shell with font preload + theme init | `src/layouts/BaseLayout.astro` |
-| Design tokens (palette, type scale, spacing) | `src/styles/tokens.css` |
-| Content loader + taxonomy parser | `src/lib/content.ts` |
-| Markdown renderer with anchor IDs + TOC | `src/lib/markdown.ts` |
-| Tiny i18n helper | `src/lib/i18n.ts` |
-| UI strings | `src/i18n/en.json` |
-| Build-time config flags | `src/config.ts` |
+| Layer                                                                  | Where                          |
+| ---------------------------------------------------------------------- | ------------------------------ |
+| Pages (homepage, category, article, search, about, 404)                | `src/pages/`                   |
+| Reusable Astro components                                              | `src/components/`              |
+| Preact interactivity islands (theme toggle, search overlay, TOC, quiz) | `src/islands/`                 |
+| Layout shell with font preload + theme init                            | `src/layouts/BaseLayout.astro` |
+| Design tokens (palette, type scale, spacing)                           | `src/styles/tokens.css`        |
+| Content loader + taxonomy parser                                       | `src/lib/content.ts`           |
+| Markdown renderer with anchor IDs + TOC                                | `src/lib/markdown.ts`          |
+| Tiny i18n helper                                                       | `src/lib/i18n.ts`              |
+| UI strings                                                             | `src/i18n/en.json`             |
+| Build-time config flags                                                | `src/config.ts`                |
 
 ## Search
 

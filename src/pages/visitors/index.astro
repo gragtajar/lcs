@@ -29,15 +29,17 @@ const visitors = loadVisitorsModule();
 
   <section class="varea">
     <h2 class="varea-h">{t('visitors.areasHeading')}</h2>
-    <ul class="varea-list" role="list">
-      {visitors.subtopics.map((s) => (
-        <li class="varea-row">
-          <span class="varea-title">{s.title}</span>
-          <span class="varea-count">
-            {t('visitors.lessonsPlanned', { count: s.estimatedLessons })}
-          </span>
-        </li>
-      ))}
+    <ul class="varea-list">
+      {
+        visitors.subtopics.map((s) => (
+          <li class="varea-row">
+            <span class="varea-title">{s.title}</span>
+            <span class="varea-count">
+              {t('visitors.lessonsPlanned', { count: s.estimatedLessons })}
+            </span>
+          </li>
+        ))
+      }
     </ul>
   </section>
 </BaseLayout>

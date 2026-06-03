@@ -18,8 +18,14 @@ import { t } from '../lib/i18n';
       aria-label={t('topbar.openSearch')}
     >
       <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-        <path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"
+        ></circle>
+        <path
+          d="M16 16l4.5 4.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"></path>
       </svg>
       <span class="search-trigger-label">{t('topbar.searchPlaceholder')}</span>
       <kbd class="search-trigger-kbd">/</kbd>
@@ -165,9 +171,13 @@ import { t } from '../lib/i18n';
     z-index: 100;
   }
   :global(.search-backdrop) {
+    /* Rendered as a button for keyboard accessibility; styled to look like a backdrop. */
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgb(0 0 0 / 45%);
+    border: 0;
+    padding: 0;
+    cursor: default;
   }
   :global(.search-panel) {
     position: relative;

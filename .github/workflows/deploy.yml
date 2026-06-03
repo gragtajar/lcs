@@ -12,16 +12,16 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-    - name: Get latest code
-      uses: actions/checkout@v4.2.2
-      with:
-        fetch-depth: 0
-        
-    - name: Sync files to cPanel
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        port: 21 # Forces GitHub to utilize standard FTP port 21
-        server-dir: /public_html/
+      - name: Get latest code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Sync files to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21 # Forces GitHub to utilize standard FTP port 21
+          server-dir: /public_html/

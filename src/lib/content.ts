@@ -10,7 +10,7 @@
 //   - All counts come from taxonomy. We never recompute "published vs planned"
 //     for navigation — only for the "is this single article live?" check.
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
@@ -201,12 +201,6 @@ export interface PlannedArticle {
 // the path from the slug alone — we scan the lessons/ dir per category and
 // map by lesson id (`{prefix}-{NNN}`), which is the stable key.
 
-/** Numeric ID part from "traffic-001" → "001". */
-function lessonNumber(id: string): string {
-  const m = id.match(/-(\d+)$/);
-  return m ? m[1] : '';
-}
-
 /** Cache: `category.id::locale` → ( `lesson_id` → full file path ). */
 const lessonFileIndex = new Map<string, Map<string, string>>();
 
@@ -224,7 +218,7 @@ function getLessonFileIndex(cat: NavCategory, locale: Locale): Map<string, strin
     );
     for (const file of readdirSync(dir)) {
       const m = file.match(idRegex);
-      if (m) index.set(m[1], path.join(dir, file));
+      if (m?.[1]) index.set(m[1], path.join(dir, file));
     }
   }
   lessonFileIndex.set(cacheKey, index);
@@ -236,17 +230,22 @@ function escapeRegex(s: string): string {
 }
 
 /**
+ * Pull a locale value from a {en: "...", hi: "...", ...} map with sensible fallback.
+ * Returns the requested locale, then English, then the empty string. Keeps strict
+ * `noUncheckedIndexedAccess` happy without sprinkling `as string` casts.
+ */
+function pickI18n(map: Record<string, string>, locale: Locale): string {
+  return map[locale] ?? map.en ?? '';
+}
+
+/**
  * "Is this planned article actually live?" per addendum §2.1:
  *   - allowlist mode + id in LAUNCH_LESSON_IDS → yes (handles the 6 draft launch lessons)
  *   - a backing .md file (matched by id, not by exact slug) exists AND its
  *     frontmatter has status: published → yes
  *   - else no
  */
-function isArticlePublished(
-  cat: NavCategory,
-  planned: RawPlannedLesson,
-  locale: Locale,
-): boolean {
+function isArticlePublished(cat: NavCategory, planned: RawPlannedLesson, locale: Locale): boolean {
   if (PUBLISH_MODE === 'allowlist' && LAUNCH_LESSON_IDS.has(planned.id)) return true;
   const fp = getLessonFileIndex(cat, locale).get(planned.id);
   if (!fp) return false;
@@ -273,8 +272,8 @@ function buildNavCategory(
   // Build the category shell first so subtopic→article construction can reference it.
   const cat: NavCategory = {
     id: raw.id,
-    title: raw.title[locale] ?? raw.title.en,
-    description: raw.description[locale] ?? raw.description.en,
+    title: pickI18n(raw.title, locale),
+    description: pickI18n(raw.description, locale),
     icon: raw.icon,
     lessonIdPrefix: raw.lesson_id_prefix,
     contentDir,
@@ -288,7 +287,7 @@ function buildNavCategory(
   for (const s of raw.subtopics) {
     const sub: NavSubtopic = {
       id: s.id,
-      title: s.title[locale] ?? s.title.en,
+      title: pickI18n(s.title, locale),
       defaultFormat: s.default_format,
       estimatedLessons: s.estimated_lessons,
       articles: [],
@@ -347,7 +346,9 @@ export function findPlannedArticle(
   slug: string,
   locale: Locale = DEFAULT_LOCALE,
 ): PlannedArticle | undefined {
-  return getSubtopic(categoryId, subtopicId, locale)?.subtopic.articles.find((a) => a.slug === slug);
+  return getSubtopic(categoryId, subtopicId, locale)?.subtopic.articles.find(
+    (a) => a.slug === slug,
+  );
 }
 
 // ---------- Visitors module (separate flow) ----------
@@ -367,13 +368,13 @@ export function loadVisitorsModule(locale: Locale = DEFAULT_LOCALE): VisitorsVie
   const vm = loadTaxonomy().visitors_module;
   return {
     id: vm.id,
-    title: vm.title[locale] ?? vm.title.en,
-    description: vm.description[locale] ?? vm.description.en,
+    title: pickI18n(vm.title, locale),
+    description: pickI18n(vm.description, locale),
     icon: vm.icon,
     phase: vm.phase,
     subtopics: vm.subtopics.map((s) => ({
       id: s.id,
-      title: s.title[locale] ?? s.title.en,
+      title: pickI18n(s.title, locale),
       estimatedLessons: s.estimated_lessons,
     })),
     lessonCount: vm.lesson_count ?? vm.subtopics.reduce((n, s) => n + s.estimated_lessons, 0),
@@ -390,7 +391,10 @@ const lessonCache = new Map<string, Lesson | null>();
  * no file or the file is unreadable. The caller is responsible for first checking
  * `planned.published` before deciding how to render.
  */
-export function loadLessonForArticle(planned: PlannedArticle, locale: Locale = DEFAULT_LOCALE): Lesson | null {
+export function loadLessonForArticle(
+  planned: PlannedArticle,
+  locale: Locale = DEFAULT_LOCALE,
+): Lesson | null {
   const cacheKey = `${planned.category.id}/${planned.id}/${locale}`;
   if (lessonCache.has(cacheKey)) return lessonCache.get(cacheKey) ?? null;
 
@@ -455,7 +459,7 @@ function splitBodyAndQuiz(content: string): {
     return { markdownBody: content.trimEnd(), quiz: null };
   }
   const markdownBody = content.slice(0, m.index).trimEnd();
-  const quizYaml = m[1];
+  const quizYaml = m[1] ?? '';
   try {
     const obj = yaml.load(quizYaml) as { quiz?: QuizQuestion[] };
     return { markdownBody, quiz: obj?.quiz ?? null };
@@ -477,14 +481,12 @@ export interface RelatedLink {
  * Resolve a lesson's `related: [id, ...]` to linkable views by looking up each id
  * in the taxonomy (any category). Drops unknown IDs silently.
  */
-export function resolveRelated(
-  related: string[],
-  locale: Locale = DEFAULT_LOCALE,
-): RelatedLink[] {
+export function resolveRelated(related: string[], locale: Locale = DEFAULT_LOCALE): RelatedLink[] {
   if (!related?.length) return [];
   const nav = getNavCategories(locale);
   const byId = new Map<string, PlannedArticle>();
-  for (const cat of nav) for (const s of cat.subtopics) for (const a of s.articles) byId.set(a.id, a);
+  for (const cat of nav)
+    for (const s of cat.subtopics) for (const a of s.articles) byId.set(a.id, a);
 
   const out: RelatedLink[] = [];
   for (const id of related) {
@@ -497,7 +499,11 @@ export function resolveRelated(
 
 // ---------- URL helpers ----------
 
-export function articleUrl(a: { category: NavCategory; subtopic: NavSubtopic; slug: string }): string {
+export function articleUrl(a: {
+  category: NavCategory;
+  subtopic: NavSubtopic;
+  slug: string;
+}): string {
   return `/${a.category.id}/${a.subtopic.id}/${a.slug}/`;
 }
 

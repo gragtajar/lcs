@@ -9,7 +9,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--topbar-h) + 1rem);
-  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -33,7 +33,7 @@ body {
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizelegibility;
 }
 
 img,
@@ -130,7 +130,7 @@ button {
   height: 1.25em;
   flex-shrink: 0;
   fill: none;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;

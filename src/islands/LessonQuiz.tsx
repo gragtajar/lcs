@@ -71,15 +71,11 @@ function QuestionBlock({
         <span class="quiz-q-num">Q{index + 1}.</span> {q.question}
       </p>
       <p class="quiz-hint">{hint}</p>
-      <ul class="quiz-opts" role="list">
+      <ul class="quiz-opts">
         {q.options.map((opt) => {
           const isPicked = picked.has(opt.id);
           const reveal = isPicked;
-          const stateClass = reveal
-            ? opt.correct
-              ? 'correct'
-              : 'wrong'
-            : '';
+          const stateClass = reveal ? (opt.correct ? 'correct' : 'wrong') : '';
           return (
             <li key={opt.id}>
               <button
@@ -88,15 +84,11 @@ function QuestionBlock({
                 onClick={() => toggle(opt.id)}
                 aria-pressed={isPicked}
               >
-                <span class="quiz-opt-marker">
-                  {reveal ? (opt.correct ? '✓' : '×') : ''}
-                </span>
+                <span class="quiz-opt-marker">{reveal ? (opt.correct ? '✓' : '×') : ''}</span>
                 <span class="quiz-opt-text">{opt.text}</span>
               </button>
               {reveal && opt.feedback && (
-                <p class={`quiz-feedback ${opt.correct ? 'good' : 'meh'}`}>
-                  {opt.feedback}
-                </p>
+                <p class={`quiz-feedback ${opt.correct ? 'good' : 'meh'}`}>{opt.feedback}</p>
               )}
             </li>
           );

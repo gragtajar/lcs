@@ -6,13 +6,7 @@ interface TocItem {
   level: 2 | 3;
 }
 
-export default function TableOfContents({
-  items,
-  label,
-}: {
-  items: TocItem[];
-  label: string;
-}) {
+export default function TableOfContents({ items, label }: { items: TocItem[]; label: string }) {
   const [active, setActive] = useState<string>('');
 
   useEffect(() => {
@@ -61,10 +55,7 @@ export default function TableOfContents({
       <p class="toc-title">{label}</p>
       <ol class="toc-list">
         {items.map((it) => (
-          <li
-            key={it.id}
-            class={`toc-item toc-${it.level} ${active === it.id ? 'active' : ''}`}
-          >
+          <li key={it.id} class={`toc-item toc-${it.level} ${active === it.id ? 'active' : ''}`}>
             <a href={`#${it.id}`}>{it.text}</a>
           </li>
         ))}

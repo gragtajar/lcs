@@ -60,13 +60,10 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
 ---
 
 <BaseLayout title={planned.title} description={description} width="flush" canonical={canonical}>
-  <div
-    class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`}
-    data-pagefind-body
-  >
+  <div class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`} data-pagefind-body>
     {/* Pagefind meta — one attribute per key, kept hidden from layout. */}
-    <span data-pagefind-meta={`cluster:${cat.title}`} hidden />
-    <span data-pagefind-meta={`subtopic:${sub.title}`} hidden />
+    <span data-pagefind-meta={`cluster:${cat.title}`} hidden></span>
+    <span data-pagefind-meta={`subtopic:${sub.title}`} hidden></span>
     {isComingSoon && <span data-pagefind-meta="status:coming-soon" hidden />}
 
     <Breadcrumb
@@ -87,59 +84,63 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
           lesson={lesson}
         />
 
-        {isComingSoon ? (
-          <ComingSoonBody
-            phase={2}
-            categoryId={cat.id}
-            subtopicId={sub.id}
-            subtopicTitle={sub.title}
-          />
-        ) : (
-          <>
-            <TldrBox items={lesson!.tldr} />
+        {
+          isComingSoon ? (
+            <ComingSoonBody
+              phase={2}
+              categoryId={cat.id}
+              subtopicId={sub.id}
+              subtopicTitle={sub.title}
+            />
+          ) : (
+            <>
+              <TldrBox items={lesson!.tldr} />
 
-            {/* Mobile-only TOC collapse, above the body. */}
-            {rendered!.toc.length > 0 && (
-              <details class="toc-mobile" name="toc-mobile">
-                <summary>
-                  <span>{t('article.contents')}</span>
-                </summary>
-                <ol>
-                  {rendered!.toc.map((it) => (
-                    <li class={`toc-${it.level}`}>
-                      <a href={`#${it.id}`}>{it.text}</a>
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            )}
+              {/* Mobile-only TOC collapse, above the body. */}
+              {rendered!.toc.length > 0 && (
+                <details class="toc-mobile" name="toc-mobile">
+                  <summary>
+                    <span>{t('article.contents')}</span>
+                  </summary>
+                  <ol>
+                    {rendered!.toc.map((it) => (
+                      <li class={`toc-${it.level}`}>
+                        <a href={`#${it.id}`}>{it.text}</a>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
 
-            <div class="article-body" set:html={rendered!.html} />
+              <div class="article-body" set:html={rendered!.html} />
 
-            {lesson!.quiz && lesson!.quiz.length > 0 && (
-              <LessonQuiz
-                client:visible
-                questions={lesson!.quiz}
-                strings={{
-                  title: t('quiz.title'),
-                  selectAnswer: t('quiz.selectAnswer'),
-                  selectAllThatApply: t('quiz.selectAllThatApply'),
-                  explanationLabel: t('quiz.explanationLabel'),
-                }}
-              />
-            )}
+              {lesson!.quiz && lesson!.quiz.length > 0 && (
+                <LessonQuiz
+                  client:visible
+                  questions={lesson!.quiz}
+                  strings={{
+                    title: t('quiz.title'),
+                    selectAnswer: t('quiz.selectAnswer'),
+                    selectAllThatApply: t('quiz.selectAllThatApply'),
+                    explanationLabel: t('quiz.explanationLabel'),
+                  }}
+                />
+              )}
 
-            <SourcesList sources={lesson!.sources} />
-            <RelatedLinks items={related} />
-          </>
-        )}
+              <SourcesList sources={lesson!.sources} />
+              <RelatedLinks items={related} />
+            </>
+          )
+        }
       </article>
 
-      {!isComingSoon && rendered!.toc.length > 0 && (
-        <aside class="toc-side" aria-hidden="false">
-          <TableOfContents client:visible items={rendered!.toc} label={t('article.contents')} />
-        </aside>
-      )}
+      {
+        !isComingSoon && rendered!.toc.length > 0 && (
+          <aside class="toc-side" aria-hidden="false">
+            <TableOfContents client:visible items={rendered!.toc} label={t('article.contents')} />
+          </aside>
+        )
+      }
     </div>
   </div>
 </BaseLayout>
@@ -151,7 +152,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     padding: var(--space-5) var(--space-4) var(--space-7);
   }
   @media (min-width: 768px) {
-    .article-page { padding-inline: var(--space-6); }
+    .article-page {
+      padding-inline: var(--space-6);
+    }
   }
 
   .article-grid {
@@ -178,7 +181,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
   }
 
   /* Floating right-rail TOC (desktop) */
-  .toc-side { display: none; }
+  .toc-side {
+    display: none;
+  }
   @media (min-width: 1024px) {
     .toc-side {
       display: block;
@@ -199,7 +204,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     background: var(--color-surface);
   }
   @media (min-width: 1024px) {
-    .toc-mobile { display: none; }
+    .toc-mobile {
+      display: none;
+    }
   }
   .toc-mobile summary {
     list-style: none;
@@ -208,16 +215,25 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     font-weight: 500;
     color: var(--color-text);
   }
-  .toc-mobile summary::-webkit-details-marker { display: none; }
+  .toc-mobile summary::-webkit-details-marker {
+    display: none;
+  }
   .toc-mobile ol {
     margin: 0;
     padding: 0 var(--space-4) var(--space-3) var(--space-5);
     list-style: decimal;
     color: var(--color-text-secondary);
   }
-  .toc-mobile li { padding: var(--space-1) 0; }
-  .toc-mobile li.toc-3 { padding-left: var(--space-3); font-size: var(--text-sm); }
-  .toc-mobile a { color: var(--color-text-secondary); }
+  .toc-mobile li {
+    padding: var(--space-1) 0;
+  }
+  .toc-mobile li.toc-3 {
+    padding-left: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .toc-mobile a {
+    color: var(--color-text-secondary);
+  }
 
   :global(.toc) {
     font-size: var(--text-sm);
@@ -266,7 +282,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     font-size: var(--text-xl);
     margin: var(--space-5) 0 var(--space-2);
   }
-  .article-body :global(.anchor-link) { color: inherit; }
+  .article-body :global(.anchor-link) {
+    color: inherit;
+  }
   .article-body :global(.anchor-link:hover) {
     color: var(--color-primary);
     text-decoration: none;
@@ -281,7 +299,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     padding-left: var(--space-5);
     max-width: var(--measure);
   }
-  .article-body :global(li) { margin-block: var(--space-2); }
+  .article-body :global(li) {
+    margin-block: var(--space-2);
+  }
   .article-body :global(blockquote) {
     margin: var(--space-5) 0;
     padding: var(--space-3) var(--space-5);
@@ -291,13 +311,17 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     max-width: var(--measure);
   }
-  .article-body :global(blockquote p) { margin: 0; }
+  .article-body :global(blockquote p) {
+    margin: 0;
+  }
   .article-body :global(a) {
     color: var(--color-primary);
     text-decoration: none;
     border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   }
-  .article-body :global(a:hover) { border-bottom-color: var(--color-primary); }
+  .article-body :global(a:hover) {
+    border-bottom-color: var(--color-primary);
+  }
 
   .article-body :global(.table-wrap) {
     overflow-x: auto;
@@ -326,7 +350,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     font-weight: 600;
     color: var(--color-text);
   }
-  .article-body :global(.table-wrap tr:last-child td) { border-bottom: 0; }
+  .article-body :global(.table-wrap tr:last-child td) {
+    border-bottom: 0;
+  }
 
   :global(.quiz) {
     margin-top: var(--space-7);
@@ -337,14 +363,19 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     font-size: var(--text-xl);
     margin-bottom: var(--space-4);
   }
-  :global(.quiz-q) { margin-bottom: var(--space-6); }
+  :global(.quiz-q) {
+    margin-bottom: var(--space-6);
+  }
   :global(.quiz-question) {
     font-size: var(--text-lg);
     font-weight: 500;
     margin-bottom: var(--space-2);
     line-height: 1.45;
   }
-  :global(.quiz-q-num) { color: var(--color-primary); margin-right: 4px; }
+  :global(.quiz-q-num) {
+    color: var(--color-primary);
+    margin-right: 4px;
+  }
   :global(.quiz-hint) {
     font-size: var(--text-xs);
     text-transform: uppercase;
@@ -376,7 +407,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
   :global(.quiz-opt:hover) {
     border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
   }
-  :global(.quiz-opt.picked) { background: var(--color-surface-alt); }
+  :global(.quiz-opt.picked) {
+    background: var(--color-surface-alt);
+  }
   :global(.quiz-opt.correct) {
     border-color: var(--color-success);
     background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
@@ -397,7 +430,9 @@ const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
     line-height: 1.5;
     color: var(--color-text-secondary);
   }
-  :global(.quiz-feedback.good) { color: var(--color-success); }
+  :global(.quiz-feedback.good) {
+    color: var(--color-success);
+  }
   :global(.quiz-explanation) {
     margin-top: var(--space-3);
     padding: var(--space-3) var(--space-4);

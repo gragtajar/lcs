@@ -60,11 +60,11 @@ Read top to bottom before implementing. The phasing matrix in Section 14 is the 
 
 Three phases. Each builds on the previous.
 
-| Phase | Window | Goal | Must-have items |
-|---|---|---|---|
-| **Phase 1** | Now → launch (60-90 days) | Site is publicly launchable: safe, fast, observable, maintainable | TypeScript strict, ESLint, Prettier, husky, commitlint, Vitest, Playwright smoke tests, Lighthouse CI, bundle budgets, GitHub Actions CI/deploy, branch protection, preview deploys, sitemap, robots.txt, SEO meta, error monitoring, analytics, uptime monitoring |
-| **Phase 2** | Launch + first month | Hardened against the edge cases real traffic surfaces | Accessibility CI (axe-core), broken link checker (lychee), visual regression, ADRs documented for past decisions, contributor docs polished, dependency audit automation |
-| **Phase 3** | When content > 100 lessons or Hindi rolls out | Architecture proven at content scale | File system migration to per-lesson folders for multilingual, per-locale Pagefind indices, image pipeline activated, RSS feed, search analytics, content team workflows |
+| Phase       | Window                                        | Goal                                                              | Must-have items                                                                                                                                                                                                                                                    |
+| ----------- | --------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Phase 1** | Now → launch (60-90 days)                     | Site is publicly launchable: safe, fast, observable, maintainable | TypeScript strict, ESLint, Prettier, husky, commitlint, Vitest, Playwright smoke tests, Lighthouse CI, bundle budgets, GitHub Actions CI/deploy, branch protection, preview deploys, sitemap, robots.txt, SEO meta, error monitoring, analytics, uptime monitoring |
+| **Phase 2** | Launch + first month                          | Hardened against the edge cases real traffic surfaces             | Accessibility CI (axe-core), broken link checker (lychee), visual regression, ADRs documented for past decisions, contributor docs polished, dependency audit automation                                                                                           |
+| **Phase 3** | When content > 100 lessons or Hindi rolls out | Architecture proven at content scale                              | File system migration to per-lesson folders for multilingual, per-locale Pagefind indices, image pipeline activated, RSS feed, search analytics, content team workflows                                                                                            |
 
 Section 14 has the detailed phasing matrix.
 
@@ -1034,16 +1034,16 @@ Links to relevant code, external docs, related ADRs.
 
 ### Initial ADRs to write (Phase 1)
 
-| # | Title | Captures |
-|---|---|---|
-| 001 | Astro over Next.js | The zero-JS + content-first decision |
-| 002 | Pagefind over Algolia | Static-search-no-server reasoning |
-| 003 | Cloudflare Pages hosting | India edge latency + free tier + atomic deploys |
-| 004 | Hind font family choice | Indian foundry, multilingual coverage |
-| 005 | Design token palette | Teal + amber, dark/light, accessibility |
-| 006 | Coming-soon article rendering | Manifest-driven, build-time detection |
-| 007 | File layout for multilingual content | Per-lesson folders when Hindi arrives |
-| 008 | Pagefind per-locale indices | Why we split search by language at scale |
+| #   | Title                                | Captures                                        |
+| --- | ------------------------------------ | ----------------------------------------------- |
+| 001 | Astro over Next.js                   | The zero-JS + content-first decision            |
+| 002 | Pagefind over Algolia                | Static-search-no-server reasoning               |
+| 003 | Cloudflare Pages hosting             | India edge latency + free tier + atomic deploys |
+| 004 | Hind font family choice              | Indian foundry, multilingual coverage           |
+| 005 | Design token palette                 | Teal + amber, dark/light, accessibility         |
+| 006 | Coming-soon article rendering        | Manifest-driven, build-time detection           |
+| 007 | File layout for multilingual content | Per-lesson folders when Hindi arrives           |
+| 008 | Pagefind per-locale indices          | Why we split search by language at scale        |
 
 ADRs are write-once mostly. Update only if superseded.
 
@@ -1090,7 +1090,7 @@ Covers:
 
 Example:
 
-```ts
+````ts
 /**
  * Loads the taxonomy and returns the structured tree of categories,
  * subcategories, and planned articles.
@@ -1109,7 +1109,7 @@ Example:
  * ```
  */
 export async function loadTaxonomy(): Promise<Taxonomy> { ... }
-```
+````
 
 ESLint rule `tsdoc/syntax` enforces format.
 
@@ -1258,19 +1258,19 @@ export function buildMeta(opts: {
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "{title}",
-  "datePublished": "{last_updated}",
-  "dateModified": "{last_updated}",
-  "author": { "@type": "Organization", "name": "learncivicsense.in" },
-  "publisher": { "@type": "Organization", "name": "learncivicsense.in" },
-  "description": "{tldr[0]}",
-  "articleSection": "{cluster.title}",
-  "wordCount": {bodyWordCount},
-  "inLanguage": "en-IN"
-}
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{title}",
+    "datePublished": "{last_updated}",
+    "dateModified": "{last_updated}",
+    "author": { "@type": "Organization", "name": "learncivicsense.in" },
+    "publisher": { "@type": "Organization", "name": "learncivicsense.in" },
+    "description": "{tldr[0]}",
+    "articleSection": "{cluster.title}",
+    "wordCount": {bodyWordCount},
+    "inLanguage": "en-IN"
+  }
 </script>
 ```
 
@@ -1322,6 +1322,7 @@ Use Astro's `<Image>` component (built-in, uses sharp):
 import { Image } from 'astro:assets';
 import heroImage from '@content/05-images/traffic/traffic-001.jpg';
 ---
+
 <Image
   src={heroImage}
   alt="Bengaluru intersection at peak hour, multiple cars honking with red light"
@@ -1341,8 +1342,8 @@ Every image gets meaningful alt text. Add a frontmatter field on lessons:
 ```yaml
 image:
   src: traffic-001.jpg
-  alt: "Bengaluru intersection at peak hour, multiple cars honking with red light"
-  credit: "Photo: Original, CC0"
+  alt: 'Bengaluru intersection at peak hour, multiple cars honking with red light'
+  credit: 'Photo: Original, CC0'
 ```
 
 Build-time validation: lint.py extended to flag lessons that have an `image` block without alt text.
@@ -1453,7 +1454,9 @@ The font CSS uses `unicode-range` to load only the relevant subset:
 @font-face {
   font-family: 'Hind';
   src: url('/fonts/hind-regular-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074,
+    U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
   font-display: swap;
 }
 
@@ -1473,45 +1476,45 @@ Browser loads only the subset it needs.
 
 Specific item-by-item priority.
 
-| Item | Phase | Blocking? |
-|---|---|---|
-| TypeScript strict mode | 1 | Yes |
-| ESLint + Prettier + Stylelint | 1 | Yes |
-| husky pre-commit + commit-msg + pre-push | 1 | Yes |
-| commitlint Conventional Commits | 1 | Yes |
-| Vitest unit tests for islands (80% coverage threshold) | 1 | Yes |
-| Playwright smoke tests | 1 | Yes |
-| Content lint integrated into CI | 1 | Yes |
-| Lighthouse CI with hard thresholds | 1 | Yes |
-| Bundle size budgets (size-limit) | 1 | Yes |
-| GitHub Actions: ci.yml, deploy.yml | 1 | Yes |
-| Branch protection on main | 1 | Yes |
-| Preview deployments | 1 | Yes |
-| Cloudflare Web Analytics | 1 | Yes |
-| Sentry error monitoring | 1 | Yes |
-| BetterStack uptime monitoring | 1 | Yes |
-| robots.txt, sitemap, canonical URLs, OG meta | 1 | Yes |
-| JSON-LD structured data | 1 | Yes |
-| Security headers (_headers file) | 1 | Yes |
-| Privacy + Terms pages | 1 | Yes |
-| README, ARCHITECTURE, CONTRIBUTING | 1 | Yes |
-| Initial ADRs (001-006) | 1 | Yes |
-| Sentry source map upload on deploy | 1 | Yes |
-| Custom 404 page | 1 | Yes |
-| Accessibility CI (axe-core) | 2 | No (run as warning until launch+30) |
-| Broken link checker (lychee) | 2 | No (weekly scheduled) |
-| Visual regression (Playwright screenshots) | 2 | No |
-| Dependency audit automation (Dependabot + npm audit) | 2 | No |
-| Status page (BetterStack public) | 2 | No |
-| Issue templates and PR templates | 2 | No |
-| ADRs 007 + 008 (multilingual decisions) | 3 | No |
-| Per-lesson folder migration | 3 | When Hindi starts |
-| Per-locale Pagefind indices | 3 | When Hindi starts |
-| Image pipeline activated | 3 | When real images arrive |
-| RSS feed | 3 | When 50+ lessons published |
-| i18n dictionaries beyond en.json | 3 | When second locale rolls out |
-| Per-locale font loading with unicode-range | 3 | When Hindi rolls out |
-| Search analytics (which queries return zero results) | 3 | When traffic justifies |
+| Item                                                   | Phase | Blocking?                           |
+| ------------------------------------------------------ | ----- | ----------------------------------- |
+| TypeScript strict mode                                 | 1     | Yes                                 |
+| ESLint + Prettier + Stylelint                          | 1     | Yes                                 |
+| husky pre-commit + commit-msg + pre-push               | 1     | Yes                                 |
+| commitlint Conventional Commits                        | 1     | Yes                                 |
+| Vitest unit tests for islands (80% coverage threshold) | 1     | Yes                                 |
+| Playwright smoke tests                                 | 1     | Yes                                 |
+| Content lint integrated into CI                        | 1     | Yes                                 |
+| Lighthouse CI with hard thresholds                     | 1     | Yes                                 |
+| Bundle size budgets (size-limit)                       | 1     | Yes                                 |
+| GitHub Actions: ci.yml, deploy.yml                     | 1     | Yes                                 |
+| Branch protection on main                              | 1     | Yes                                 |
+| Preview deployments                                    | 1     | Yes                                 |
+| Cloudflare Web Analytics                               | 1     | Yes                                 |
+| Sentry error monitoring                                | 1     | Yes                                 |
+| BetterStack uptime monitoring                          | 1     | Yes                                 |
+| robots.txt, sitemap, canonical URLs, OG meta           | 1     | Yes                                 |
+| JSON-LD structured data                                | 1     | Yes                                 |
+| Security headers (\_headers file)                      | 1     | Yes                                 |
+| Privacy + Terms pages                                  | 1     | Yes                                 |
+| README, ARCHITECTURE, CONTRIBUTING                     | 1     | Yes                                 |
+| Initial ADRs (001-006)                                 | 1     | Yes                                 |
+| Sentry source map upload on deploy                     | 1     | Yes                                 |
+| Custom 404 page                                        | 1     | Yes                                 |
+| Accessibility CI (axe-core)                            | 2     | No (run as warning until launch+30) |
+| Broken link checker (lychee)                           | 2     | No (weekly scheduled)               |
+| Visual regression (Playwright screenshots)             | 2     | No                                  |
+| Dependency audit automation (Dependabot + npm audit)   | 2     | No                                  |
+| Status page (BetterStack public)                       | 2     | No                                  |
+| Issue templates and PR templates                       | 2     | No                                  |
+| ADRs 007 + 008 (multilingual decisions)                | 3     | No                                  |
+| Per-lesson folder migration                            | 3     | When Hindi starts                   |
+| Per-locale Pagefind indices                            | 3     | When Hindi starts                   |
+| Image pipeline activated                               | 3     | When real images arrive             |
+| RSS feed                                               | 3     | When 50+ lessons published          |
+| i18n dictionaries beyond en.json                       | 3     | When second locale rolls out        |
+| Per-locale font loading with unicode-range             | 3     | When Hindi rolls out                |
+| Search analytics (which queries return zero results)   | 3     | When traffic justifies              |
 
 ---
 
@@ -1520,6 +1523,7 @@ Specific item-by-item priority.
 The implementation is "done" for Phase 1 when ALL of the following are true:
 
 **Code quality**
+
 - [ ] `npm run lint` reports zero errors and zero warnings
 - [ ] `npm run typecheck` reports zero errors
 - [ ] `npm run format:check` reports zero issues
@@ -1527,11 +1531,13 @@ The implementation is "done" for Phase 1 when ALL of the following are true:
 - [ ] commitlint blocks non-conforming commit messages
 
 **Testing**
+
 - [ ] Vitest unit test coverage ≥80% statements, ≥75% branches, on islands and lib utilities
 - [ ] Playwright smoke tests pass: homepage, category, article (real + coming-soon), search, theme toggle
 - [ ] Content lint runs in CI and fails the build on lesson errors
 
 **Performance**
+
 - [ ] Lighthouse Performance ≥95 desktop, ≥90 mobile on homepage and one article per format
 - [ ] Lighthouse Accessibility ≥95
 - [ ] Lighthouse SEO ≥95
@@ -1540,6 +1546,7 @@ The implementation is "done" for Phase 1 when ALL of the following are true:
 - [ ] First Contentful Paint <2s on slow 3G simulation
 
 **CI/CD**
+
 - [ ] PRs cannot merge without passing CI, E2E, Lighthouse, and at least one review
 - [ ] Every PR auto-deploys to a unique Cloudflare Pages preview URL
 - [ ] Push to main triggers production deploy
@@ -1547,12 +1554,14 @@ The implementation is "done" for Phase 1 when ALL of the following are true:
 - [ ] Rollback procedure tested and documented in `docs/runbooks/rollback.md`
 
 **Observability**
+
 - [ ] Cloudflare Web Analytics receiving page views from production
 - [ ] Sentry receiving any deliberately-triggered test error from production
 - [ ] BetterStack monitoring 4 endpoints, alerting configured
 - [ ] Custom 404 page tracked
 
 **Privacy and security**
+
 - [ ] Security headers verified via `securityheaders.com` (A or A+ grade)
 - [ ] No third-party trackers loaded
 - [ ] No cookies set
@@ -1560,6 +1569,7 @@ The implementation is "done" for Phase 1 when ALL of the following are true:
 - [ ] `/privacy` and `/terms` pages published
 
 **Documentation**
+
 - [ ] `README.md` reads cleanly with badges and quick-start
 - [ ] `ARCHITECTURE.md` covers high-level design with diagram
 - [ ] `CONTRIBUTING.md` walks through setup, contribution flow, conventions
@@ -1568,6 +1578,7 @@ The implementation is "done" for Phase 1 when ALL of the following are true:
 - [ ] Every major folder has a README
 
 **SEO and discovery**
+
 - [ ] `/sitemap-index.xml` auto-generated and includes all routes
 - [ ] `/robots.txt` allows all crawlers and links sitemap
 - [ ] OG meta tags on every page

@@ -1,0 +1,16 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "custom-property-pattern": null,
+    "selector-class-pattern": "^[a-z][a-zA-Z0-9-]*$",
+    "no-descending-specificity": null,
+    "declaration-block-no-redundant-longhand-properties": null,
+    "no-duplicate-selectors": null,
+    "media-feature-range-notation": "prefix",
+    "alpha-value-notation": "number",
+    "color-function-notation": "modern",
+    "comment-empty-line-before": null,
+    "rule-empty-line-before": null
+  },
+  "ignoreFiles": ["dist/**/*", ".astro/**/*", "public/pagefind/**/*", "node_modules/**/*"]
+}

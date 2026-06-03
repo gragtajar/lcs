@@ -1,0 +1,12 @@
+dist/
+.astro/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+public/pagefind/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+# Content repo is managed elsewhere; the website never formats it.
+../learncivicsense-content/

@@ -5,7 +5,7 @@
 [data-theme='light'] {
   /* Backgrounds */
   --color-bg: #faf8f3;
-  --color-surface: #ffffff;
+  --color-surface: #fff;
   --color-surface-alt: #f2eee6;
 
   /* Text */
@@ -27,42 +27,36 @@
   --color-focus: #0e6e62;
   --color-success: #2e7d5b;
   --color-warning: #b5641e;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 0.06);
 }
 
 [data-theme='dark'] {
   --color-bg: #15181a;
   --color-surface: #1e2225;
   --color-surface-alt: #262b2e;
-
   --color-text: #ece8e0;
   --color-text-secondary: #b0aaa0;
   --color-text-muted: #8a847a;
-
   --color-primary: #46b8a8;
   --color-primary-hover: #5dc7b8;
   --color-primary-soft: #173430;
-
   --color-accent: #e0a35c;
   --color-accent-soft: #3a2c1b;
-
   --color-border: #2f3437;
   --color-focus: #46b8a8;
   --color-success: #5bbe8c;
   --color-warning: #e0a35c;
 
   /* In dark mode, prefer borders over shadows (shadows invisible on dark). */
-  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-sm: 0 0 0 1px rgb(255 255 255 / 0.03);
+  --shadow-md: 0 0 0 1px rgb(255 255 255 / 0.05);
 }
 
 :root {
   /* Typography */
-  --font-family-base: 'Hind', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
+  --font-family-base: 'Hind', system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
+  --font-family-mono: ui-monospace, sfmono-regular, menlo, consolas, monospace;
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;
   --text-base: 1.0625rem;
@@ -71,10 +65,8 @@
   --text-2xl: 1.625rem;
   --text-3xl: 2.125rem;
   --text-4xl: 2.5rem;
-
   --leading-tight: 1.25;
   --leading-body: 1.7;
-
   --measure: 68ch;
 
   /* Spacing */

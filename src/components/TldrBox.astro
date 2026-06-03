@@ -8,16 +8,18 @@ interface Props {
 const { items } = Astro.props;
 ---
 
-{items.length > 0 && (
-  <aside class="tldr" aria-label={t('article.tldr')}>
-    <p class="tldr-label">{t('article.tldr')}</p>
-    <ul class="tldr-list">
-      {items.map((item) => (
-        <li set:html={renderInline(item)} />
-      ))}
-    </ul>
-  </aside>
-)}
+{
+  items.length > 0 && (
+    <aside class="tldr" aria-label={t('article.tldr')}>
+      <p class="tldr-label">{t('article.tldr')}</p>
+      <ul class="tldr-list">
+        {items.map((item) => (
+          <li set:html={renderInline(item)} />
+        ))}
+      </ul>
+    </aside>
+  )
+}
 
 <style>
   .tldr {
