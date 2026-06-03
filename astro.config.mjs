@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import preact from '@astrojs/preact';
+import sitemap from '@astrojs/sitemap';
 import sentry from '@sentry/astro';
 
 // learncivicsense.in — Astro config.
@@ -13,7 +14,18 @@ const SENTRY_DSN = process.env.SENTRY_DSN;
 const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 
-const integrations = [preact()];
+const integrations = [
+  preact(),
+  sitemap({
+    changefreq: 'weekly',
+    priority: 0.8,
+    lastmod: new Date(),
+    i18n: {
+      defaultLocale: 'en',
+      locales: { en: 'en-IN' },
+    },
+  }),
+];
 
 if (SENTRY_DSN) {
   integrations.push(

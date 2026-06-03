@@ -1,0 +1,10 @@
+/* TEAM */
+Author: Rajat Garg
+Site: https://learncivicsense.in
+Contact: <see GitHub>
+
+/* SITE */
+Last update: 2026-06-03
+Standards: HTML5, CSS3, ES2022
+Built with: Astro, Pagefind, Preact (islands), self-hosted Hind webfont
+Content license: CC BY-SA 4.0

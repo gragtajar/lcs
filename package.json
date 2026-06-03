@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@astrojs/preact": "^4.0.1",
+    "@astrojs/sitemap": "^3.2.1",
     "@sentry/astro": "^8.45.0",
     "astro": "^5.1.0",
     "gray-matter": "^4.0.3",

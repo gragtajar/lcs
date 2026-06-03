@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://learncivicsense.in/sitemap-index.xml
