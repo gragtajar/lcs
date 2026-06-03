@@ -55,31 +55,43 @@ const visitors = loadVisitorsModule();
   /* Persist accordion open/close state across visits (per spec §10.2).
      Native <details> handles toggling — we only persist which IDs are open. */
   (function () {
-    var KEY = 'lcs-home-open';
-    var nodes = document.querySelectorAll('details[data-cat-id]');
+    const KEY = 'lcs-home-open';
+    const nodes = document.querySelectorAll('details[data-cat-id]');
 
-    var raw = null;
-    try { raw = localStorage.getItem(KEY); } catch (e) {}
+    let raw = null;
+    try {
+      raw = localStorage.getItem(KEY);
+    } catch {
+      /* localStorage unavailable */
+    }
     if (raw !== null) {
       try {
-        var saved = JSON.parse(raw);
+        const saved = JSON.parse(raw);
         if (Array.isArray(saved)) {
-          var openSet = new Set(saved);
+          const openSet = new Set(saved);
           nodes.forEach(function (d) {
             d.open = openSet.has(d.getAttribute('data-cat-id'));
           });
         }
-      } catch (e) {}
+      } catch {
+        /* malformed saved state; ignore */
+      }
     }
 
     function persist() {
-      var ids = [];
+      const ids = [];
       nodes.forEach(function (d) {
         if (d.open) ids.push(d.getAttribute('data-cat-id'));
       });
-      try { localStorage.setItem(KEY, JSON.stringify(ids)); } catch (e) {}
+      try {
+        localStorage.setItem(KEY, JSON.stringify(ids));
+      } catch {
+        /* localStorage unavailable */
+      }
     }
-    nodes.forEach(function (d) { d.addEventListener('toggle', persist); });
+    nodes.forEach(function (d) {
+      d.addEventListener('toggle', persist);
+    });
   })();
 </script>
 
@@ -95,7 +107,9 @@ const visitors = loadVisitorsModule();
     margin-bottom: var(--space-3);
   }
   @media (min-width: 768px) {
-    .hero-title { font-size: var(--text-4xl); }
+    .hero-title {
+      font-size: var(--text-4xl);
+    }
   }
   .hero-body {
     font-size: var(--text-lg);

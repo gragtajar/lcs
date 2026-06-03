@@ -9,21 +9,25 @@ interface Props {
 const { items } = Astro.props;
 ---
 
-{items.length > 0 && (
-  <section class="related" aria-labelledby="related-h">
-    <h2 id="related-h" class="related-title">{t('article.related')}</h2>
-    <ul role="list" class="related-list">
-      {items.map((r) => (
-        <li>
-          <a href={r.url} class="related-link">
-            <span>{r.title}</span>
-            <Icon name="chevron_right" />
-          </a>
-        </li>
-      ))}
-    </ul>
-  </section>
-)}
+{
+  items.length > 0 && (
+    <section class="related" aria-labelledby="related-h">
+      <h2 id="related-h" class="related-title">
+        {t('article.related')}
+      </h2>
+      <ul class="related-list">
+        {items.map((r) => (
+          <li>
+            <a href={r.url} class="related-link">
+              <span>{r.title}</span>
+              <Icon name="chevron_right" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
 <style>
   .related {

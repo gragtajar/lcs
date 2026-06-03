@@ -28,33 +28,38 @@ const { title, format, comingSoon, lesson } = Astro.props;
     <span class={`ah-format ah-format-${format} ${comingSoon ? 'ah-format-outline' : ''}`}>
       {t(`article.format.${format}`)}
     </span>
-    {comingSoon ? (
-      <span class="ah-soon-badge">
-        <Icon name="schedule" />
-        {t('article.comingSoonBadge')}
-      </span>
-    ) : (
-      <>
-        <span class="ah-meta-item">
-          <Icon name="schedule" /> {t('list.minRead', { n: lesson?.length_min ?? 3 })}
+    {
+      comingSoon ? (
+        <span class="ah-soon-badge">
+          <Icon name="schedule" />
+          {t('article.comingSoonBadge')}
         </span>
-        {lesson?.last_updated && (
+      ) : (
+        <>
           <span class="ah-meta-item">
-            <Icon name="calendar" /> {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+            <Icon name="schedule" /> {t('list.minRead', { n: lesson?.length_min ?? 3 })}
           </span>
-        )}
-      </>
-    )}
-    {/*
+          {lesson?.last_updated && (
+            <span class="ah-meta-item">
+              <Icon name="calendar" />{' '}
+              {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+            </span>
+          )}
+        </>
+      )
+    }
+    {
+      /*
       Future-favorites insertion point (spec §15.4): a bookmark button slots in here.
       Reserved as a placeholder so the layout doesn't shift when login + favorites land.
-    */}
+    */
+    }
     <span class="ah-fav-slot" data-future-favorite hidden>
       <Icon name="bookmark" label={t('article.favoritePlaceholder')} />
     </span>
   </div>
   <div class="ah-image" aria-hidden="true">
-    <div class={`ah-image-ph ${comingSoon ? 'ah-image-ph-soon' : ''}`} />
+    <div class={`ah-image-ph ${comingSoon ? 'ah-image-ph-soon' : ''}`}></div>
   </div>
 </header>
 
@@ -68,7 +73,9 @@ const { title, format, comingSoon, lesson } = Astro.props;
     margin-bottom: var(--space-3);
   }
   @media (min-width: 768px) {
-    .ah-title { font-size: 2.5rem; }
+    .ah-title {
+      font-size: 2.5rem;
+    }
   }
   .ah-meta {
     display: flex;
@@ -136,10 +143,11 @@ const { title, format, comingSoon, lesson } = Astro.props;
   .ah-image-ph {
     width: 100%;
     height: 100%;
-    background:
-      linear-gradient(135deg,
-        color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface-alt)),
-        var(--color-surface-alt));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface-alt)),
+      var(--color-surface-alt)
+    );
   }
   .ah-image-ph-soon {
     filter: grayscale(0.7);

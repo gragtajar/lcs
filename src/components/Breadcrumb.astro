@@ -13,19 +13,19 @@ const { items } = Astro.props;
 ---
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
-  <ol role="list">
-    {items.map((item, i) => (
-      <li>
-        {item.href && i < items.length - 1 ? (
-          <a href={item.href}>{item.label}</a>
-        ) : (
-          <span aria-current={i === items.length - 1 ? 'page' : undefined}>
-            {item.label}
-          </span>
-        )}
-        {i < items.length - 1 && <Icon name="chevron_right" class="bc-sep" />}
-      </li>
-    ))}
+  <ol>
+    {
+      items.map((item, i) => (
+        <li>
+          {item.href && i < items.length - 1 ? (
+            <a href={item.href}>{item.label}</a>
+          ) : (
+            <span aria-current={i === items.length - 1 ? 'page' : undefined}>{item.label}</span>
+          )}
+          {i < items.length - 1 && <Icon name="chevron_right" class="bc-sep" />}
+        </li>
+      ))
+    }
   </ol>
 </nav>
 

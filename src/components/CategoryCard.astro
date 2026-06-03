@@ -35,18 +35,18 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
     <Icon name="expand_more" class="cat-chevron" />
   </summary>
 
-  <ul class="sub-list" role="list">
-    {category.subtopics.map((s) => (
-      <li>
-        <a class="sub-row" href={subtopicUrl(category.id, s.id)}>
-          <span class="sub-title">{s.title}</span>
-          <span class="sub-count">
-            {t('home.articleCount', { count: s.articles.length })}
-          </span>
-          <Icon name="chevron_right" class="sub-arrow" />
-        </a>
-      </li>
-    ))}
+  <ul class="sub-list">
+    {
+      category.subtopics.map((s) => (
+        <li>
+          <a class="sub-row" href={subtopicUrl(category.id, s.id)}>
+            <span class="sub-title">{s.title}</span>
+            <span class="sub-count">{t('home.articleCount', { count: s.articles.length })}</span>
+            <Icon name="chevron_right" class="sub-arrow" />
+          </a>
+        </li>
+      ))
+    }
   </ul>
 </details>
 
@@ -71,7 +71,9 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
     user-select: none;
     min-height: 64px;
   }
-  .cat-header::-webkit-details-marker { display: none; }
+  .cat-header::-webkit-details-marker {
+    display: none;
+  }
   .cat-header:hover {
     background: var(--color-surface-alt);
   }
@@ -85,7 +87,10 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
     color: var(--color-primary);
     flex-shrink: 0;
   }
-  .cat-icon :global(.icon) { width: 20px; height: 20px; }
+  .cat-icon :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
   .cat-text {
     flex: 1;
     display: flex;
@@ -123,7 +128,9 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
     color: var(--color-text-muted);
     transition: transform 0.2s ease;
   }
-  .cat[open] .cat-chevron { transform: rotate(180deg); }
+  .cat[open] .cat-chevron {
+    transform: rotate(180deg);
+  }
 
   .sub-list {
     list-style: none;
@@ -147,7 +154,10 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
     background: var(--color-surface-alt);
     text-decoration: none;
   }
-  .sub-title { flex: 1; font-size: var(--text-base); }
+  .sub-title {
+    flex: 1;
+    font-size: var(--text-base);
+  }
   .sub-count {
     color: var(--color-text-muted);
     font-size: var(--text-sm);

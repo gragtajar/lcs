@@ -17,33 +17,37 @@ const isComingSoon = !article.published;
 
 <article class={`li ${isComingSoon ? 'li-soon' : ''}`}>
   <a class="li-image" href={url} aria-hidden="true" tabindex="-1">
-    <div class={`li-image-ph ${isComingSoon ? 'li-image-ph-soon' : ''}`} />
+    <div class={`li-image-ph ${isComingSoon ? 'li-image-ph-soon' : ''}`}></div>
   </a>
   <div class="li-body">
     <h3 class="li-title">
       <a href={url}>{article.title}</a>
     </h3>
     <div class="li-meta">
-      {isComingSoon ? (
-        <span class="li-meta-soon">
-          <Icon name="schedule" />
-          {t('list.comingSoonBadge')}
-        </span>
-      ) : (
-        <>
-          <span class="li-meta-item">
+      {
+        isComingSoon ? (
+          <span class="li-meta-soon">
             <Icon name="schedule" />
-            {t('list.minRead', { n: lesson?.length_min ?? 3 })}
+            {t('list.comingSoonBadge')}
           </span>
-          {lesson?.last_updated && (
+        ) : (
+          <>
             <span class="li-meta-item">
-              <Icon name="calendar" />
-              {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+              <Icon name="schedule" />
+              {t('list.minRead', { n: lesson?.length_min ?? 3 })}
             </span>
-          )}
-        </>
-      )}
-      <span class={`li-format li-format-${article.format} ${isComingSoon ? 'li-format-outline' : ''}`}>
+            {lesson?.last_updated && (
+              <span class="li-meta-item">
+                <Icon name="calendar" />
+                {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+              </span>
+            )}
+          </>
+        )
+      }
+      <span
+        class={`li-format li-format-${article.format} ${isComingSoon ? 'li-format-outline' : ''}`}
+      >
         {t(`article.format.${article.format}`)}
       </span>
     </div>
@@ -84,16 +88,19 @@ const isComingSoon = !article.published;
   .li-image-ph {
     width: 100%;
     height: 100%;
-    background:
-      linear-gradient(135deg,
-        color-mix(in srgb, var(--color-primary-soft) 60%, var(--color-surface-alt)),
-        var(--color-surface-alt));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-soft) 60%, var(--color-surface-alt)),
+      var(--color-surface-alt)
+    );
   }
   .li-image-ph-soon {
     filter: grayscale(0.7);
     opacity: 0.65;
   }
-  .li-body { min-width: 0; }
+  .li-body {
+    min-width: 0;
+  }
   .li-title {
     font-size: var(--text-lg);
     font-weight: 600;
@@ -103,7 +110,9 @@ const isComingSoon = !article.published;
   .li-soon .li-title a {
     color: var(--color-text-secondary);
   }
-  .li-title a { color: var(--color-text); }
+  .li-title a {
+    color: var(--color-text);
+  }
   .li-title a:hover {
     color: var(--color-primary);
     text-decoration: none;
