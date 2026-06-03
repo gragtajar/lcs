@@ -15,6 +15,9 @@
     "lint:fix": "eslint . --ext .ts,.tsx,.astro,.js,.mjs,.cjs --fix",
     "stylelint": "stylelint \"src/styles/**/*.css\"",
     "typecheck": "astro sync && tsc --noEmit",
+    "lhci": "lhci autorun --config=lighthouserc.json",
+    "lhci:mobile": "lhci autorun --config=lighthouserc.mobile.json",
+    "size": "size-limit",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -28,6 +31,7 @@
   },
   "dependencies": {
     "@astrojs/preact": "^4.0.1",
+    "@sentry/astro": "^8.45.0",
     "astro": "^5.1.0",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
@@ -38,6 +42,8 @@
   "devDependencies": {
     "@commitlint/cli": "^19.6.0",
     "@commitlint/config-conventional": "^19.6.0",
+    "@lhci/cli": "^0.14.0",
+    "@size-limit/file": "^11.1.6",
     "@types/js-yaml": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
@@ -50,6 +56,7 @@
     "lint-staged": "^15.2.10",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
+    "size-limit": "^11.1.6",
     "stylelint": "^16.12.0",
     "stylelint-config-standard": "^36.0.1",
     "typescript": "^5.7.0"
