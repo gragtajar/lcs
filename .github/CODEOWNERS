@@ -1,0 +1,7 @@
+# Default reviewer for everything. Add more lines as contributors join.
+*       @gragtajar
+
+# Docs and runbooks fall under the same review.
+docs/   @gragtajar
+src/    @gragtajar
+.github/ @gragtajar

@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel in-progress runs when a new commit is pushed to the same PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-build:
+    name: Lint, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci --legacy-peer-deps
+      - name: Format check
+        run: npm run format:check
+      - name: ESLint
+        run: npm run lint
+      - name: Stylelint
+        run: npm run stylelint
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Build (Astro + Pagefind)
+        run: npm run build
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 3
+
+  content-lint:
+    name: Content lint
+    runs-on: ubuntu-latest
+    # Skip when the content repo isn't available (e.g. forked PRs without submodule).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for content repo
+        id: check
+        run: |
+          if [ -f ../learncivicsense-content/01-taxonomy/taxonomy.json ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "::notice::Content repo not checked out; skipping content lint. Wire as submodule for CI coverage."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.available == 'true'
+        with:
+          python-version: '3.12'
+      - name: Run lint.py
+        if: steps.check.outputs.available == 'true'
+        run: |
+          pip install pyyaml
+          python3 ../learncivicsense-workflow/04-auto-lint/lint.py --repo ../learncivicsense-content/
