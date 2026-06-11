@@ -1,5 +1,33 @@
 # Project notes for Claude
 
+## Git workflow — standing instruction (set 2026-06-11)
+
+From now on, land every website change through a PR-style flow, then merge to main:
+
+1. Branch off `main`: `feat/…`, `fix/…`, `chore/…`, `docs/…`, or `content/…`.
+2. Commit (husky runs lint-staged + commitlint; subject must be sentence-case).
+3. Push the branch; surface the PR compare URL.
+4. Merge to `main` with a merge commit (`git merge --no-ff`) once green, then
+   `git push origin main`. Delete the merged branch.
+5. Never force-push; never push secrets.
+
+**Commit identity gotcha:** the GitHub account has email-privacy on, so commits
+must use the noreply email or pushes are rejected (`GH007`). All repos are
+configured with:
+`git config user.email "287801135+gragtajar@users.noreply.github.com"` and
+`user.name "gragtajar"`. Keep using it.
+
+**Repos (all on github.com/gragtajar):**
+
+- `lcs` — the website (this repo).
+- `lcs-content` (private) — `../learncivicsense-content`.
+- `lcs-workflow` (private) — `../learncivicsense-workflow`.
+- `lcs-tasks` (public) — `~/Documents/Claude/Scheduled`.
+
+Content/workflow/tasks are separate repos (not a monorepo). Push content edits
+to `lcs-content`, workflow edits to `lcs-workflow`, scheduled-skill edits to
+`lcs-tasks`.
+
 ## Publishing articles — standing instruction
 
 When the user says **"publish the remaining articles"** (or any close variant),
