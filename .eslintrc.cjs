@@ -69,6 +69,13 @@ module.exports = {
         'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
       },
     },
+    {
+      files: ['tests/**/*.{ts,tsx}'],
+      rules: {
+        // Tests legitimately spy on and assert against console (e.g. logger tests).
+        'no-console': 'off',
+      },
+    },
   ],
   ignorePatterns: ['dist/', '.astro/', 'node_modules/', 'coverage/', 'public/pagefind/', '*.d.ts'],
 };

@@ -10,7 +10,17 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
       include: ['src/lib/**/*.ts'],
-      exclude: ['**/*.d.ts', '**/*.test.ts', 'src/lib/icons.ts'],
+      // icons.ts is a static lookup table; analytics.ts + logger.ts are browser-SDK
+      // glue (Amplitude / Sentry) whose init paths need a real browser — they're
+      // exercised by Playwright e2e + their safe surface in runtime-libs.test.ts,
+      // not by unit branch coverage.
+      exclude: [
+        '**/*.d.ts',
+        '**/*.test.ts',
+        'src/lib/icons.ts',
+        'src/lib/analytics.ts',
+        'src/lib/logger.ts',
+      ],
       thresholds: {
         statements: 80,
         branches: 75,
