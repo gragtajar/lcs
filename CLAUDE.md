@@ -11,6 +11,11 @@ From now on, land every website change through a PR-style flow, then merge to ma
    `git push origin main`. Delete the merged branch.
 5. Never force-push; never push secrets.
 
+**Tooling:** `gh` is installed at `~/.local/bin/gh` and authenticated (scopes
+`repo`, `workflow`). Use `gh pr create` / `gh pr merge` for the flow above.
+`main` is protected (PR + 1 review/clean status required), so changes land via
+PR merge, not direct push.
+
 **Commit identity gotcha:** the GitHub account has email-privacy on, so commits
 must use the noreply email or pushes are rejected (`GH007`). All repos are
 configured with:
