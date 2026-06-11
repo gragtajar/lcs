@@ -42,7 +42,7 @@ describe('t()', () => {
 
 describe('formatDate()', () => {
   it('formats an ISO date in en-IN', () => {
-    expect(formatDate('2026-05-11')).toBe('11 May 2026');
+    expect(formatDate('2026-05-11')).toBe('May 11, 2026');
   });
 
   it('returns empty string for empty input', () => {

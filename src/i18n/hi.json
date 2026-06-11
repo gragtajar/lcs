@@ -1,4 +1,7 @@
 {
+  "_translated": false,
+  "_locale": "hi",
+  "_note": "Stub for Hindi. Copied from en.json; strings fall back to English until translated. Set _translated true when complete.",
   "siteName": "learncivicsense.in",
   "siteTagline": "Practical civic sense for India. Short lessons, real situations, no lectures.",
   "nav": {

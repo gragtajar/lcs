@@ -1,5 +1,13 @@
 /* Global reset + base typography. Kept tiny on purpose. */
 
+/* Browser-native cross-document view transitions (addendum T8.2, CSS-only,
+   zero JS). Supporting browsers (Chrome/Edge 126+) get smooth navigations;
+   others fall back to normal full-page loads. ClientRouter was deliberately
+   not adopted — see docs/adrs/007. */
+@view-transition {
+  navigation: auto;
+}
+
 *,
 *::before,
 *::after {

@@ -10,8 +10,9 @@ We need a single typeface that:
 
 1. Looks clean and readable for body text in long-form lessons.
 2. Covers Latin (English at launch) and Devanagari (Hindi in Phase 3).
-3. Has siblings for the other six Indian scripts (Tamil, Telugu, Malayalam,
-   Kannada, Gujarati, Odia) so we don't switch families per locale.
+3. Has siblings for as many of the other six Indian scripts (Tamil, Bengali,
+   Marathi-Devanagari, Telugu, Punjabi-Gurmukhi, Gujarati) as possible so we
+   don't switch families per locale.
 4. Is free and self-hostable (no Google Fonts CDN — extra DNS round-trip
    hurts our 2G budget).
 5. Is light enough to subset and ship under our 20-KB-per-script woff2 budget.
@@ -20,11 +21,12 @@ We need a single typeface that:
 
 Use the **Hind** family by Indian Type Foundry. Specifically:
 
-- **Hind** for Latin + Devanagari (launch + Phase 3 Hindi)
-- **Hind Madurai** (Tamil), **Hind Guntur** (Telugu), **Hind Kochi**
-  (Malayalam), **Hind Vadodara** (Gujarati), **Hind Mysuru** (Kannada) for
-  Phase 3+ Indian scripts
-- **Noto Sans Oriya** as the fallback for Odia (Hind has no Odia variant)
+- **Hind** for Latin + Devanagari (launch + Phase 3 Hindi + Phase 3 Marathi,
+  both Devanagari)
+- **Hind Madurai** (Tamil), **Hind Kolkata** (Bengali), **Hind Guntur**
+  (Telugu), **Hind Vadodara** (Gujarati) for Phase 3+ Indian scripts
+- **Mukta Mahee** (ITF) or **Noto Sans Gurmukhi** as the fallback for
+  Punjabi (Hind has no Gurmukhi variant)
 
 Self-host woff2 files, subset per script, load via `unicode-range` so the
 browser only fetches what it needs for the active locale.

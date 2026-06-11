@@ -2,6 +2,7 @@
 import Icon from './Icon.astro';
 import { t, formatDate } from '../lib/i18n';
 import { articleUrl } from '../lib/content';
+import { getArticleImage, articleImagesEnabled } from '../lib/images';
 import type { PlannedArticle, Lesson } from '../lib/content';
 
 interface Props {
@@ -17,7 +18,21 @@ const isComingSoon = !article.published;
 
 <article class={`li ${isComingSoon ? 'li-soon' : ''}`}>
   <a class="li-image" href={url} aria-hidden="true" tabindex="-1">
-    <div class={`li-image-ph ${isComingSoon ? 'li-image-ph-soon' : ''}`}></div>
+    {
+      !isComingSoon && articleImagesEnabled() ? (
+        <img
+          class="li-image-thumb"
+          src={getArticleImage(article.id, 'card')}
+          alt=""
+          width="600"
+          height="338"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div class={`li-image-ph ${isComingSoon ? 'li-image-ph-soon' : ''}`} />
+      )
+    }
   </a>
   <div class="li-body">
     <h3 class="li-title">
@@ -84,6 +99,12 @@ const isComingSoon = !article.published;
     overflow: hidden;
     aspect-ratio: 1 / 1;
     background: var(--color-surface-alt);
+  }
+  .li-image-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .li-image-ph {
     width: 100%;

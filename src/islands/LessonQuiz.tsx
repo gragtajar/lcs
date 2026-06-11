@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { trackQuizAttempt } from '../lib/analytics';
 
 interface QuizOption {
   id: string;
@@ -22,15 +23,17 @@ interface Strings {
 export default function LessonQuiz({
   questions,
   strings,
+  articleId = '',
 }: {
   questions: QuizQuestion[];
   strings: Strings;
+  articleId?: string;
 }) {
   return (
     <section class="quiz" aria-label={strings.title}>
       <h2 class="quiz-title">{strings.title}</h2>
       {questions.map((q, i) => (
-        <QuestionBlock key={i} q={q} index={i} strings={strings} />
+        <QuestionBlock key={i} q={q} index={i} strings={strings} articleId={articleId} />
       ))}
     </section>
   );
@@ -40,15 +43,25 @@ function QuestionBlock({
   q,
   index,
   strings,
+  articleId,
 }: {
   q: QuizQuestion;
   index: number;
   strings: Strings;
+  articleId: string;
 }) {
   const isMulti = q.type === 'multi_choice';
   const [picked, setPicked] = useState<Set<string>>(new Set());
 
   function toggle(id: string) {
+    const option = q.options.find((o) => o.id === id);
+    // Analytics: report each option selection (no PII). No-op until initialised.
+    trackQuizAttempt({
+      articleId,
+      questionId: `q${index + 1}`,
+      optionId: id,
+      correct: option?.correct === true,
+    });
     setPicked((prev) => {
       const next = new Set(prev);
       if (isMulti) {

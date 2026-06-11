@@ -18,6 +18,7 @@ import {
   articleUrl,
 } from '../../../lib/content';
 import { renderLessonBody } from '../../../lib/markdown';
+import { getArticleImage } from '../../../lib/images';
 import { t } from '../../../lib/i18n';
 import { articleJsonLd, breadcrumbJsonLd } from '../../../lib/seo';
 
@@ -84,6 +85,7 @@ const articleLd =
   width="flush"
   canonical={canonical}
   type="article"
+  image={isComingSoon ? undefined : getArticleImage(planned.id, 'og', true)}
 >
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
@@ -146,6 +148,7 @@ const articleLd =
               {lesson!.quiz && lesson!.quiz.length > 0 && (
                 <LessonQuiz
                   client:visible
+                  articleId={planned.id}
                   questions={lesson!.quiz}
                   strings={{
                     title: t('quiz.title'),

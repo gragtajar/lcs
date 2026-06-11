@@ -109,8 +109,8 @@ audience: [adults, students]
 length_min: 3 # reading time in minutes (use this directly)
 languages: [en] # locale codes available
 status: draft # ONLY render status: published in production builds
-version: 0.1
-last_updated: 2026-05-11 # show as "last updated" date on article + list
+version: 'v1.0' # quoted string with "v" prefix (see §4.2.1 for bump rules + legacy format)
+last_updated: 2026-06-07 # ISO YYYY-MM-DD in frontmatter; rendered as "Last updated Jun 07, 2026 · v1.0" (see §4.2.1)
 tldr: # NEW FIELD — 3-4 bullet quick summary (see section 17)
   - 'First takeaway'
   - 'Second takeaway'
@@ -119,6 +119,32 @@ related: [traffic-002] # related lesson IDs; render as "Related" links
 toolkit_widgets: [...] # civic action widgets; NOT built at launch, ignore gracefully
 tags: [honking, urban]
 ```
+
+### 4.2.1 Versioning and date display (added 2026-06-07)
+
+Two frontmatter fields, `version` and `last_updated`, are rendered together on the article page as a single line: `Last updated Jun 04, 2026 · v1.0`.
+
+**On-disk format (from 2026-06-07 onward)**
+
+- `version: "v1.0"` — always quoted, always with a `"v"` prefix. First publish stays at `v1.0`.
+  - Minor edit (typo, link refresh, small clarification, citation URL update, source ID rename): bump minor → `v1.1`, `v1.2`, …
+  - Major edit (sensitivity reframe, substantive new content, structural rework, factual correction, fabricated-source replacement): bump major → `v2.0`, `v3.0`, …
+- `last_updated: 2026-06-04` — ISO `YYYY-MM-DD`. Bumps in lockstep with every version bump.
+
+**Legacy format (historical)**
+
+The original 28 pre-2026-06-07 published articles initially carried the older form `version: 1.0` (unquoted YAML number). They were retrofitted to the new `version: "v1.0"` format in a single cleanup pass on 2026-06-11. The content parser still accepts both forms via `src/lib/content.ts → normaliseVersion` — kept for backwards-compatible defensive parsing in case any future drafting drifts back to the unquoted form.
+
+**Display rules**
+
+- English locale: render `last_updated` as `Mmm DD, YYYY` with zero-padded day (e.g. `Jun 04, 2026`). The format helper uses UTC parts to avoid timezone drift on `YYYY-MM-DD` dates.
+- Other locales: render via `Intl.DateTimeFormat` with the locale tag, year numeric, month short, day 2-digit, timeZone UTC.
+- The version chip is appended via the i18n key `list.lastUpdatedWithVersion` → `"Last updated {date} · {version}"`. If `version` is missing, fall back to `list.lastUpdated` → `"Updated {date}"` so legacy data still renders.
+- Rendered only on the article page header (`ArticleHeader.astro`), not on the list / card view. Cards stay compact with only reading time + date.
+
+**Bump-rule reference**
+
+The authoritative bump rules live in `learncivicsense-workflow/05-editorial-checklists.md` and `learncivicsense-content/01-taxonomy/lesson-template.md`. The website is downstream of both: it reads what the content repo writes and never mutates these fields.
 
 ### 4.3 Locale from filename
 
@@ -249,7 +275,7 @@ Contrast: all text colors meet WCAG AA (4.5:1 body, 3:1 large). Verify with a co
 **Font: the Hind superfamily** (by Indian Type Foundry). Free, light, humanist sans-serif designed for Devanagari + Latin harmony, with sibling fonts for the other Indian scripts.
 
 - **Launch (English + future Hindi):** "Hind" (covers Latin + Devanagari in one family).
-- **Future language extension:** Hind Madurai (Tamil), Hind Guntur (Telugu), Hind Kochi (Malayalam), Hind Vadodara (Gujarati), Hind Mysuru (Kannada). Odia has no Hind variant; fall back to "Noto Sans Oriya" for that locale.
+- **Future language extension:** Hind Madurai (Tamil), Hind Kolkata (Bengali), Hind Guntur (Telugu), Hind Vadodara (Gujarati). Marathi uses the base Hind (same Devanagari script as Hindi). Punjabi has no Hind variant; use Indian Type Foundry's "Mukta Mahee" or "Noto Sans Gurmukhi" for that locale.
 
 **Loading strategy (critical for 2G):**
 
@@ -330,28 +356,28 @@ Design language: generous whitespace, subtle borders over heavy shadows, moderat
 
 Build these as Astro components (`.astro`), using small Preact/vanilla islands only where interactivity is required (marked [island]).
 
-| Component               | Purpose                                                              | Island?  |
-| ----------------------- | -------------------------------------------------------------------- | -------- |
-| `BaseLayout.astro`      | HTML shell, head, theme init, font preload                           | no       |
-| `TopBar.astro`          | Logo + global search trigger + theme toggle                          | partial  |
-| `ThemeToggle`           | Light/dark switch                                                    | [island] |
-| `SearchOverlay`         | Global search UI (Pagefind)                                          | [island] |
-| `Homepage` (page)       | Category list with expandable subcategories                          | partial  |
-| `CategoryAccordion`     | Expand/collapse category to show subcategories                       | [island] |
-| `CategoryCard.astro`    | One category with subcategory count                                  | no       |
-| `SubcategoryRow.astro`  | One subcategory with article count                                   | no       |
-| `CategoryPage` (page)   | Left sidebar + article list                                          | partial  |
-| `SidebarNav`            | Accordion of all categories/subcategories + its own name-only filter | [island] |
-| `ArticleListItem.astro` | Title, last-updated, reading time, image placeholder                 | no       |
-| `ArticlePage` (page)    | Full article layout                                                  | partial  |
-| `ArticleHeader.astro`   | Title, date, reading time, image placeholder, format chip            | no       |
-| `TldrBox.astro`         | The TL;DR block                                                      | no       |
-| `ArticleBody.astro`     | Rendered markdown body                                               | no       |
-| `TableOfContents`       | Floating right-side outline, scroll-spy, click-to-anchor             | [island] |
-| `LessonQuiz`            | Interactive quiz                                                     | [island] |
-| `SourcesList.astro`     | Citations                                                            | no       |
-| `RelatedLinks.astro`    | Related article links                                                | no       |
-| `Footer.astro`          | Minimal footer                                                       | no       |
+| Component               | Purpose                                                                                                                                                                  | Island?  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| `BaseLayout.astro`      | HTML shell, head, theme init, font preload                                                                                                                               | no       |
+| `TopBar.astro`          | Logo + global search trigger + theme toggle                                                                                                                              | partial  |
+| `ThemeToggle`           | Light/dark switch                                                                                                                                                        | [island] |
+| `SearchOverlay`         | Global search UI (Pagefind)                                                                                                                                              | [island] |
+| `Homepage` (page)       | Category list with expandable subcategories                                                                                                                              | partial  |
+| `CategoryAccordion`     | Expand/collapse category to show subcategories                                                                                                                           | [island] |
+| `CategoryCard.astro`    | One category with subcategory count                                                                                                                                      | no       |
+| `SubcategoryRow.astro`  | One subcategory with article count                                                                                                                                       | no       |
+| `CategoryPage` (page)   | Left sidebar + article list                                                                                                                                              | partial  |
+| `SidebarNav`            | Accordion of all categories/subcategories + its own name-only filter                                                                                                     | [island] |
+| `ArticleListItem.astro` | Title, last-updated, reading time, image placeholder                                                                                                                     | no       |
+| `ArticlePage` (page)    | Full article layout                                                                                                                                                      | partial  |
+| `ArticleHeader.astro`   | Title, reading time, last_updated + version chip (e.g. "Last updated Jun 04, 2026 · v1.0"), image placeholder, format chip. See §4.2.1 for version+date rendering rules. | no       |
+| `TldrBox.astro`         | The TL;DR block                                                                                                                                                          | no       |
+| `ArticleBody.astro`     | Rendered markdown body                                                                                                                                                   | no       |
+| `TableOfContents`       | Floating right-side outline, scroll-spy, click-to-anchor                                                                                                                 | [island] |
+| `LessonQuiz`            | Interactive quiz                                                                                                                                                         | [island] |
+| `SourcesList.astro`     | Citations                                                                                                                                                                | no       |
+| `RelatedLinks.astro`    | Related article links                                                                                                                                                    | no       |
+| `Footer.astro`          | Minimal footer                                                                                                                                                           | no       |
 
 Keep islands tiny. The whole point of Astro is that most of this ships as zero-JS HTML.
 
@@ -435,7 +461,7 @@ Reached by clicking a subcategory on the homepage. URL: `/{category}/{subcategor
 - Heading: the selected category > subcategory (breadcrumb + subcategory title).
 - **Article list**, each item showing:
   - Article **name** (title), links to the article.
-  - **Last updated date** (from `last_updated`).
+  - **Last updated date** (from `last_updated`). On cards, only the date is shown (no version); the version chip is reserved for the article page header per §4.2.1.
   - **Reading time** (from `length_min`, e.g., "3 min read").
   - **Image** placeholder (images added later; reserve the space with a fixed-aspect placeholder so layout doesn't shift when images arrive).
 - List is ordered by lesson ID ascending (or by last_updated descending; RECOMMENDED: by the planned order in taxonomy.json, falling back to ID ascending).
@@ -789,7 +815,7 @@ Pagefind runs as a post-build step over `./dist` to generate the search index.
 
 - **Astro over Next.js:** zero-JS default, fastest for 2G.
 - **Pagefind over Elasticsearch/Algolia:** static, no server, free, faster for ~200 articles, no infra.
-- **Hind font:** Indian foundry, covers 7/8 languages, on-brand, light.
+- **Hind font:** Indian foundry, covers 7/8 languages (all except Punjabi/Gurmukhi), on-brand, light.
 - **Teal + amber palette:** civic, calm, trustworthy, deliberately apolitical (no saffron/green).
 - **Cloudflare Pages:** best India edge latency, free, HTTP/3 + Brotli.
 - **No login at launch:** per owner. Hooks reserved for future favorites/reading-lists.

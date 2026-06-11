@@ -1,0 +1,15 @@
+---
+// Mounts once in BaseLayout. Emits a bundled (deferred) module that initialises
+// Amplitude after the page is interactive. initAnalytics() itself bails when the
+// API key is absent or Do-Not-Track is set, so this is a no-op in those cases.
+---
+
+<script>
+  import { initAnalytics } from '../lib/analytics';
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => void initAnalytics(), { once: true });
+  } else {
+    void initAnalytics();
+  }
+</script>

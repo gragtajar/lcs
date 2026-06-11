@@ -78,10 +78,11 @@ describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
   });
 
   it('flags planned-but-not-written lessons as not published', () => {
+    // school-zones lessons remain unwritten (no .md on disk) → coming-soon.
     const a = findPlannedArticle(
       'traffic',
-      'honking-discipline',
-      'honking-at-red-lights-and-what-it-costs-everyone',
+      'school-zones',
+      'what-school-zone-signs-require-of-you',
     );
     expect(a?.published).toBe(false);
   });
