@@ -60,3 +60,11 @@ describe('escapeHtml()', () => {
     expect(escapeHtml('<a href="x">&</a>')).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&lt;/a&gt;');
   });
 });
+
+describe('renderLessonBody() slug fallbacks', () => {
+  it('falls back to section-N when a heading has no slug-able characters', () => {
+    const { html, toc } = renderLessonBody('## !!!');
+    expect(toc[0]?.id).toMatch(/^section-\d+$/);
+    expect(html).toContain('id="section-');
+  });
+});

@@ -52,4 +52,26 @@ describe('formatDate()', () => {
   it('returns the raw input when unparseable', () => {
     expect(formatDate('not-a-date')).toBe('not-a-date');
   });
+
+  it('uses Intl for a non-English locale (covers the locale branch)', () => {
+    // The routing Locale union is still 'en'; cast to exercise the future-locale path.
+    const fd = formatDate as (iso: string, locale?: string) => string;
+    const out = fd('2026-05-11', 'hi');
+    expect(out.length).toBeGreaterThan(0);
+    expect(out).not.toBe('2026-05-11');
+  });
+});
+
+describe('t() locale fallback (i18n stubs)', () => {
+  const tt = t as (key: string, vars?: Record<string, string | number>, locale?: string) => string;
+
+  it('falls back to English for an untranslated stub locale', () => {
+    // hi.json is a stub with _translated:false → English value is returned.
+    expect(tt('article.tldr', {}, 'hi')).toBe('TL;DR');
+    expect(tt('siteName', {}, 'ta')).toBe('learncivicsense.in');
+  });
+
+  it('falls back to English for an unknown locale code', () => {
+    expect(tt('article.tldr', {}, 'zz')).toBe('TL;DR');
+  });
 });

@@ -5,6 +5,7 @@ import {
   getCategory,
   getSubtopic,
   findPlannedArticle,
+  loadLessonForArticle,
   loadVisitorsModule,
   resolveRelated,
   articleUrl,
@@ -91,6 +92,49 @@ describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
     expect(getCategory('nonexistent')).toBeUndefined();
     expect(getSubtopic('traffic', 'nonexistent')).toBeUndefined();
     expect(findPlannedArticle('traffic', 'honking-discipline', 'nonexistent')).toBeUndefined();
+  });
+});
+
+describe('loadLessonForArticle()', () => {
+  it('parses a published launch lesson: body, TL;DR, and quiz', () => {
+    const a = findPlannedArticle('traffic', 'honking-discipline', 'the-case-against-honking');
+    expect(a?.published).toBe(true);
+    const lesson = loadLessonForArticle(a!);
+    expect(lesson).not.toBeNull();
+    expect(lesson!.id).toBe('traffic-001');
+    expect(lesson!.body.length).toBeGreaterThan(0);
+    expect(lesson!.tldr.length).toBeGreaterThan(0);
+    // The case-against-honking lesson ships a quiz block.
+    expect(Array.isArray(lesson!.quiz)).toBe(true);
+    expect(lesson!.quiz!.length).toBeGreaterThan(0);
+  });
+
+  it('returns null for a coming-soon (unwritten) article', () => {
+    const a = findPlannedArticle(
+      'traffic',
+      'school-zones',
+      'what-school-zone-signs-require-of-you',
+    );
+    expect(a?.published).toBe(false);
+    expect(loadLessonForArticle(a!)).toBeNull();
+  });
+
+  it('memoises repeat loads of the same article', () => {
+    const a = findPlannedArticle('traffic', 'honking-discipline', 'the-case-against-honking');
+    expect(loadLessonForArticle(a!)).toBe(loadLessonForArticle(a!));
+  });
+
+  it('parses a published abroad-pack lesson (exercises the 03-abroad path)', () => {
+    const a = findPlannedArticle(
+      'universal-core',
+      'queues-and-waiting-globally',
+      'queueing-in-international-contexts-the-global-default',
+    );
+    expect(a?.published).toBe(true);
+    expect(a?.category.group).toBe('abroad');
+    const lesson = loadLessonForArticle(a!);
+    expect(lesson?.id).toBe('global-001');
+    expect(lesson!.body.length).toBeGreaterThan(0);
   });
 });
 
