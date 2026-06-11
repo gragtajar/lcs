@@ -23,6 +23,19 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci --legacy-peer-deps
+      - name: Fetch content repo (private lcs-content)
+        env:
+          CONTENT_REPO_TOKEN: ${{ secrets.CONTENT_REPO_TOKEN }}
+        run: |
+          if [ -z "$CONTENT_REPO_TOKEN" ]; then
+            echo "::error::CONTENT_REPO_TOKEN not set — the build and content-reading tests need lcs-content."
+            exit 1
+          fi
+          # The website reads ../learncivicsense-content (sibling of the repo root).
+          git clone --depth 1 \
+            "https://x-access-token:${CONTENT_REPO_TOKEN}@github.com/gragtajar/lcs-content.git" \
+            ../learncivicsense-content
+          echo "Cloned lcs-content ($(find ../learncivicsense-content -name '*.en.md' | wc -l | tr -d ' ') lessons)."
       - name: Format check
         run: npm run format:check
       - name: ESLint
@@ -52,25 +65,40 @@ jobs:
   content-lint:
     name: Content lint
     runs-on: ubuntu-latest
-    # Skip when the content repo isn't available (e.g. forked PRs without submodule).
+    # The lint script itself lives in the private lcs-workflow repo. Until a
+    # WORKFLOW_REPO_TOKEN secret is added, lint.py is skipped (soft) — the build
+    # job already validates the content via the real Astro build.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Check for content repo
-        id: check
+      - name: Fetch content + workflow repos
+        id: fetch
+        env:
+          CONTENT_REPO_TOKEN: ${{ secrets.CONTENT_REPO_TOKEN }}
+          WORKFLOW_REPO_TOKEN: ${{ secrets.WORKFLOW_REPO_TOKEN }}
         run: |
-          if [ -f ../learncivicsense-content/01-taxonomy/taxonomy.json ]; then
-            echo "available=true" >> $GITHUB_OUTPUT
+          if [ -n "$CONTENT_REPO_TOKEN" ]; then
+            git clone --depth 1 \
+              "https://x-access-token:${CONTENT_REPO_TOKEN}@github.com/gragtajar/lcs-content.git" \
+              ../learncivicsense-content
+          fi
+          if [ -n "$WORKFLOW_REPO_TOKEN" ]; then
+            git clone --depth 1 \
+              "https://x-access-token:${WORKFLOW_REPO_TOKEN}@github.com/gragtajar/lcs-workflow.git" \
+              ../learncivicsense-workflow
+          fi
+          if [ -f ../learncivicsense-workflow/04-auto-lint/lint.py ] && [ -f ../learncivicsense-content/01-taxonomy/taxonomy.json ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
           else
-            echo "available=false" >> $GITHUB_OUTPUT
-            echo "::notice::Content repo not checked out; skipping content lint. Wire as submodule for CI coverage."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::lint.py or content not available (add WORKFLOW_REPO_TOKEN to enable); skipping content lint."
           fi
       - uses: actions/setup-python@v5
-        if: steps.check.outputs.available == 'true'
+        if: steps.fetch.outputs.available == 'true'
         with:
           python-version: '3.12'
       - name: Run lint.py
-        if: steps.check.outputs.available == 'true'
+        if: steps.fetch.outputs.available == 'true'
         run: |
           pip install pyyaml
           python3 ../learncivicsense-workflow/04-auto-lint/lint.py --repo ../learncivicsense-content/
