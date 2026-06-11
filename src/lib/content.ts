@@ -125,6 +125,14 @@ export interface Lesson {
   format: LessonFormat;
   length_min: number;
   last_updated: string;
+  /**
+   * Article version. Convention from 2026-06-07 onward: quoted string with "v" prefix,
+   * e.g. `"v1.0"` on first publish, `"v1.1"` on minor edit, `"v2.0"` on major edit.
+   * Pre-2026-06-07 articles (the original 28) initially carried the legacy unquoted form `"1.0"` (retrofitted to `"v1.0"` on 2026-06-11);
+   * the renderer normalises both to display as `v1.0`.
+   * Bump rules: `learncivicsense-workflow/05-editorial-checklists.md`.
+   */
+  version: string;
   locale: Locale;
   status: string;
   tldr: string[];
@@ -410,6 +418,72 @@ export function loadLessonForArticle(
   return parsed;
 }
 
+/**
+ * Coerce a raw `tldr` frontmatter value into a clean `string[]`.
+ *
+ * Guards against a common YAML authoring bug: an unquoted bullet that contains
+ * a `colon-space` (e.g. `- Scan before any big move: laps in progress?`) parses
+ * as a single-key MAP `{ "Scan before any big move": "laps in progress?" }`
+ * instead of a string. Left unhandled, that object reaches marked.parseInline
+ * and throws, which would crash the ENTIRE static build over one typo.
+ *
+ * We reconstruct `"key: value"` from such maps so the line still renders with
+ * its intended text, stringify any other non-string, and log a warning so the
+ * underlying content can be fixed at source (quote the offending line).
+ */
+/**
+ * Normalises the frontmatter `version` field to the display form `v<major>.<minor>`.
+ *
+ * Two on-disk formats coexist in the content repo:
+ *   - New (2026-06-07 onward): quoted string with "v" prefix, e.g. `version: "v1.0"`.
+ *     YAML parses this as the string `"v1.0"`.
+ *   - Legacy (originally the 28 pre-2026-06-07 articles, retrofitted on 2026-06-11): formerly unquoted number, e.g. `version: 1.0`. Helper retained for defensive parsing in case any draft drifts back to the unquoted form.
+ *     YAML parses this as the number `1` (drops the trailing `.0`). The unquoted form
+ *     also loses the distinction between `1.0` and `1.10` (both become `1.1`), which is
+ *     one of the reasons we moved to quoted strings.
+ *
+ * This function accepts both and always returns the canonical `v<x>.<y>` display string.
+ * Falls back to `v1.0` if absent or unparseable, so the header always renders something
+ * sensible even on a malformed file.
+ */
+function normaliseVersion(raw: unknown): string {
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return 'v1.0';
+    // Already "v1.0" or "V1.0" form
+    if (/^v\d+(\.\d+)?$/i.test(trimmed)) {
+      return 'v' + trimmed.slice(1);
+    }
+    // Bare "1.0" string form
+    if (/^\d+(\.\d+)?$/.test(trimmed)) {
+      return 'v' + (trimmed.includes('.') ? trimmed : trimmed + '.0');
+    }
+    return trimmed;
+  }
+  if (typeof raw === 'number') {
+    // Legacy unquoted YAML number like 1.0 → 1
+    return Number.isInteger(raw) ? `v${raw}.0` : `v${raw}`;
+  }
+  return 'v1.0';
+}
+
+function normalizeTldr(raw: unknown, filename: string): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') {
+      const entries = Object.entries(item as Record<string, unknown>);
+      const recovered = entries.map(([k, v]) => `${k}: ${v}`).join(' ');
+      console.warn(
+        `[content] ${filename}: a tldr bullet parsed as an object (likely an unquoted ` +
+          `colon in YAML). Recovered as "${recovered}". Quote that line in the source.`,
+      );
+      return recovered;
+    }
+    return String(item);
+  });
+}
+
 function parseLessonFile(filePath: string, filename: string, locale: Locale): Lesson | null {
   let raw: string;
   try {
@@ -437,9 +511,10 @@ function parseLessonFile(filePath: string, filename: string, locale: Locale): Le
     format: (fm.format as LessonFormat) ?? 'scenario',
     length_min: typeof fm.length_min === 'number' ? fm.length_min : 3,
     last_updated: String(fm.last_updated ?? ''),
+    version: normaliseVersion(fm.version),
     locale,
     status: String(fm.status ?? 'draft'),
-    tldr: Array.isArray(fm.tldr) ? (fm.tldr as string[]) : [],
+    tldr: normalizeTldr(fm.tldr, filename),
     sources: Array.isArray(fm.sources) ? (fm.sources as LessonSource[]) : [],
     related: Array.isArray(fm.related) ? (fm.related as string[]) : [],
     tags: Array.isArray(fm.tags) ? (fm.tags as string[]) : [],

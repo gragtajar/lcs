@@ -67,6 +67,7 @@ const mockLesson = {
   format: 'scenario',
   length_min: 3,
   last_updated: '2026-05-11',
+  version: 'v1.0',
   locale: 'en',
   status: 'draft',
   tldr: ['First takeaway'],

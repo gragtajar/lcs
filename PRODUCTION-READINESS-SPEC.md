@@ -1278,6 +1278,12 @@ Helps Google Discover and other content surfaces.
 
 ### 11.5 RSS (Phase 3 when content updates regularly)
 
+> **[DEFERRED — DO NOT IMPLEMENT AT LAUNCH]**
+>
+> RSS is not covered by `PRODUCTION-READINESS-SPEC-v2-ADDENDUM.md`. v2 leaves this section alone and confirms its Phase-3 status. Do not build it at launch.
+>
+> When the time comes to ship RSS (content updates are regular enough to merit a feed, typically post-100 lessons), **revalidate the `@astrojs/rss` snippet below against the then-current package version before using it.** Astro 6+ may have changed the export shape; do not assume the snippet still compiles. Treat it as a starting point, not a finished spec.
+
 `src/pages/rss.xml.ts`:
 
 ```ts
@@ -1304,6 +1310,20 @@ export async function GET(context: any) {
 ---
 
 ## 12. Image pipeline (for when real images replace placeholders)
+
+> **[SUPERSEDED — DO NOT IMPLEMENT THIS SECTION]**
+>
+> The current source of truth for the image pipeline is **`PRODUCTION-READINESS-SPEC-v2-ADDENDUM.md` §T10**.
+>
+> Differences that matter:
+>
+> - v1 §12.1 specified a **flat-file layout** `05-images/{cluster}/{lesson-id}.{jpg,png}`; v2 T10.1 replaces this with a **folder-per-lesson layout** `05-images/{cluster}/{lesson-id}/{hero,inline-1,...}.jpg` to support multiple images per lesson.
+> - v1 §12.2 used Astro's `<Image>` component; v2 T10.2 uses **`<Picture>`** for multi-format AVIF/WebP output and adds a `priority` prop for above-the-fold heroes.
+> - v2 T10 also adds LQIP (low-quality image placeholder), connection-aware demotion on `slow-2g`/`saveData`, the verified 20,000-file Cloudflare Pages limit, and the R2 migration trigger.
+>
+> Since this section was never implemented (Phase 3 was deliberately deferred per the original plan), the contents below are retained as **historical context only**. Build against v2 T10, not against the snippets here.
+
+---
 
 The current build uses image placeholders. When real images arrive, this is the pipeline.
 
@@ -1444,9 +1464,12 @@ Load with fallback chain: requested locale → en → hard-coded key as last res
 Hind family: load only the subset needed for the active locale.
 
 - Latin pages (English): Hind-Regular-Latin.woff2, Hind-Medium-Latin.woff2
-- Devanagari pages (Hindi): Hind-Regular-Devanagari.woff2, Hind-Medium-Devanagari.woff2
+- Devanagari pages (Hindi + Marathi, both Devanagari): Hind-Regular-Devanagari.woff2, Hind-Medium-Devanagari.woff2
 - Tamil pages (future): Hind Madurai
-- Etc.
+- Bengali pages (future): Hind Kolkata
+- Telugu pages (future): Hind Guntur
+- Gujarati pages (future): Hind Vadodara
+- Punjabi pages (future): Mukta Mahee or Noto Sans Gurmukhi (Hind has no Gurmukhi variant)
 
 The font CSS uses `unicode-range` to load only the relevant subset:
 

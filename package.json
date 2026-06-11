@@ -36,6 +36,7 @@
     ]
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "^2.11.0",
     "@astrojs/preact": "^4.0.1",
     "@astrojs/sitemap": "^3.2.1",
     "@sentry/astro": "^8.45.0",
@@ -44,7 +45,8 @@
     "js-yaml": "^4.1.0",
     "marked": "^15.0.0",
     "pagefind": "^1.2.0",
-    "preact": "^10.25.0"
+    "preact": "^10.25.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.0",

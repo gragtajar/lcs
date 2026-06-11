@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import ArticleHero from './ArticleHero.astro';
 import { t, formatDate } from '../lib/i18n';
 import type { LessonFormat, Lesson } from '../lib/content';
 
@@ -22,7 +23,10 @@ interface Props {
 const { title, format, comingSoon, lesson } = Astro.props;
 ---
 
-<header class={`ah ${comingSoon ? 'ah-soon' : ''}`}>
+<header
+  class={`ah ${comingSoon ? 'ah-soon' : ''}`}
+  data-article-id={!comingSoon && lesson ? lesson.id : undefined}
+>
   <h1 class="ah-title">{title}</h1>
   <div class="ah-meta">
     <span class={`ah-format ah-format-${format} ${comingSoon ? 'ah-format-outline' : ''}`}>
@@ -42,7 +46,12 @@ const { title, format, comingSoon, lesson } = Astro.props;
           {lesson?.last_updated && (
             <span class="ah-meta-item">
               <Icon name="calendar" />{' '}
-              {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+              {lesson.version
+                ? t('list.lastUpdatedWithVersion', {
+                    date: formatDate(lesson.last_updated),
+                    version: lesson.version,
+                  })
+                : t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
             </span>
           )}
         </>
@@ -58,10 +67,49 @@ const { title, format, comingSoon, lesson } = Astro.props;
       <Icon name="bookmark" label={t('article.favoritePlaceholder')} />
     </span>
   </div>
-  <div class="ah-image" aria-hidden="true">
-    <div class={`ah-image-ph ${comingSoon ? 'ah-image-ph-soon' : ''}`}></div>
-  </div>
+  {
+    comingSoon || !lesson ? (
+      <div class="ah-image" aria-hidden="true">
+        <div class={`ah-image-ph ${comingSoon ? 'ah-image-ph-soon' : ''}`} />
+      </div>
+    ) : (
+      <ArticleHero articleId={lesson.id} alt={title} aspectRatio="16:9" />
+    )
+  }
 </header>
+
+<script>
+  // Fire the `article-read` analytics event once the reader reaches the end of
+  // a published article. A sentinel is appended to the article column and
+  // observed; on first intersection we report the time spent on the page.
+  // No-op when analytics is uninitialised (no key / Do-Not-Track).
+  import { trackArticleRead } from '../lib/analytics';
+
+  const header = document.querySelector<HTMLElement>('.ah[data-article-id]');
+  const articleId = header?.dataset.articleId;
+  const column = document.querySelector('.article');
+
+  if (articleId && column) {
+    const startedAt = performance.now();
+    const sentinel = document.createElement('div');
+    sentinel.setAttribute('aria-hidden', 'true');
+    sentinel.style.height = '1px';
+    column.append(sentinel);
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        observer.disconnect();
+        trackArticleRead({
+          articleId,
+          locale: document.documentElement.lang || 'en',
+          timeOnPageMs: Math.round(performance.now() - startedAt),
+        });
+      }
+    });
+    observer.observe(sentinel);
+  }
+</script>
 
 <style>
   .ah {
