@@ -79,12 +79,8 @@ describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
   });
 
   it('flags planned-but-not-written lessons as not published', () => {
-    // school-zones lessons remain unwritten (no .md on disk) → coming-soon.
-    const a = findPlannedArticle(
-      'traffic',
-      'school-zones',
-      'what-school-zone-signs-require-of-you',
-    );
+    // This water-pools lesson remains unwritten (no .md on disk) → coming-soon.
+    const a = findPlannedArticle('water-pools', 'pool-hygiene', 'what-chlorine-does-and-doesnt-do');
     expect(a?.published).toBe(false);
   });
 
@@ -110,11 +106,7 @@ describe('loadLessonForArticle()', () => {
   });
 
   it('returns null for a coming-soon (unwritten) article', () => {
-    const a = findPlannedArticle(
-      'traffic',
-      'school-zones',
-      'what-school-zone-signs-require-of-you',
-    );
+    const a = findPlannedArticle('water-pools', 'pool-hygiene', 'what-chlorine-does-and-doesnt-do');
     expect(a?.published).toBe(false);
     expect(loadLessonForArticle(a!)).toBeNull();
   });
