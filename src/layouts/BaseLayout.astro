@@ -18,6 +18,10 @@ interface Props {
   type?: 'website' | 'article';
   /** Absolute URL of the OG/Twitter card image (when set, uses summary_large_image). */
   image?: string;
+  /** Optional OG/Twitter title override (defaults to the suffixed page title). */
+  ogTitle?: string;
+  /** Optional OG/Twitter description override (defaults to `description`). */
+  ogDescription?: string;
 }
 
 const {
@@ -27,6 +31,8 @@ const {
   canonical,
   type = 'website',
   image,
+  ogTitle,
+  ogDescription,
 } = Astro.props;
 
 const meta = buildMeta({
@@ -35,6 +41,8 @@ const meta = buildMeta({
   path: canonical ?? Astro.url.pathname,
   type,
   image,
+  ogTitle,
+  ogDescription,
 });
 
 // Analytics: only inject the Cloudflare Web Analytics beacon when a token is
@@ -56,8 +64,8 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
 
     {/* Open Graph */}
     <meta property="og:type" content={meta.ogType} />
-    <meta property="og:title" content={meta.fullTitle} />
-    <meta property="og:description" content={meta.description} />
+    <meta property="og:title" content={meta.ogTitle} />
+    <meta property="og:description" content={meta.ogDescription} />
     <meta property="og:url" content={meta.canonicalUrl} />
     <meta property="og:site_name" content="learncivicsense.in" />
     <meta property="og:locale" content="en_IN" />
@@ -65,8 +73,8 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
 
     {/* Twitter */}
     <meta name="twitter:card" content={meta.twitterCard} />
-    <meta name="twitter:title" content={meta.fullTitle} />
-    <meta name="twitter:description" content={meta.description} />
+    <meta name="twitter:title" content={meta.ogTitle} />
+    <meta name="twitter:description" content={meta.ogDescription} />
     {meta.ogImage && <meta name="twitter:image" content={meta.ogImage} />}
 
     {

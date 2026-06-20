@@ -55,7 +55,19 @@ const rendered = isComingSoon ? null : renderLessonBody(lesson!.body);
 const related = isComingSoon ? [] : resolveRelated(lesson!.related);
 
 const canonical = articleUrl(planned);
-const description = lesson?.tldr?.[0] ?? cat.description ?? planned.title;
+// <meta description>: prefer the authored meta_description, fall back to tldr[0]
+// for un-backfilled articles, then category/title. `||` (not `??`) so an empty
+// meta_description string falls through.
+const description =
+  lesson?.meta_description || lesson?.tldr?.[0] || cat.description || planned.title;
+
+// OG/social-card overrides apply only to real articles. og:title uses the bare
+// lesson title (or its og_title override); og:description prefers og_description,
+// then meta_description, then the first TL;DR line.
+const ogTitle = lesson ? lesson.og_title || lesson.title : undefined;
+const ogDescription = lesson
+  ? lesson.og_description || lesson.meta_description || lesson.tldr[0] || description
+  : undefined;
 
 // JSON-LD: real articles get a schema.org Article + BreadcrumbList.
 // Coming-soon stubs only emit the breadcrumb (no Article — there's no body to describe).
@@ -86,10 +98,17 @@ const articleLd =
   canonical={canonical}
   type="article"
   image={isComingSoon ? undefined : getArticleImage(planned.id, 'og', true)}
+  ogTitle={ogTitle}
+  ogDescription={ogDescription}
 >
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
     {articleLd && <script type="application/ld+json" set:html={JSON.stringify(articleLd)} />}
+    {
+      !isComingSoon &&
+        lesson &&
+        lesson.tags.map((tag) => <meta property="article:tag" content={tag} />)
+    }
   </Fragment>
   <div class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`} data-pagefind-body>
     {/* Pagefind meta — one attribute per key, kept hidden from layout. */}

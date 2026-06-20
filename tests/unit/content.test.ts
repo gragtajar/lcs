@@ -12,7 +12,25 @@ import {
   subtopicUrl,
   categoryUrl,
   visitorsUrl,
+  trimmedString,
+  optionalTrimmedString,
 } from '../../src/lib/content';
+
+describe('frontmatter string coercion helpers', () => {
+  it('trimmedString trims strings and returns "" for non-strings', () => {
+    expect(trimmedString('  hi  ')).toBe('hi');
+    expect(trimmedString('')).toBe('');
+    expect(trimmedString(undefined)).toBe('');
+    expect(trimmedString(42)).toBe('');
+  });
+
+  it('optionalTrimmedString returns the trimmed value or undefined when empty/non-string', () => {
+    expect(optionalTrimmedString('  Override  ')).toBe('Override');
+    expect(optionalTrimmedString('   ')).toBeUndefined();
+    expect(optionalTrimmedString('')).toBeUndefined();
+    expect(optionalTrimmedString(123)).toBeUndefined();
+  });
+});
 
 describe('loadTaxonomy()', () => {
   it('parses taxonomy.json with v2 shape', () => {
@@ -103,6 +121,12 @@ describe('loadLessonForArticle()', () => {
     // The case-against-honking lesson ships a quiz block.
     expect(Array.isArray(lesson!.quiz)).toBe(true);
     expect(lesson!.quiz!.length).toBeGreaterThan(0);
+    // SEO fields (added 2026-06-20) parse with correct types even before the
+    // meta_description backfill lands — meta_description is always a string,
+    // og_title / og_description stay undefined until authored.
+    expect(typeof lesson!.meta_description).toBe('string');
+    expect(['undefined', 'string']).toContain(typeof lesson!.og_title);
+    expect(['undefined', 'string']).toContain(typeof lesson!.og_description);
   });
 
   it('returns null for a coming-soon (unwritten) article', () => {

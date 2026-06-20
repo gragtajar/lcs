@@ -35,6 +35,26 @@ describe('buildMeta()', () => {
       'article',
     );
   });
+
+  it('defaults ogTitle to the suffixed full title and ogDescription to description', () => {
+    const m = buildMeta({ title: 'Honking', description: 'd', path: '/x' });
+    expect(m.ogTitle).toBe('Honking — learncivicsense.in');
+    expect(m.ogDescription).toBe('d');
+  });
+
+  it('honours ogTitle / ogDescription overrides (bare title for social cards)', () => {
+    const m = buildMeta({
+      title: 'Honking',
+      description: 'meta desc',
+      path: '/x',
+      ogTitle: 'Honking',
+      ogDescription: 'social desc',
+    });
+    expect(m.ogTitle).toBe('Honking');
+    expect(m.ogDescription).toBe('social desc');
+    // The browser-tab title is unaffected by the OG overrides.
+    expect(m.fullTitle).toBe('Honking — learncivicsense.in');
+  });
 });
 
 const mockCategory = {
@@ -71,6 +91,7 @@ const mockLesson = {
   locale: 'en',
   status: 'draft',
   tldr: ['First takeaway'],
+  meta_description: '',
   sources: [],
   related: [],
   tags: [],
@@ -103,6 +124,56 @@ describe('articleJsonLd()', () => {
       url: 'https://learncivicsense.in/x',
     });
     expect(ld.description).toBe('fallback');
+  });
+
+  it('prefers meta_description over tldr[0] for the description', () => {
+    const ld = articleJsonLd({
+      category: mockCategory,
+      subtopic: mockSubtopic,
+      lesson: { ...mockLesson, meta_description: 'A keyword-rich snippet.' },
+      url: 'https://learncivicsense.in/x',
+    });
+    expect(ld.description).toBe('A keyword-rich snippet.');
+  });
+
+  it('emits comma-joined keywords from tags, and omits the property when there are none', () => {
+    const withTags = articleJsonLd({
+      category: mockCategory,
+      subtopic: mockSubtopic,
+      lesson: { ...mockLesson, tags: ['honking', 'urban', 'traffic'] },
+      url: 'https://learncivicsense.in/x',
+    });
+    expect(withTags.keywords).toBe('honking, urban, traffic');
+
+    const noTags = articleJsonLd({
+      category: mockCategory,
+      subtopic: mockSubtopic,
+      lesson: mockLesson,
+      url: 'https://learncivicsense.in/x',
+    });
+    expect(noTags).not.toHaveProperty('keywords');
+  });
+
+  it('emits a markdown-stripped, truncated articleBody', () => {
+    const body = ['## The moment', '', 'You **stop** at the [signal](https://x).'].join('\n');
+    const ld = articleJsonLd({
+      category: mockCategory,
+      subtopic: mockSubtopic,
+      lesson: { ...mockLesson, body },
+      url: 'https://learncivicsense.in/x',
+    });
+    // The `##` marker is stripped but the heading text survives as prose, joined
+    // with the paragraph; emphasis and link syntax are removed.
+    expect(ld.articleBody).toBe('The moment You stop at the signal.');
+
+    const long = articleJsonLd({
+      category: mockCategory,
+      subtopic: mockSubtopic,
+      lesson: { ...mockLesson, body: 'word '.repeat(400) },
+      url: 'https://learncivicsense.in/x',
+    });
+    expect((long.articleBody as string).length).toBeLessThanOrEqual(601);
+    expect(long.articleBody as string).toMatch(/…$/);
   });
 });
 
