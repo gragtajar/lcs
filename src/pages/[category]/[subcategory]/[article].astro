@@ -6,6 +6,7 @@ import TldrBox from '../../../components/TldrBox.astro';
 import SourcesList from '../../../components/SourcesList.astro';
 import RelatedLinks from '../../../components/RelatedLinks.astro';
 import ComingSoonBody from '../../../components/ComingSoonBody.astro';
+import ShareBar from '../../../components/ShareBar.astro';
 import TableOfContents from '../../../islands/TableOfContents.tsx';
 import LessonQuiz from '../../../islands/LessonQuiz.tsx';
 import {
@@ -56,6 +57,8 @@ const rendered = isComingSoon ? null : renderLessonBody(lesson!.body);
 const related = isComingSoon ? [] : resolveRelated(lesson!.related);
 
 const canonical = articleUrl(planned);
+// Absolute URL for the ShareBar (Web Share API + per-platform intents).
+const shareUrl = new URL(canonical, 'https://learncivicsense.in').toString();
 // <meta description>: prefer the authored meta_description, fall back to tldr[0]
 // for un-backfilled articles, then category/title. `||` (not `??`) so an empty
 // meta_description string falls through.
@@ -153,6 +156,14 @@ const howToLd =
             />
           ) : (
             <>
+              <ShareBar
+                variant="compact"
+                url={shareUrl}
+                title={lesson!.title}
+                description={lesson!.meta_description || lesson!.tldr[0]}
+                articleId={planned.id}
+              />
+
               <TldrBox items={lesson!.tldr} />
 
               {/* Mobile-only TOC collapse, above the body. */}
@@ -189,6 +200,14 @@ const howToLd =
 
               <SourcesList sources={lesson!.sources} />
               <RelatedLinks items={related} />
+
+              <ShareBar
+                variant="full"
+                url={shareUrl}
+                title={lesson!.title}
+                description={lesson!.meta_description || lesson!.tldr[0]}
+                articleId={planned.id}
+              />
             </>
           )
         }

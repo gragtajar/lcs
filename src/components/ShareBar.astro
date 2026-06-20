@@ -1,0 +1,313 @@
+---
+// ShareBar (brief §9). Web Share API when available, with per-platform fallback
+// links that work without JS. Two variants:
+//   compact — a small "Share" button (top of article); reveals the fallback row
+//             when the Web Share API is absent.
+//   full    — all platform buttons visible (bottom of article).
+// The per-platform <a> links are real intents (no JS needed). The native-share +
+// copy buttons are progressively enhanced by the deferred module script below.
+import Icon from './Icon.astro';
+import { t } from '../lib/i18n';
+import { buildShareLinks } from '../lib/share';
+
+interface Props {
+  /** Canonical absolute URL. */
+  url: string;
+  title: string;
+  description?: string;
+  articleId: string;
+  variant?: 'compact' | 'full';
+}
+
+const { url, title, description, articleId, variant = 'compact' } = Astro.props;
+const links = buildShareLinks({ url, title });
+
+const platforms = [
+  {
+    platform: 'whatsapp',
+    href: links.whatsapp,
+    icon: 'whatsapp',
+    labelKey: 'share.onWhatsapp',
+    newTab: true,
+  },
+  {
+    platform: 'twitter',
+    href: links.twitter,
+    icon: 'twitter',
+    labelKey: 'share.onTwitter',
+    newTab: true,
+  },
+  {
+    platform: 'linkedin',
+    href: links.linkedin,
+    icon: 'linkedin',
+    labelKey: 'share.onLinkedin',
+    newTab: true,
+  },
+  {
+    platform: 'telegram',
+    href: links.telegram,
+    icon: 'telegram',
+    labelKey: 'share.onTelegram',
+    newTab: true,
+  },
+  { platform: 'email', href: links.email, icon: 'mail', labelKey: 'share.viaEmail', newTab: false },
+] as const;
+---
+
+<div
+  class:list={['sharebar', `sharebar-${variant}`]}
+  data-sharebar
+  data-url={url}
+  data-title={title}
+  data-desc={description ?? title}
+  data-article-id={articleId}
+>
+  {
+    variant === 'compact' ? (
+      <>
+        <button
+          class="sb-trigger"
+          type="button"
+          data-share-native
+          aria-expanded="false"
+          aria-label={t('share.shareThis')}
+        >
+          <Icon name="share" />
+          <span>{t('share.share')}</span>
+        </button>
+        <div class="sb-fallback" data-share-fallback hidden>
+          {platforms.map((p) => (
+            <a
+              class="sb-icon"
+              href={p.href}
+              data-platform={p.platform}
+              aria-label={t(p.labelKey)}
+              {...(p.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
+              <Icon name={p.icon} />
+            </a>
+          ))}
+          <button class="sb-icon" type="button" data-share-copy aria-label={t('share.copyLink')}>
+            <Icon name="link" />
+          </button>
+        </div>
+      </>
+    ) : (
+      <>
+        <span class="sb-label">{t('share.shareThisLesson')}</span>
+        <div class="sb-row">
+          <button
+            class="sb-icon sb-native-opt"
+            type="button"
+            data-share-native-optional
+            aria-label={t('share.shareThis')}
+            hidden
+          >
+            <Icon name="share" />
+          </button>
+          {platforms.map((p) => (
+            <a
+              class="sb-icon"
+              href={p.href}
+              data-platform={p.platform}
+              aria-label={t(p.labelKey)}
+              {...(p.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
+              <Icon name={p.icon} />
+            </a>
+          ))}
+          <button class="sb-icon" type="button" data-share-copy aria-label={t('share.copyLink')}>
+            <Icon name="link" />
+          </button>
+        </div>
+      </>
+    )
+  }
+  <span class="sb-toast" data-share-toast role="status" aria-live="polite" hidden>
+    {t('share.copied')}
+  </span>
+</div>
+
+<script>
+  import { canNativeShare, invokeNativeShare, copyToClipboard } from '../lib/share';
+  import { trackArticleShare } from '../lib/analytics';
+
+  function initShareBars(): void {
+    document.querySelectorAll<HTMLElement>('[data-sharebar]').forEach((bar) => {
+      if (bar.dataset.shareReady) return;
+      bar.dataset.shareReady = '1';
+
+      const url = bar.dataset.url || location.href;
+      const title = bar.dataset.title || document.title;
+      const text = bar.dataset.desc || title;
+      const articleId = bar.dataset.articleId || '';
+
+      const toast = bar.querySelector<HTMLElement>('[data-share-toast]');
+      let toastTimer: number | undefined;
+      const showToast = (): void => {
+        if (!toast) return;
+        toast.hidden = false;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+          toast.classList.remove('show');
+          toast.hidden = true;
+        }, 2200);
+      };
+
+      // Compact trigger: native share if supported, otherwise reveal the fallback row.
+      const trigger = bar.querySelector<HTMLButtonElement>('[data-share-native]');
+      const fallback = bar.querySelector<HTMLElement>('[data-share-fallback]');
+      trigger?.addEventListener('click', async () => {
+        if (canNativeShare()) {
+          const ok = await invokeNativeShare({ title, text, url });
+          if (ok) trackArticleShare({ articleId, platform: 'native' });
+        } else if (fallback) {
+          const willOpen = fallback.hidden;
+          fallback.hidden = !willOpen;
+          trigger.setAttribute('aria-expanded', String(willOpen));
+        }
+      });
+
+      // Full variant: reveal the optional native button only when supported.
+      const nativeOpt = bar.querySelector<HTMLButtonElement>('[data-share-native-optional]');
+      if (nativeOpt && canNativeShare()) {
+        nativeOpt.hidden = false;
+        nativeOpt.addEventListener('click', async () => {
+          const ok = await invokeNativeShare({ title, text, url });
+          if (ok) trackArticleShare({ articleId, platform: 'native' });
+        });
+      }
+
+      // Per-platform links still navigate; we just record the click.
+      bar.querySelectorAll<HTMLElement>('[data-platform]').forEach((node) => {
+        node.addEventListener('click', () => {
+          trackArticleShare({ articleId, platform: node.dataset.platform || 'unknown' });
+        });
+      });
+
+      // Copy link.
+      const copyBtn = bar.querySelector<HTMLButtonElement>('[data-share-copy]');
+      copyBtn?.addEventListener('click', async () => {
+        if (await copyToClipboard(url)) {
+          showToast();
+          trackArticleShare({ articleId, platform: 'copy_link' });
+        }
+      });
+    });
+  }
+
+  initShareBars();
+</script>
+
+<style>
+  .sharebar {
+    position: relative;
+  }
+  .sharebar-compact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  .sb-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .sb-trigger:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    color: var(--color-primary);
+  }
+  .sb-trigger :global(.icon) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sb-fallback {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .sharebar-full {
+    margin-top: var(--space-7);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+  .sb-label {
+    display: block;
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+  }
+  .sb-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .sb-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .sb-icon:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+  .sb-icon :global(.icon) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sb-toast {
+    display: inline-block;
+    margin-left: var(--space-2);
+    margin-top: var(--space-2);
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--text-xs);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .sb-toast.show {
+    opacity: 1;
+  }
+
+  /* Comfortable touch targets on small screens. */
+  @media (max-width: 640px) {
+    .sb-icon {
+      width: 48px;
+      height: 48px;
+    }
+    .sb-trigger {
+      min-height: 48px;
+    }
+  }
+</style>

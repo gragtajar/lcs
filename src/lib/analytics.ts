@@ -107,3 +107,9 @@ export function trackSearchQuery(p: { query: string; resultCount: number }): voi
 export function trackLanguageSwitch(p: { from: string; to: string }): void {
   track('language-switch', p);
 }
+
+export function trackArticleShare(p: { articleId: string; platform: string }): void {
+  // platform: 'native' | 'whatsapp' | 'twitter' | 'linkedin' | 'telegram' | 'email' | 'copy_link'.
+  // Event name kept hyphenated for consistency with the other helpers above.
+  track('article-share', p);
+}

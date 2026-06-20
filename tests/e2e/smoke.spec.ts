@@ -1,19 +1,33 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Homepage', () => {
-  test('renders the hero + 3 sections of categories', async ({ page }) => {
+  test('renders the hero, curated chips, cluster cards, and mission', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/learn civic sense/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/civic sense, learnable/i);
+    // At least one curated hero chip links to an article.
+    await expect(page.locator('.hero-chip').first()).toBeVisible();
+    // Featured cluster cards: each is an <article> with an <h3>.
+    await expect(page.locator('.cluster-card').first()).toBeVisible();
+    await expect(page.locator('.cluster-card h3').first()).toBeVisible();
+    // Mission section below the fold.
+    await expect(page.getByRole('heading', { name: /who this is for/i })).toBeVisible();
+    // "Browse all topics" leads to the catalog page.
+    await expect(page.getByRole('link', { name: /browse all topics/i })).toBeVisible();
+  });
+});
+
+test.describe('Topics catalog page', () => {
+  test('lists the India / abroad sections and expands a category', async ({ page }) => {
+    await page.goto('/topics/');
     await expect(page.getByRole('heading', { name: /in and around india/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /for your trip abroad/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /for visitors to india/i })).toBeVisible();
-  });
-
-  test('expanding a category reveals its subcategories', async ({ page }) => {
-    await page.goto('/');
+    // Traffic is the first card (open by default) so its subtopics are visible.
     const traffic = page.locator('details[data-cat-id="traffic"]');
-    await traffic.locator('summary').first().click();
     await expect(traffic.getByRole('link', { name: /honking discipline/i })).toBeVisible();
+    // A closed category expands on click.
+    const queues = page.locator('details[data-cat-id="queues-and-waiting"]');
+    await queues.locator('summary').first().click();
+    await expect(queues.getByRole('link').first()).toBeVisible();
   });
 });
 
@@ -30,8 +44,8 @@ test.describe('Category and subcategory pages', () => {
   });
 
   test('subcategory page mixes published and coming-soon articles', async ({ page }) => {
-    await page.goto('/traffic/honking-discipline/');
-    // at least one COMING SOON chip on the list
+    // water-pools/pool-hygiene still has unwritten lessons → at least one COMING SOON chip.
+    await page.goto('/water-pools/pool-hygiene/');
     await expect(page.locator('.li-meta-soon').first()).toBeVisible();
   });
 });
@@ -43,6 +57,17 @@ test.describe('Article page (real)', () => {
     await expect(page.getByText(/TL;DR/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /sources/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /quick check/i })).toBeVisible();
+  });
+
+  test('renders the ShareBar at the top and bottom with per-platform links', async ({ page }) => {
+    await page.goto('/traffic/honking-discipline/the-case-against-honking/');
+    await expect(page.locator('.sharebar-compact')).toHaveCount(1); // top
+    await expect(page.locator('.sharebar-full')).toHaveCount(1); // bottom
+    // The bottom bar exposes the per-platform fallback links + copy.
+    const full = page.locator('.sharebar-full');
+    await expect(full.getByRole('link', { name: /share on whatsapp/i })).toBeVisible();
+    await expect(full.getByRole('link', { name: /share on x/i })).toBeVisible();
+    await expect(full.getByRole('button', { name: /copy link/i })).toBeVisible();
   });
 
   test('clicking a quiz option reveals per-option feedback', async ({ page }) => {
@@ -57,14 +82,13 @@ test.describe('Article page (real)', () => {
 
 test.describe('Article page (coming-soon)', () => {
   test('renders the placeholder body for a planned-but-unpublished lesson', async ({ page }) => {
-    await page.goto(
-      '/traffic/honking-discipline/honking-at-red-lights-and-what-it-costs-everyone/',
-    );
+    await page.goto('/water-pools/pool-hygiene/what-chlorine-does-and-doesnt-do/');
     await expect(page.locator('.ah-soon-badge')).toContainText(/coming soon/i);
     await expect(page.locator('.cs-card')).toContainText(/lesson is being written/i);
-    // No TOC, quiz, or sources on coming-soon
+    // No TOC, quiz, sources, or ShareBar on coming-soon
     await expect(page.locator('.quiz')).toHaveCount(0);
     await expect(page.locator('.toc')).toHaveCount(0);
+    await expect(page.locator('.sharebar')).toHaveCount(0);
   });
 });
 
@@ -82,13 +106,12 @@ test.describe('Global search', () => {
   }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /open search/i }).click();
-    const input = page.getByPlaceholder(/search lessons/i).nth(1); // overlay input, not topbar trigger
-    await input.fill('honking');
-    // Wait for Pagefind to load + debounce settle.
-    await expect(page.getByText(/the case against honking/i).first()).toBeVisible({
-      timeout: 5_000,
-    });
-    // The coming-soon "Honking at red lights..." should appear with chip
+    // The topbar trigger is a button; the only "Search lessons" input is the overlay's.
+    const input = page.getByPlaceholder(/search lessons/i).first();
+    await input.fill('chlorine');
+    // Wait for Pagefind to load + debounce settle. The chlorine lesson is unwritten,
+    // so the result both appears and carries the coming-soon chip.
+    await expect(page.getByText(/chlorine/i).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.search-result-chip').first()).toContainText(/coming soon/i);
   });
 });
