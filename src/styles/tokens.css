@@ -90,6 +90,11 @@
   --width-sidebar: 280px;
   --width-toc: 240px;
 
+  /* Responsive breakpoints (documentation tokens — CSS can't use var() inside a
+     media query condition, so @media rules use these literal px values directly). */
+  --bp-mobile-max: 640px;
+  --bp-tablet-max: 1024px;
+
   /* Topbar height (sticky offset for anchor scrolls) */
   --topbar-h: 60px;
 }

@@ -1,0 +1,194 @@
+---
+// Hero (homepage brief §1). Positive, world-applicable framing first; the disclaimer
+// lives below the fold in MissionSection. Visual weight: H1 > chips (primary CTA) >
+// subhead > body > search (intentionally small) > scroll cue (de-emphasised).
+import Icon from './Icon.astro';
+import { t } from '../lib/i18n';
+import type { HeroChip } from '../lib/homepage-data';
+
+interface Props {
+  chips: HeroChip[];
+  lessonCount: number;
+  clusterCount: number;
+}
+
+const { chips, lessonCount, clusterCount } = Astro.props;
+---
+
+<section class="hero">
+  <h1 class="hero-h1">{t('homepage.hero.h1')}</h1>
+  <p class="hero-subhead">{t('homepage.hero.subhead')}</p>
+  <p class="hero-body">{t('homepage.hero.body')}</p>
+
+  <form class="hero-search" role="search" action="/search" method="get">
+    <input
+      type="search"
+      name="q"
+      class="hero-search-input"
+      placeholder={t('homepage.hero.searchPlaceholder')}
+      aria-label={t('homepage.hero.searchPlaceholder')}
+      autocomplete="off"
+    />
+    <button type="submit" class="hero-search-btn" aria-label={t('homepage.hero.searchSubmitLabel')}>
+      <Icon name="search" />
+    </button>
+  </form>
+
+  {
+    chips.length > 0 && (
+      <ul class="hero-chips">
+        {chips.map((chip) => (
+          <li>
+            <a class="hero-chip" href={chip.href}>
+              {chip.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <a class="hero-scrollcue" href="#featured" aria-hidden="true" tabindex="-1">
+    <span>{t('homepage.hero.scrollCueText', { count: lessonCount, clusterCount })}</span>
+    <Icon name="expand_more" class="hero-scrollcue-chevron" />
+  </a>
+</section>
+
+<style>
+  .hero {
+    max-width: 720px;
+    margin-inline: auto;
+    padding: var(--space-7) var(--space-2) var(--space-6);
+    text-align: center;
+  }
+  .hero-h1 {
+    font-size: clamp(1.9rem, 7vw, var(--text-4xl));
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 0 0 var(--space-3);
+  }
+  .hero-subhead {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-3);
+  }
+  .hero-body {
+    font-size: var(--text-base);
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    max-width: 56ch;
+    margin: 0 auto var(--space-5);
+  }
+
+  /* Search: small, secondary. Bottom-border chrome, not a boxed centrepiece. */
+  .hero-search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: clamp(280px, 60vw, 480px);
+    margin: 0 auto var(--space-5);
+    border-bottom: 1.5px solid var(--color-border);
+    padding-bottom: var(--space-1);
+  }
+  .hero-search:focus-within {
+    border-bottom-color: var(--color-primary);
+  }
+  .hero-search-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: var(--text-base);
+    padding: var(--space-2) 0;
+  }
+  .hero-search-input:focus {
+    outline: none;
+  }
+  .hero-search-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+  .hero-search-btn:hover {
+    color: var(--color-primary);
+  }
+  .hero-search-btn :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Chips: the primary CTA. Generous tap targets (>=48px). */
+  .hero-chips {
+    list-style: none;
+    margin: 0 0 var(--space-6);
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2) var(--space-3);
+  }
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: var(--space-2) var(--space-4);
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: 1.3;
+    text-align: left;
+  }
+  .hero-chip:hover {
+    background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+    text-decoration: none;
+  }
+
+  /* Scroll cue: a hint, de-emphasised. */
+  .hero-scrollcue {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    text-decoration: none;
+  }
+  .hero-scrollcue-chevron {
+    width: 20px;
+    height: 20px;
+    animation: scrollcue-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes scrollcue-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: translateY(0);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-scrollcue-chevron {
+      animation: none;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero {
+      padding-top: calc(var(--space-7) + var(--space-4));
+    }
+  }
+</style>

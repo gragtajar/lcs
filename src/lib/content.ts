@@ -372,6 +372,20 @@ export function findPlannedArticle(
   );
 }
 
+/** Find a planned article anywhere in the nav tree by its stable `id` (e.g. `spaces-001`). */
+export function findArticleById(
+  id: string,
+  locale: Locale = DEFAULT_LOCALE,
+): PlannedArticle | undefined {
+  for (const cat of getNavCategories(locale)) {
+    for (const sub of cat.subtopics) {
+      const found = sub.articles.find((a) => a.id === id);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
 // ---------- Visitors module (separate flow) ----------
 
 export interface VisitorsView {

@@ -1,155 +1,102 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import CategoryCard from '../components/CategoryCard.astro';
-import VisitorsCard from '../components/VisitorsCard.astro';
-import { getNavCategories, loadVisitorsModule } from '../lib/content';
+import Hero from '../components/Hero.astro';
+import ClusterCard from '../components/ClusterCard.astro';
+import MissionSection from '../components/MissionSection.astro';
+import EngagementSlot from '../components/EngagementSlot.astro';
+import { getFeaturedClusters, resolveHeroChips, getHomepageStats } from '../lib/homepage-data';
+import { DEFAULT_LOCALE } from '../config.ts';
 import { t } from '../lib/i18n';
 
-const nav = getNavCategories();
-const indiaCats = nav.filter((c) => c.group === 'india');
-const abroadCats = nav.filter((c) => c.group === 'abroad');
-const visitors = loadVisitorsModule();
+// The rotation selects per build week (deterministic, stateless). BUILD_DATE lets a
+// reproducible build or test pin the window; otherwise it's the current build time.
+const buildDate = new Date(process.env.BUILD_DATE ?? Date.now());
+const locale = DEFAULT_LOCALE;
+
+const heroChips = resolveHeroChips(locale);
+const { lessonCount, clusterCount } = getHomepageStats(locale);
+const featured = getFeaturedClusters(locale, buildDate);
 ---
 
-<BaseLayout title={t('home.introTitle')} width="wide">
-  <section class="hero">
-    <h1 class="hero-title">{t('home.introTitle')}</h1>
-    <p class="hero-body">{t('home.introBody')}</p>
+<BaseLayout title="" width="flush">
+  <Hero chips={heroChips} lessonCount={lessonCount} clusterCount={clusterCount} />
+
+  <section id="featured" class="home-featured" aria-labelledby="featured-h">
+    <h2 id="featured-h" class="sr-only">Featured topics</h2>
+    {
+      featured.length > 0 ? (
+        <>
+          <div class="featured-stack">
+            {featured.map((f) => (
+              <ClusterCard featured={f} />
+            ))}
+          </div>
+          <div class="featured-browse">
+            <a href="/topics/">{t('homepage.clusterCards.browseAllTopics')}</a>
+          </div>
+        </>
+      ) : (
+        <p class="featured-empty">{t('list.comingSoon')}</p>
+      )
+    }
   </section>
 
-  <!-- India -->
-  <section class="home-section" aria-labelledby="india-h">
-    <header class="home-section-head">
-      <h2 id="india-h" class="home-section-title">{t('home.sectionIndia')}</h2>
-      <p class="home-section-blurb">{t('home.sectionIndiaBlurb')}</p>
-    </header>
-    <div class="cat-grid">
-      {indiaCats.map((c, i) => <CategoryCard category={c} openByDefault={i === 0} />)}
-    </div>
+  <section class="home-mission">
+    <MissionSection />
   </section>
 
-  <!-- Abroad -->
-  <section class="home-section" aria-labelledby="abroad-h">
-    <header class="home-section-head">
-      <h2 id="abroad-h" class="home-section-title">{t('home.sectionAbroad')}</h2>
-      <p class="home-section-blurb">{t('home.sectionAbroadBlurb')}</p>
-    </header>
-    <div class="cat-grid">
-      {abroadCats.map((c) => <CategoryCard category={c} />)}
-    </div>
-  </section>
-
-  <!-- Visitors -->
-  <section class="home-section" aria-labelledby="visitors-h">
-    <header class="home-section-head">
-      <h2 id="visitors-h" class="home-section-title">{t('home.sectionVisitors')}</h2>
-      <p class="home-section-blurb">{t('home.sectionVisitorsBlurb')}</p>
-    </header>
-    <div class="cat-grid cat-grid-single">
-      <VisitorsCard visitors={visitors} />
-    </div>
-  </section>
+  <EngagementSlot />
 </BaseLayout>
 
-<script is:inline>
-  /* Persist accordion open/close state across visits (per spec §10.2).
-     Native <details> handles toggling — we only persist which IDs are open. */
-  (function () {
-    const KEY = 'lcs-home-open';
-    const nodes = document.querySelectorAll('details[data-cat-id]');
-
-    let raw = null;
-    try {
-      raw = localStorage.getItem(KEY);
-    } catch {
-      /* localStorage unavailable */
-    }
-    if (raw !== null) {
-      try {
-        const saved = JSON.parse(raw);
-        if (Array.isArray(saved)) {
-          const openSet = new Set(saved);
-          nodes.forEach(function (d) {
-            d.open = openSet.has(d.getAttribute('data-cat-id'));
-          });
-        }
-      } catch {
-        /* malformed saved state; ignore */
-      }
-    }
-
-    function persist() {
-      const ids = [];
-      nodes.forEach(function (d) {
-        if (d.open) ids.push(d.getAttribute('data-cat-id'));
-      });
-      try {
-        localStorage.setItem(KEY, JSON.stringify(ids));
-      } catch {
-        /* localStorage unavailable */
-      }
-    }
-    nodes.forEach(function (d) {
-      d.addEventListener('toggle', persist);
-    });
-  })();
-</script>
-
 <style>
-  .hero {
-    text-align: center;
-    padding: var(--space-7) var(--space-2) var(--space-5);
-    max-width: 720px;
-    margin-inline: auto;
+  .home-featured {
+    padding: var(--space-6) var(--space-4) var(--space-4);
   }
-  .hero-title {
-    font-size: var(--text-3xl);
-    margin-bottom: var(--space-3);
+  .featured-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+  .featured-browse {
+    max-width: 960px;
+    margin: var(--space-5) auto 0;
+    text-align: center;
+  }
+  .featured-browse a {
+    display: inline-block;
+    min-height: 48px;
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-primary);
+  }
+  .featured-empty {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: var(--space-6) 0;
+  }
+
+  .home-mission {
+    padding: var(--space-6) var(--space-4) var(--space-7);
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-5);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   @media (min-width: 768px) {
-    .hero-title {
-      font-size: var(--text-4xl);
+    .home-featured,
+    .home-mission {
+      padding-inline: var(--space-6);
     }
-  }
-  .hero-body {
-    font-size: var(--text-lg);
-    color: var(--color-text-secondary);
-    line-height: 1.55;
-  }
-
-  .home-section {
-    margin-top: var(--space-7);
-    padding-top: var(--space-5);
-    border-top: 1px solid var(--color-border);
-  }
-  .home-section:first-of-type {
-    border-top: 0;
-    padding-top: 0;
-  }
-  .home-section-head {
-    margin-bottom: var(--space-4);
-  }
-  .home-section-title {
-    font-size: var(--text-2xl);
-    margin-bottom: var(--space-1);
-  }
-  .home-section-blurb {
-    color: var(--color-text-secondary);
-    font-size: var(--text-base);
-    max-width: 60ch;
-  }
-  .cat-grid {
-    display: grid;
-    gap: var(--space-3);
-    grid-template-columns: 1fr;
-  }
-  @media (min-width: 900px) {
-    .cat-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-  .cat-grid-single {
-    grid-template-columns: 1fr;
-    max-width: 720px;
   }
 </style>
