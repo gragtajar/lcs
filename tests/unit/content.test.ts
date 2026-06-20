@@ -14,6 +14,7 @@ import {
   visitorsUrl,
   trimmedString,
   optionalTrimmedString,
+  normaliseDate,
 } from '../../src/lib/content';
 
 describe('frontmatter string coercion helpers', () => {
@@ -29,6 +30,22 @@ describe('frontmatter string coercion helpers', () => {
     expect(optionalTrimmedString('   ')).toBeUndefined();
     expect(optionalTrimmedString('')).toBeUndefined();
     expect(optionalTrimmedString(123)).toBeUndefined();
+  });
+
+  it('normaliseDate formats a Date (UTC parts) to ISO YYYY-MM-DD', () => {
+    // js-yaml stores `last_updated: 2026-06-04` as UTC midnight.
+    expect(normaliseDate(new Date(Date.UTC(2026, 5, 4)))).toBe('2026-06-04');
+    // Zero-padding for single-digit month/day.
+    expect(normaliseDate(new Date(Date.UTC(2026, 0, 9)))).toBe('2026-01-09');
+  });
+
+  it('normaliseDate passes an ISO string through (trimmed) and rejects garbage', () => {
+    expect(normaliseDate('2026-06-04')).toBe('2026-06-04');
+    expect(normaliseDate('  2026-06-04  ')).toBe('2026-06-04');
+    expect(normaliseDate('')).toBe('');
+    expect(normaliseDate(undefined)).toBe('');
+    expect(normaliseDate(42)).toBe('');
+    expect(normaliseDate(new Date('not-a-date'))).toBe('');
   });
 });
 

@@ -515,6 +515,31 @@ export function optionalTrimmedString(value: unknown): string | undefined {
   return s ? s : undefined;
 }
 
+/**
+ * Normalise a frontmatter date to an ISO `YYYY-MM-DD` string.
+ *
+ * Unquoted YAML dates (`last_updated: 2026-06-04`) are parsed by js-yaml into a
+ * JS `Date` at UTC midnight. `String(date)` would then emit a long locale string
+ * (`"Thu Jun 04 2026 05:30:00 GMT+0530 ..."`), which is invalid for the schema.org
+ * `datePublished` / `dateModified` fields (Google requires ISO 8601).
+ *
+ * For a Date we read the UTC parts — js-yaml stored the authored calendar date as
+ * UTC midnight, so the UTC parts recover it regardless of the build server's
+ * timezone (CI runs in UTC). This matches formatDate()'s own UTC handling and
+ * avoids a day-shift on non-IST runners. An already-string value is kept as-is
+ * (trimmed), so a quoted `"2026-06-04"` passes straight through.
+ */
+export function normaliseDate(value: unknown): string {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    const year = value.getUTCFullYear();
+    const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(value.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return trimmedString(value);
+}
+
 function parseLessonFile(filePath: string, filename: string, locale: Locale): Lesson | null {
   let raw: string;
   try {
@@ -541,7 +566,7 @@ function parseLessonFile(filePath: string, filename: string, locale: Locale): Le
     subtopic: String(fm.subtopic ?? ''),
     format: (fm.format as LessonFormat) ?? 'scenario',
     length_min: typeof fm.length_min === 'number' ? fm.length_min : 3,
-    last_updated: String(fm.last_updated ?? ''),
+    last_updated: normaliseDate(fm.last_updated),
     version: normaliseVersion(fm.version),
     locale,
     status: String(fm.status ?? 'draft'),
