@@ -89,4 +89,27 @@ export function renderInline(md: string): string {
   return marked.parseInline(md, { async: false }) as string;
 }
 
+/**
+ * Flatten a markdown string to plain prose: strips code fences, heading markers,
+ * blockquote/list markers, table pipes, image/link syntax, and emphasis marks,
+ * then collapses whitespace. Used for SEO text fields (JSON-LD `articleBody` and
+ * HowTo step text) where crawlers want readable text, not markup. Heading and
+ * link *text* survive; only the markers are removed.
+ */
+export function stripMarkdownToText(md: string): string {
+  if (!md) return '';
+  return md
+    .replace(/```[\s\S]*?```/g, ' ') // fenced code
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '') // heading markers
+    .replace(/^\s{0,3}>\s?/gm, '') // blockquotes
+    .replace(/^\s*[-*+]\s+/gm, '') // bullet markers
+    .replace(/^\s*\d+\.\s+/gm, '') // ordered-list markers
+    .replace(/^\s*\|.*\|\s*$/gm, ' ') // table rows
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // links → link text
+    .replace(/[*_`~]/g, '') // emphasis / code marks
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export { escapeHtml };

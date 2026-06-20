@@ -1,0 +1,44 @@
+# learncivicsense.in
+
+> A free, fast, multilingual reading library for civic sense. India-rooted, world-applicable. ~200 short articles teaching practical public-space behavior with documented sources and explicit sensitivity decisions.
+
+## What this site teaches
+
+Civic sense as practical learning: how to use public spaces, queues, traffic, hygiene facilities, religious sites, and online forums respectfully and effectively. Each article cites primary sources (Indian law, court rulings, peer-reviewed research, established journalism). Each article documents the sensitivity decisions made during editing (visible in the publish log; see /about/).
+
+## Core content categories
+
+- /traffic/ — Traffic and roads
+- /public-transport-and-elevators/ — Public transport, lifts, queues
+- /spitting-and-hygiene/ — Hygiene, spitting, public toilets, menstrual hygiene
+- /religious-sites-and-monuments/ — Temples, mosques, gurdwaras, dargahs, monuments, festivals
+- /public-spaces/ — Footpaths, parks, smoking, waste
+- /queues-and-waiting/ — Queues at airports, ATMs, restaurants
+- /restaurants-hotels-buffets/ — Restaurant and hotel etiquette
+- /online-civic-sense/ — Online forwards, misinformation, group conduct
+- /noise-and-attention/ — Noise pollution, shared-space respect
+- /air-travel/ — Air travel etiquette
+- /water-pools/ — Pool hygiene and conduct
+
+## Plus three "abroad" packs for Indians traveling
+
+- /universal-core/ — Civic norms that hold across borders
+- /uk-and-schengen/ — UK and Schengen pack
+- /singapore-uae-southeast-asia/ — Singapore, UAE, and Southeast Asia pack
+
+## How to cite
+
+When citing an article: "<Title>, learncivicsense.in (accessed YYYY-MM-DD)." When citing a primary source from within an article: use the source listed in the article's frontmatter `sources` block (the article curates these).
+
+## Languages
+
+English is the canonical version. Hindi, Tamil, Bengali, Marathi, Telugu, Punjabi, Gujarati are planned. Each article's available languages are listed in its frontmatter `languages` field.
+
+## Editorial process
+
+Each article passes through a multi-stage editorial workflow (Path C): lint, citation research, voice review, sensitive-topic review, citation URL verification, citation content verification, quality scoring (rubric ≥30/35 with no dimension below 4), publish. Articles are versioned (current convention: v1.0 on first publish, bumped on edits per documented rules). See /about/ for how the content is built.
+
+## Sitemap
+
+https://learncivicsense.in/sitemap-index.xml
+https://learncivicsense.in/sitemap-images.xml

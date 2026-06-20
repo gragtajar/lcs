@@ -22,6 +22,7 @@ import {
   PUBLISH_MODE,
   type Locale,
 } from '../config.ts';
+import { stripMarkdownToText } from './markdown';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_ROOT = path.resolve(HERE, '..', '..', CONTENT_REPO_PATH);
@@ -584,6 +585,39 @@ function parseLessonFile(filePath: string, filename: string, locale: Locale): Le
     quiz,
     filename,
   };
+}
+
+export interface RuleSection {
+  /** The `## ` heading text, markers stripped. */
+  heading: string;
+  /** The section body flattened to plain prose (markdown stripped). */
+  text: string;
+}
+
+/**
+ * Split a lesson body into its top-level (`## `) sections, returning each heading
+ * with the section's text flattened to plain prose. Rule-format lessons use this
+ * to map their four-section structure (the rule / why / consequences / quick
+ * reference) onto schema.org HowTo steps (see `howToJsonLd` in seo.ts).
+ *
+ * Only level-2 headings start a new section; `###` subheads stay within the
+ * current section (their marker is stripped, text retained). Sections with an
+ * empty heading or empty body are dropped.
+ */
+export function extractRuleSections(md: string): RuleSection[] {
+  const sections: RuleSection[] = [];
+  const headingRe = /^##[ \t]+(.+?)[ \t]*$/gm;
+  const matches = [...md.matchAll(headingRe)];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    if (!m || m.index === undefined) continue;
+    const heading = (m[1] ?? '').trim();
+    const start = m.index + m[0].length;
+    const end = matches[i + 1]?.index ?? md.length;
+    const text = stripMarkdownToText(md.slice(start, end));
+    if (heading && text) sections.push({ heading, text });
+  }
+  return sections;
 }
 
 function splitBodyAndQuiz(content: string): {

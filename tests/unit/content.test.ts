@@ -15,7 +15,54 @@ import {
   trimmedString,
   optionalTrimmedString,
   normaliseDate,
+  extractRuleSections,
 } from '../../src/lib/content';
+
+describe('extractRuleSections()', () => {
+  const ruleBody = [
+    '## The rule',
+    '',
+    'Do not smoke in enclosed public spaces.',
+    '',
+    '## Why this rule exists',
+    '',
+    'Second-hand smoke harms others. See **COTPA**.',
+    '',
+    "## What happens if you don't follow it",
+    '',
+    'A fine under Section 4.',
+    '',
+    '## Quick reference',
+    '',
+    '- Smoke only in designated areas',
+    '- Carry it outside',
+  ].join('\n');
+
+  it('splits a rule body into its four heading/text sections in order', () => {
+    const sections = extractRuleSections(ruleBody);
+    expect(sections.map((s) => s.heading)).toEqual([
+      'The rule',
+      'Why this rule exists',
+      "What happens if you don't follow it",
+      'Quick reference',
+    ]);
+    expect(sections[0]?.text).toBe('Do not smoke in enclosed public spaces.');
+    expect(sections[1]?.text).toBe('Second-hand smoke harms others. See COTPA.');
+    expect(sections[3]?.text).toBe('Smoke only in designated areas Carry it outside');
+  });
+
+  it('ignores ### subheadings (only ## starts a section) and drops empty sections', () => {
+    const body = ['## Main', '', '### Sub', '', 'Body text here.'].join('\n');
+    const sections = extractRuleSections(body);
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.heading).toBe('Main');
+    expect(sections[0]?.text).toBe('Sub Body text here.');
+  });
+
+  it('returns [] for a body with no headings', () => {
+    expect(extractRuleSections('Just a paragraph, no headings.')).toEqual([]);
+  });
+});
 
 describe('frontmatter string coercion helpers', () => {
   it('trimmedString trims strings and returns "" for non-strings', () => {

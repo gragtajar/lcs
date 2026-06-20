@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { renderLessonBody, renderInline, escapeHtml } from '../../src/lib/markdown';
+import {
+  renderLessonBody,
+  renderInline,
+  escapeHtml,
+  stripMarkdownToText,
+} from '../../src/lib/markdown';
+
+describe('stripMarkdownToText()', () => {
+  it('returns "" for empty input', () => {
+    expect(stripMarkdownToText('')).toBe('');
+  });
+
+  it('strips markers but keeps heading, emphasis, and link text', () => {
+    const md = ['## The rule', '', 'You **stop** at the [signal](https://x).'].join('\n');
+    expect(stripMarkdownToText(md)).toBe('The rule You stop at the signal.');
+  });
+
+  it('flattens lists, blockquotes, and tables to prose', () => {
+    const md = ['- one', '- two', '', '> a quote', '', '| a | b |', '| 1 | 2 |'].join('\n');
+    expect(stripMarkdownToText(md)).toBe('one two a quote');
+  });
+
+  it('drops fenced code blocks', () => {
+    expect(stripMarkdownToText('before\n```\ncode here\n```\nafter')).toBe('before after');
+  });
+});
 
 describe('renderLessonBody()', () => {
   it('renders an empty body', () => {

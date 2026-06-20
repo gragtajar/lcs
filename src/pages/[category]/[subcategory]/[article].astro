@@ -13,6 +13,7 @@ import {
   findPlannedArticle,
   loadLessonForArticle,
   resolveRelated,
+  extractRuleSections,
   categoryUrl,
   subtopicUrl,
   articleUrl,
@@ -20,7 +21,7 @@ import {
 import { renderLessonBody } from '../../../lib/markdown';
 import { getArticleImage } from '../../../lib/images';
 import { t } from '../../../lib/i18n';
-import { articleJsonLd, breadcrumbJsonLd } from '../../../lib/seo';
+import { articleJsonLd, howToJsonLd, breadcrumbJsonLd } from '../../../lib/seo';
 
 // Generate ONE page per planned article — published or not.
 // That's how the volumetric view gets every article a working URL
@@ -87,6 +88,13 @@ const articleLd =
       })
     : null;
 
+// Rule-format articles additionally emit a HowTo blob (its four sections map onto
+// HowToSteps). Two ld+json blocks on one page is valid and Google handles it.
+const howToLd =
+  !isComingSoon && lesson && lesson.format === 'rule'
+    ? howToJsonLd({ lesson, sections: extractRuleSections(lesson.body) })
+    : null;
+
 // Pagefind only parses ONE key:value per `data-pagefind-meta` attribute, so we
 // render each meta as a separate hidden span (see the article template below).
 ---
@@ -104,6 +112,7 @@ const articleLd =
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
     {articleLd && <script type="application/ld+json" set:html={JSON.stringify(articleLd)} />}
+    {howToLd && <script type="application/ld+json" set:html={JSON.stringify(howToLd)} />}
     {
       !isComingSoon &&
         lesson &&
