@@ -1,0 +1,10 @@
+{
+  "_note": "Curated hero chips (homepage). Each entry links directly to a published article by id; the href is resolved at build time via the content repo. If an article isn't published, its chip is dropped silently with a build warning. `label` is the English display string; locale label translation is a later editorial pass.",
+  "chips": [
+    { "article_id": "spaces-001", "label": "The footpath is for walking" },
+    { "article_id": "sacred-014", "label": "Loud festivals + your neighbours" },
+    { "article_id": "hygiene-006", "label": "When there's genuinely no toilet" },
+    { "article_id": "sacred-013", "label": "Crowd surges: how not to die in one" },
+    { "article_id": "global-001", "label": "Queueing, abroad and at home" }
+  ]
+}

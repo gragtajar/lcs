@@ -1,0 +1,34 @@
+---
+// MissionSection — "Who this is for" long-form explanation (homepage brief §4).
+// Reusable so it can also appear on /about/ if needed. Single column, comfortable
+// measure. Carries the disclaimer that civic sense isn't a national trait/deficit
+// and the world-applicable / lifelong-learning framing.
+import { t } from '../lib/i18n';
+---
+
+<section class="mission" aria-labelledby="mission-h">
+  <h2 id="mission-h" class="mission-h">{t('homepage.mission.h2')}</h2>
+  <p>{t('homepage.mission.para1')}</p>
+  <p>{t('homepage.mission.para2')}</p>
+  <p>{t('homepage.mission.para3')}</p>
+</section>
+
+<style>
+  .mission {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+  .mission-h {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+  }
+  .mission p {
+    color: var(--color-text-secondary);
+    line-height: 1.65;
+    max-width: 70ch;
+    margin: 0 0 var(--space-4);
+  }
+  .mission p:last-child {
+    margin-bottom: 0;
+  }
+</style>

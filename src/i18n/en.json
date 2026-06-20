@@ -89,5 +89,26 @@
     "tagline": "A free reading library for civic sense in India.",
     "copy": "Free to read. No login. No ads.",
     "openSource": "Content lives in the open."
+  },
+  "homepage": {
+    "hero": {
+      "h1": "Civic sense, learnable.",
+      "subhead": "Free. Fast. Multilingual. India-rooted. World-applicable.",
+      "body": "A lifelong learning library for being a better neighbour, at home, on the road, online, anywhere people share space.",
+      "searchPlaceholder": "Search 200+ lessons…",
+      "searchSubmitLabel": "Search",
+      "scrollCueText": "{count} lessons across {clusterCount} topics"
+    },
+    "clusterCards": {
+      "browseAll": "Browse all {count} lessons in {clusterName} →",
+      "browseAllTopics": "Browse all topics →",
+      "englishOnlyBadge": "Available in English only"
+    },
+    "mission": {
+      "h2": "Who this is for",
+      "para1": "This site is for everyone, across cultures, backgrounds, ages, nationalities, and genders. Civic sense isn't a national trait or a deficit. It's a set of practical habits for sharing public space respectfully. Each lesson teaches one habit, citing the law, the research, and the lived experience behind it.",
+      "para2": "Why \"India-rooted\"? Because India is where the platform is being written from, and most of its examples are Indian streets, queues, and gatherings. That's a choice of starting point, not a claim about anyone. The principles are universal; the casework is local. If you read three lessons, you'll see the patterns travel.",
+      "para3": "It's a lifelong learning library. Habits change slowly. New situations come up. We add lessons as we encounter them and update existing ones as the law, the data, or the framing shifts. Each article carries a version number and a last-updated date for exactly this reason."
+    }
   }
 }
