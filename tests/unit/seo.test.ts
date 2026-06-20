@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { buildMeta, articleJsonLd, collectionJsonLd, breadcrumbJsonLd } from '../../src/lib/seo';
+import {
+  buildMeta,
+  articleJsonLd,
+  howToJsonLd,
+  collectionJsonLd,
+  breadcrumbJsonLd,
+} from '../../src/lib/seo';
 import type { Lesson, NavCategory, NavSubtopic } from '../../src/lib/content';
 
 describe('buildMeta()', () => {
@@ -174,6 +180,37 @@ describe('articleJsonLd()', () => {
     });
     expect((long.articleBody as string).length).toBeLessThanOrEqual(601);
     expect(long.articleBody as string).toMatch(/…$/);
+  });
+});
+
+describe('howToJsonLd()', () => {
+  it('maps rule sections onto HowToSteps with the lesson title + description', () => {
+    const ld = howToJsonLd({
+      lesson: { ...mockLesson, format: 'rule', meta_description: 'How to do X.' },
+      sections: [
+        { heading: 'The rule', text: 'Do X.' },
+        { heading: 'Why this rule exists', text: 'Because Y.' },
+      ],
+    });
+    expect(ld).not.toBeNull();
+    expect(ld!['@type']).toBe('HowTo');
+    expect(ld!.name).toBe(mockLesson.title);
+    expect(ld!.description).toBe('How to do X.');
+    const steps = ld!.step as Array<{ '@type': string; name: string; text: string }>;
+    expect(steps).toHaveLength(2);
+    expect(steps[0]).toEqual({ '@type': 'HowToStep', name: 'The rule', text: 'Do X.' });
+  });
+
+  it('returns null when there are no sections (no empty HowTo)', () => {
+    expect(howToJsonLd({ lesson: mockLesson, sections: [] })).toBeNull();
+  });
+
+  it('falls back to tldr[0] for the description when meta_description is empty', () => {
+    const ld = howToJsonLd({
+      lesson: mockLesson,
+      sections: [{ heading: 'The rule', text: 'Do X.' }],
+    });
+    expect(ld!.description).toBe('First takeaway');
   });
 });
 

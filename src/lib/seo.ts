@@ -4,7 +4,8 @@
 // Article-typed JSON-LD). Keeping it pure-functional makes it trivially testable
 // and keeps SEO concerns out of the layout's render tree.
 
-import type { Lesson, NavCategory, NavSubtopic } from './content';
+import type { Lesson, NavCategory, NavSubtopic, RuleSection } from './content';
+import { stripMarkdownToText } from './markdown';
 
 export interface MetaInput {
   /** Page title shown in browser tab + OG; bare, without site name suffix. */
@@ -98,6 +99,39 @@ export function articleJsonLd(input: ArticleJsonLdInput): Record<string, unknown
   return ld;
 }
 
+export interface HowToJsonLdInput {
+  lesson: Lesson;
+  /** Top-level body sections (from `extractRuleSections`), in document order. */
+  sections: RuleSection[];
+}
+
+/**
+ * Build a schema.org HowTo JSON-LD blob for a rule-format lesson, mapping each
+ * top-level body section onto a HowToStep. Rule articles follow a fixed
+ * four-section shape (the rule / why / consequences / quick reference) that maps
+ * cleanly onto HowTo and unlocks expandable-step rich results.
+ *
+ * Returns null when there are no sections, so scenario/comparison (or malformed)
+ * articles never emit an empty HowTo. Callers should still gate on
+ * `lesson.format === 'rule'` before building.
+ */
+export function howToJsonLd(input: HowToJsonLdInput): Record<string, unknown> | null {
+  const { lesson, sections } = input;
+  if (sections.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: lesson.title,
+    description: lesson.meta_description || lesson.tldr[0] || lesson.title,
+    inLanguage: 'en-IN',
+    step: sections.map((s) => ({
+      '@type': 'HowToStep',
+      name: s.heading,
+      text: s.text,
+    })),
+  };
+}
+
 export interface CollectionJsonLdInput {
   name: string;
   description: string;
@@ -151,24 +185,11 @@ const ARTICLE_BODY_SUMMARY_CHARS = 600;
 
 /**
  * Produce a plain-text, truncated excerpt of a markdown lesson body for the
- * Article JSON-LD `articleBody`. Strips headings, emphasis, links, list markers,
- * blockquotes, and tables down to readable prose, collapses whitespace, and caps
- * the length (cutting on a word boundary with an ellipsis when truncated).
+ * Article JSON-LD `articleBody`. Flattens markdown to prose, then caps the length
+ * (cutting on a word boundary with an ellipsis when truncated).
  */
 function summariseBody(md: string): string {
-  if (!md) return '';
-  const plain = md
-    .replace(/```[\s\S]*?```/g, ' ') // fenced code
-    .replace(/^\s{0,3}#{1,6}\s+/gm, '') // headings
-    .replace(/^\s{0,3}>\s?/gm, '') // blockquotes
-    .replace(/^\s*[-*+]\s+/gm, '') // bullet markers
-    .replace(/^\s*\d+\.\s+/gm, '') // ordered-list markers
-    .replace(/^\s*\|.*\|\s*$/gm, ' ') // table rows
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // links → link text
-    .replace(/[*_`~]/g, '') // emphasis / code marks
-    .replace(/\s+/g, ' ')
-    .trim();
+  const plain = stripMarkdownToText(md);
   if (plain.length <= ARTICLE_BODY_SUMMARY_CHARS) return plain;
   const slice = plain.slice(0, ARTICLE_BODY_SUMMARY_CHARS);
   const lastSpace = slice.lastIndexOf(' ');

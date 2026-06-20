@@ -20,6 +20,9 @@ const integrations = [
     changefreq: 'weekly',
     priority: 0.8,
     lastmod: new Date(),
+    // The dedicated image sitemap (src/pages/sitemap-images.xml.ts) is referenced
+    // directly from robots.txt; keep it out of the page sitemap index.
+    filter: (page) => !page.includes('/sitemap-images.xml'),
     i18n: {
       defaultLocale: 'en',
       locales: { en: 'en-IN' },

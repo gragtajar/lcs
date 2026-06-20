@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+# LLM-friendly site summary for agentic crawlers
+Allow: /llms.txt
+
 Sitemap: https://learncivicsense.in/sitemap-index.xml
+Sitemap: https://learncivicsense.in/sitemap-images.xml
