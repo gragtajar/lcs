@@ -136,6 +136,18 @@ export interface Lesson {
   locale: Locale;
   status: string;
   tldr: string[];
+  /**
+   * SEO page description (target 150-160 chars), written from outside the article
+   * in a search-snippet register — distinct from `tldr`, which is conversational.
+   * Required for articles authored from 2026-06-20 onward; empty string for the
+   * pre-backfill articles (see BACKFILL-LOG-2026-06-20.md in lcs-workflow). The
+   * renderer falls back to `tldr[0]` while a file is un-backfilled.
+   */
+  meta_description: string;
+  /** Optional Open Graph / social-card title override; falls back to `title`. */
+  og_title?: string;
+  /** Optional Open Graph / social-card description override; falls back to `meta_description`. */
+  og_description?: string;
   sources: LessonSource[];
   related: string[];
   tags: string[];
@@ -484,6 +496,25 @@ function normalizeTldr(raw: unknown, filename: string): string[] {
   });
 }
 
+/**
+ * Trim a frontmatter string field, returning '' for any non-string. Used for
+ * required-but-defaultable fields like `meta_description` (which is '' on
+ * pre-backfill files).
+ */
+export function trimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * Trim an OPTIONAL frontmatter string field. Returns undefined for non-strings
+ * and for empty/whitespace-only values so the renderer can apply its own fallback
+ * (e.g. og_title → title, og_description → meta_description).
+ */
+export function optionalTrimmedString(value: unknown): string | undefined {
+  const s = trimmedString(value);
+  return s ? s : undefined;
+}
+
 function parseLessonFile(filePath: string, filename: string, locale: Locale): Lesson | null {
   let raw: string;
   try {
@@ -515,6 +546,12 @@ function parseLessonFile(filePath: string, filename: string, locale: Locale): Le
     locale,
     status: String(fm.status ?? 'draft'),
     tldr: normalizeTldr(fm.tldr, filename),
+    // SEO fields (added 2026-06-20). `meta_description` is '' on pre-backfill files
+    // and the renderer falls back to tldr[0]; og_title/og_description stay undefined
+    // unless authored so the renderer can apply its own fallbacks.
+    meta_description: trimmedString(fm.meta_description),
+    og_title: optionalTrimmedString(fm.og_title),
+    og_description: optionalTrimmedString(fm.og_description),
     sources: Array.isArray(fm.sources) ? (fm.sources as LessonSource[]) : [],
     related: Array.isArray(fm.related) ? (fm.related as string[]) : [],
     tags: Array.isArray(fm.tags) ? (fm.tags as string[]) : [],
