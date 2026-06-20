@@ -113,5 +113,17 @@
       "para2": "Why \"India-rooted\"? Because India is where the platform is being written from, and most of its examples are Indian streets, queues, and gatherings. That's a choice of starting point, not a claim about anyone. The principles are universal; the casework is local. If you read three lessons, you'll see the patterns travel.",
       "para3": "It's a lifelong learning library. Habits change slowly. New situations come up. We add lessons as we encounter them and update existing ones as the law, the data, or the framing shifts. Each article carries a version number and a last-updated date for exactly this reason."
     }
+  },
+  "share": {
+    "share": "Share",
+    "shareThis": "Share this article",
+    "shareThisLesson": "Share this lesson",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "onWhatsapp": "Share on WhatsApp",
+    "onTwitter": "Share on X",
+    "onLinkedin": "Share on LinkedIn",
+    "onTelegram": "Share on Telegram",
+    "viaEmail": "Share via email"
   }
 }

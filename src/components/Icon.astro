@@ -30,7 +30,14 @@ type IconName =
   | 'volume'
   | 'smartphone'
   | 'open_book'
-  | 'sparkle';
+  | 'sparkle'
+  | 'share'
+  | 'link'
+  | 'mail'
+  | 'whatsapp'
+  | 'twitter'
+  | 'linkedin'
+  | 'telegram';
 
 interface Props {
   name: IconName;
@@ -214,6 +221,57 @@ const a11y = label
       <g>
         <path d="M12 3v6M12 15v6M3 12h6M15 12h6" />
         <path d="M6 6l3 3M15 15l3 3M6 18l3-3M15 9l3-3" />
+      </g>
+    )
+  }
+  {
+    name === 'share' && (
+      <g>
+        <circle cx="18" cy="5" r="2.5" />
+        <circle cx="6" cy="12" r="2.5" />
+        <circle cx="18" cy="19" r="2.5" />
+        <path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6" />
+      </g>
+    )
+  }
+  {
+    name === 'link' && (
+      <g>
+        <path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5" />
+        <path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5" />
+      </g>
+    )
+  }
+  {
+    name === 'mail' && (
+      <g>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M4 7l8 6 8-6" />
+      </g>
+    )
+  }
+  {
+    name === 'whatsapp' && (
+      <g>
+        <path d="M4 20l1.4-4A8 8 0 1 1 9 19.3z" />
+        <path d="M9.2 9c0 3 2.8 5.8 5.8 5.8.6 0 1-.5 1-1l-.2-1.1-1.9-.6-.9.9c-.9-.5-1.7-1.3-2.2-2.2l.9-.9-.6-1.9L10 7.2c-.5 0-1 .4-1 1z" />
+      </g>
+    )
+  }
+  {name === 'twitter' && <path d="M5 4l14 16M19 4L5 20" />}
+  {
+    name === 'linkedin' && (
+      <g>
+        <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+        <path d="M8 10.5v6M12 16.5v-3.2a2 2 0 0 1 4 0v3.2" />
+        <circle cx="8" cy="7.6" r="0.9" fill="currentColor" stroke="none" />
+      </g>
+    )
+  }
+  {
+    name === 'telegram' && (
+      <g>
+        <path d="M21 5L3 11.5l5 1.8L16 8l-6 6.5.4 4z" />
       </g>
     )
   }
