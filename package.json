@@ -6,7 +6,8 @@
   "description": "learncivicsense.in — fast, multilingual civic-sense website (Astro + Pagefind)",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && pagefind --site dist",
+    "sync:images": "node scripts/sync-imagekit-registry.mjs",
+    "build": "npm run sync:images && astro build && pagefind --site dist",
     "preview": "astro preview",
     "astro": "astro",
     "format": "prettier --write .",
