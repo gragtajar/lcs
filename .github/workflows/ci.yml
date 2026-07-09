@@ -54,7 +54,12 @@ jobs:
           path: coverage/
           retention-days: 3
       - name: Build (Astro + Pagefind)
+        # IMAGEKIT_PRIVATE_KEY (optional secret) lets the prebuild step refresh the
+        # article-image registry from the ImageKit Media Library. Absent -> the
+        # committed registry is used; the build never depends on the API.
         run: npm run build
+        env:
+          IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
