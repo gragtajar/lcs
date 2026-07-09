@@ -1,40 +1,59 @@
 import { describe, it, expect } from 'vitest';
-import {
-  cloudflareImagesDeliveryUrl,
-  cloudflareImagesEnabled,
-  cloudflareEnvOk,
-} from '../../src/lib/cloudflare';
-import { getArticleImage, getArticleImageSrcset } from '../../src/lib/images';
+import { imagekitEndpoint, imagekitUrl, serialiseTransform } from '../../src/lib/imagekit';
+import { getArticleImage, getArticleImageSrcset, hasArticleImage } from '../../src/lib/images';
 import { LcsError, TaxonomyError, NetworkTimeoutError } from '../../src/lib/errors';
 import { TaxonomySchema, LessonFrontmatterSchema } from '../../src/lib/schemas';
 
-// In the test env no Cloudflare vars are set, so these assert the fallback path.
-describe('cloudflare (no env configured)', () => {
-  it('returns undefined delivery URL when account hash is absent', () => {
-    expect(cloudflareImagesDeliveryUrl('articles/x/hero', 'hero')).toBeUndefined();
+describe('imagekit URL builder', () => {
+  it('defaults the endpoint when no env is set', () => {
+    expect(imagekitEndpoint()).toBe('https://ik.imagekit.io/civic');
   });
-  it('reports images disabled', () => {
-    expect(cloudflareImagesEnabled()).toBe(false);
+  it('serialises transforms with f-auto and width, in order', () => {
+    expect(serialiseTransform({ width: 800, format: 'auto' })).toBe('w-800,f-auto');
+    expect(serialiseTransform({ width: 1200, height: 630, format: 'jpg', quality: 80 })).toBe(
+      'w-1200,h-630,f-jpg,q-80',
+    );
+    expect(serialiseTransform({ width: 800, crop: 'at_max' })).toBe('w-800,f-auto,c-at_max');
   });
-  it('env check reports the missing public hash', () => {
-    const report = cloudflareEnvOk();
-    expect(report.ok).toBe(false);
-    expect(report.missing).toContain('PUBLIC_CLOUDFLARE_IMAGES_ACCOUNT_HASH');
+  it('builds a path-form transformation URL', () => {
+    expect(imagekitUrl('sacred-001.png', { width: 800, format: 'auto' })).toBe(
+      'https://ik.imagekit.io/civic/tr:w-800,f-auto/sacred-001.png',
+    );
   });
 });
 
-describe('images fallback', () => {
-  it('falls back to the local placeholder for any variant', () => {
-    expect(getArticleImage('sacred-014', 'hero')).toBe('/placeholders/default-article.svg');
+describe('article images (ImageKit)', () => {
+  it('knows which articles have an uploaded image', () => {
+    expect(hasArticleImage('sacred-001')).toBe(true);
+    expect(hasArticleImage('sacred-014')).toBe(false);
   });
-  it('returns an absolute placeholder URL when requested (og:image)', () => {
+
+  it('builds an ImageKit hero URL for an article with an image', () => {
+    expect(getArticleImage('sacred-001', 'hero')).toBe(
+      'https://ik.imagekit.io/civic/tr:w-1200,f-auto/sacred-001.png',
+    );
+  });
+
+  it('builds a JPEG 1200x630 og URL (absolute) for social cards', () => {
+    expect(getArticleImage('sacred-001', 'og', true)).toBe(
+      'https://ik.imagekit.io/civic/tr:w-1200,h-630,f-jpg,q-80/sacred-001.png',
+    );
+  });
+
+  it('emits a multi-width responsive srcset from the single source', () => {
+    const srcset = getArticleImageSrcset('sacred-001');
+    expect(srcset).toBeDefined();
+    expect(srcset).toContain('tr:w-400,f-auto/sacred-001.png 400w');
+    expect(srcset).toContain('tr:w-1600,f-auto/sacred-001.png 1600w');
+    expect(srcset!.split(', ')).toHaveLength(6);
+  });
+
+  it('falls back to the local placeholder for an article without an image', () => {
+    expect(getArticleImage('sacred-014', 'hero')).toBe('/placeholders/default-article.svg');
     expect(getArticleImage('sacred-014', 'og', true)).toBe(
       'https://learncivicsense.in/placeholders/default-article.svg',
     );
-  });
-  it('srcset is a single placeholder entry when images disabled', () => {
-    const srcset = getArticleImageSrcset('sacred-014');
-    expect(srcset).toContain('/placeholders/default-article.svg');
+    expect(getArticleImageSrcset('sacred-014')).toBeUndefined();
   });
 });
 

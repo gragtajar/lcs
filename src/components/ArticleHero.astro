@@ -1,12 +1,12 @@
 ---
-// Article hero image (brief Item 5). Renders a responsive <img> that points at
-// Cloudflare Images delivery URLs when configured, falling back to a bundled
-// placeholder otherwise. Aspect-ratio box reserves space → zero CLS.
+// Article hero image. Renders a responsive <img> pointing at ImageKit delivery URLs
+// (single source, resized + format-optimised by the CDN) when the article has an image,
+// falling back to a bundled placeholder otherwise. Aspect-ratio box reserves space → zero CLS.
 import {
   getArticleImage,
   getArticleImageSrcset,
   getArticleImageSizes,
-  articleImagesEnabled,
+  hasArticleImage,
 } from '../lib/images';
 
 interface Props {
@@ -19,13 +19,13 @@ interface Props {
 
 const { articleId, alt, eager = true, aspectRatio = '16:9' } = Astro.props;
 
-const enabled = articleImagesEnabled();
+const hasImage = hasArticleImage(articleId);
 const src = getArticleImage(articleId, 'hero');
-const srcset = enabled ? getArticleImageSrcset(articleId) : undefined;
-const sizes = enabled ? getArticleImageSizes() : undefined;
+const srcset = hasImage ? getArticleImageSrcset(articleId) : undefined;
+const sizes = hasImage ? getArticleImageSizes() : undefined;
 ---
 
-<div class={`article-hero ${enabled ? '' : 'article-hero-placeholder'}`} data-aspect={aspectRatio}>
+<div class={`article-hero ${hasImage ? '' : 'article-hero-placeholder'}`} data-aspect={aspectRatio}>
   <img
     src={src}
     srcset={srcset}

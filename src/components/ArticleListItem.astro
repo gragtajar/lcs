@@ -2,7 +2,7 @@
 import Icon from './Icon.astro';
 import { t, formatDate } from '../lib/i18n';
 import { articleUrl } from '../lib/content';
-import { getArticleImage, articleImagesEnabled } from '../lib/images';
+import { getArticleImage, hasArticleImage } from '../lib/images';
 import type { PlannedArticle, Lesson } from '../lib/content';
 
 interface Props {
@@ -19,7 +19,7 @@ const isComingSoon = !article.published;
 <article class={`li ${isComingSoon ? 'li-soon' : ''}`}>
   <a class="li-image" href={url} aria-hidden="true" tabindex="-1">
     {
-      !isComingSoon && articleImagesEnabled() ? (
+      !isComingSoon && hasArticleImage(article.id) ? (
         <img
           class="li-image-thumb"
           src={getArticleImage(article.id, 'card')}

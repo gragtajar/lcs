@@ -2,18 +2,13 @@
 //
 // @astrojs/sitemap covers pages but not images, and Google Image Search indexes
 // images via a dedicated sitemap-images.xml. This endpoint emits one
-// <image:image> per PUBLISHED article (coming-soon stubs are skipped), pointing
-// at the article's Cloudflare Images hero delivery URL.
-//
-// Env-gated: when Cloudflare Images isn't configured every hero would resolve to
-// the local placeholder, which isn't worth indexing — so we emit a valid but
-// empty <urlset>. The file (and its robots.txt reference) stay valid; it
-// populates automatically once R2/Images is live in production.
+// <image:image> per PUBLISHED article that actually HAS an ImageKit image, pointing
+// at its hero delivery URL. Articles with only the placeholder are skipped (not worth
+// indexing), so early on the file is small and grows as images are uploaded.
 
 import type { APIRoute } from 'astro';
 import { getNavCategories, loadLessonForArticle, articleUrl } from '../lib/content';
-import { getArticleImage } from '../lib/images';
-import { cloudflareImagesEnabled } from '../lib/cloudflare';
+import { getArticleImage, hasArticleImage } from '../lib/images';
 
 const SITE_ORIGIN = 'https://learncivicsense.in';
 
@@ -43,18 +38,16 @@ function imageEntry(loc: string, imgLoc: string, title: string, caption: string)
 export const GET: APIRoute = () => {
   const entries: string[] = [];
 
-  if (cloudflareImagesEnabled()) {
-    for (const cat of getNavCategories()) {
-      for (const sub of cat.subtopics) {
-        for (const article of sub.articles) {
-          if (!article.published) continue;
-          const lesson = loadLessonForArticle(article);
-          if (!lesson) continue;
-          const loc = new URL(articleUrl(article), SITE_ORIGIN).toString();
-          const imgLoc = getArticleImage(lesson.id, 'hero', true);
-          const caption = lesson.meta_description || lesson.tldr[0] || lesson.title;
-          entries.push(imageEntry(loc, imgLoc, lesson.title, caption));
-        }
+  for (const cat of getNavCategories()) {
+    for (const sub of cat.subtopics) {
+      for (const article of sub.articles) {
+        if (!article.published || !hasArticleImage(article.id)) continue;
+        const lesson = loadLessonForArticle(article);
+        if (!lesson) continue;
+        const loc = new URL(articleUrl(article), SITE_ORIGIN).toString();
+        const imgLoc = getArticleImage(lesson.id, 'hero', true);
+        const caption = lesson.meta_description || lesson.tldr[0] || lesson.title;
+        entries.push(imageEntry(loc, imgLoc, lesson.title, caption));
       }
     }
   }
