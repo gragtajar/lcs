@@ -1,0 +1,6 @@
+{
+  "_note": "Registry of articles that have an image uploaded to ImageKit. Key = article id (== the uploaded filename stem), value = the file path within the ImageKit URL endpoint (ik.imagekit.io/civic/<path>). Only listed articles render an ImageKit hero/card; every other article falls back to the bundled placeholder, so unlisted ids never produce a broken image. Add an entry when an image is uploaded. A future option is to auto-populate this from the ImageKit Media Library API at build time (needs IMAGEKIT_PRIVATE_KEY).",
+  "images": {
+    "sacred-001": "sacred-001.png"
+  }
+}
