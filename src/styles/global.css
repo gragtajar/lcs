@@ -44,6 +44,13 @@ body {
   text-rendering: optimizelegibility;
 }
 
+/* Soothing, on-brand text selection instead of the harsh browser default.
+   (Standard ::selection — supported by all current browsers incl. Firefox.) */
+::selection {
+  background-color: var(--color-selection);
+  color: var(--color-text);
+}
+
 img,
 svg,
 video {

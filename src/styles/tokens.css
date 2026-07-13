@@ -17,6 +17,8 @@
   --color-primary: #0e6e62;
   --color-primary-hover: #0a574d;
   --color-primary-soft: #e1efec;
+  /* Text-selection highlight — a soft brand teal, gentler than the browser default. */
+  --color-selection: #cfe7e1;
 
   /* Accent */
   --color-accent: #b5641e;
@@ -41,6 +43,7 @@
   --color-primary: #46b8a8;
   --color-primary-hover: #5dc7b8;
   --color-primary-soft: #173430;
+  --color-selection: #2b4f48;
   --color-accent: #e0a35c;
   --color-accent-soft: #3a2c1b;
   --color-border: #2f3437;
