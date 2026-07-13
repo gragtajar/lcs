@@ -44,6 +44,18 @@ body {
   text-rendering: optimizelegibility;
 }
 
+/* Soothing, on-brand text selection instead of the harsh browser default.
+   (::selection and ::-moz-selection kept as separate rules so one unknown
+   pseudo-element doesn't invalidate the other.) */
+::selection {
+  background-color: var(--color-selection);
+  color: var(--color-text);
+}
+::-moz-selection {
+  background-color: var(--color-selection);
+  color: var(--color-text);
+}
+
 img,
 svg,
 video {

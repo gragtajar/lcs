@@ -21,6 +21,9 @@ const { chips, lessonCount, clusterCount } = Astro.props;
   <p class="hero-body">{t('homepage.hero.body')}</p>
 
   <form class="hero-search" role="search" action="/search" method="get">
+    <span class="hero-search-icon" aria-hidden="true">
+      <Icon name="search" />
+    </span>
     <input
       type="search"
       name="q"
@@ -29,8 +32,8 @@ const { chips, lessonCount, clusterCount } = Astro.props;
       aria-label={t('homepage.hero.searchPlaceholder')}
       autocomplete="off"
     />
-    <button type="submit" class="hero-search-btn" aria-label={t('homepage.hero.searchSubmitLabel')}>
-      <Icon name="search" />
+    <button type="submit" class="hero-search-btn">
+      {t('homepage.hero.searchSubmitLabel')}
     </button>
   </form>
 
@@ -81,18 +84,35 @@ const { chips, lessonCount, clusterCount } = Astro.props;
     margin: 0 auto var(--space-5);
   }
 
-  /* Search: small, secondary. Bottom-border chrome, not a boxed centrepiece. */
+  /* Search: a proper bordered field (magnifier + input + submit). Kept calm in
+     weight — the chips remain the primary CTA. */
   .hero-search {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     width: clamp(280px, 60vw, 480px);
     margin: 0 auto var(--space-5);
-    border-bottom: 1.5px solid var(--color-border);
-    padding-bottom: var(--space-1);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface);
+    transition:
+      border-color 0.12s ease,
+      box-shadow 0.12s ease;
   }
   .hero-search:focus-within {
-    border-bottom-color: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
+  }
+  .hero-search-icon {
+    display: inline-grid;
+    place-items: center;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+  .hero-search-icon :global(.icon) {
+    width: 18px;
+    height: 18px;
   }
   .hero-search-input {
     flex: 1;
@@ -107,22 +127,19 @@ const { chips, lessonCount, clusterCount } = Astro.props;
     outline: none;
   }
   .hero-search-btn {
-    display: inline-grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
+    flex-shrink: 0;
     border: 0;
-    background: transparent;
-    color: var(--color-text-muted);
+    background: var(--color-primary);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    padding: var(--space-2) var(--space-4);
+    border-radius: 999px;
     cursor: pointer;
-    border-radius: var(--radius-sm);
+    transition: background-color 0.12s ease;
   }
   .hero-search-btn:hover {
-    color: var(--color-primary);
-  }
-  .hero-search-btn :global(.icon) {
-    width: 20px;
-    height: 20px;
+    background: var(--color-primary-hover);
   }
 
   /* Chips: the primary CTA. Generous tap targets (>=48px). */
