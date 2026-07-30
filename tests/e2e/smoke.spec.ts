@@ -1,4 +1,48 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+/** Subtopics that still hold unwritten lessons, most-unwritten first.
+ *  Coming-soon coverage shrinks with every publish batch, so the two
+ *  coming-soon tests below probe this list and use the first subtopic that
+ *  still has a COMING SOON chip, instead of pinning one lesson that gets
+ *  published out from under them. Refresh the list if all of these fill in. */
+const COMING_SOON_CANDIDATES = [
+  '/spitting-and-hygiene/paan-and-gutka/',
+  '/religious-sites-and-monuments/hindu-temples-general/',
+  '/religious-sites-and-monuments/leave-no-trace-monuments/',
+  '/spitting-and-hygiene/public-toilets-using/',
+  '/water-pools/sea-and-beach/',
+];
+
+/** Returns the first candidate subtopic that still lists a coming-soon lesson,
+ *  along with that lesson's URL. Null when everything on the list is published. */
+async function findComingSoon(
+  page: Page,
+): Promise<{ subcategory: string; article: string; title: string } | null> {
+  for (const subcategory of COMING_SOON_CANDIDATES) {
+    await page.goto(subcategory);
+    const link = page.locator('article.li-soon .li-title a').first();
+    if ((await link.count()) > 0) {
+      const article = await link.getAttribute('href');
+      const title = (await link.textContent())?.trim();
+      if (article && title) return { subcategory, article, title };
+    }
+  }
+  return null;
+}
+
+/** Opens the global search overlay and returns its input.
+ *  The trigger is a Preact island, so a click fired before hydration is a no-op —
+ *  retry until the overlay's input actually shows up. */
+async function openSearchOverlay(page: Page) {
+  const trigger = page.getByRole('button', { name: /open search/i });
+  const input = page.getByPlaceholder(/search lessons/i).first();
+  await expect(async () => {
+    await trigger.click();
+    await expect(input).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+  return input;
+}
 
 test.describe('Homepage', () => {
   test('renders the hero, curated chips, cluster cards, and mission', async ({ page }) => {
@@ -44,9 +88,11 @@ test.describe('Category and subcategory pages', () => {
   });
 
   test('subcategory page mixes published and coming-soon articles', async ({ page }) => {
-    // water-pools/pool-hygiene still has unwritten lessons → at least one COMING SOON chip.
-    await page.goto('/water-pools/pool-hygiene/');
+    const found = await findComingSoon(page);
+    test.skip(!found, 'every candidate subtopic is fully published');
+    // Same page still lists at least one published lesson alongside the chip.
     await expect(page.locator('.li-meta-soon').first()).toBeVisible();
+    await expect(page.locator('article.li:not(.li-soon)').first()).toBeVisible();
   });
 });
 
@@ -74,15 +120,21 @@ test.describe('Article page (real)', () => {
     await page.goto('/traffic/honking-discipline/the-case-against-honking/');
     const firstOpt = page.locator('.quiz-opt').first();
     await firstOpt.scrollIntoViewIfNeeded();
-    await firstOpt.click();
-    // Feedback text appears below the picked option
-    await expect(page.locator('.quiz-feedback').first()).toBeVisible();
+    // The quiz is a Preact island: it renders server-side, so a click that lands
+    // before hydration is silently dropped. Retry until the feedback appears.
+    await expect(async () => {
+      await firstOpt.click();
+      // Feedback text appears below the picked option
+      await expect(page.locator('.quiz-feedback').first()).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
   });
 });
 
 test.describe('Article page (coming-soon)', () => {
   test('renders the placeholder body for a planned-but-unpublished lesson', async ({ page }) => {
-    await page.goto('/water-pools/pool-hygiene/what-chlorine-does-and-doesnt-do/');
+    const found = await findComingSoon(page);
+    test.skip(!found, 'every candidate subtopic is fully published');
+    await page.goto(found!.article);
     await expect(page.locator('.ah-soon-badge')).toContainText(/coming soon/i);
     await expect(page.locator('.cs-card')).toContainText(/lesson is being written/i);
     // No TOC, quiz, sources, or ShareBar on coming-soon
@@ -101,18 +153,27 @@ test.describe('Visitors module', () => {
 });
 
 test.describe('Global search', () => {
-  test('overlay opens, finds a published article, and flags coming-soon results', async ({
-    page,
-  }) => {
+  test('overlay opens and finds a published article', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /open search/i }).click();
-    // The topbar trigger is a button; the only "Search lessons" input is the overlay's.
-    const input = page.getByPlaceholder(/search lessons/i).first();
-    await input.fill('chlorine');
-    // Wait for Pagefind to load + debounce settle. The chlorine lesson is unwritten,
-    // so the result both appears and carries the coming-soon chip.
-    await expect(page.getByText(/chlorine/i).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.search-result-chip').first()).toContainText(/coming soon/i);
+    const input = await openSearchOverlay(page);
+    await input.fill('honking');
+    // Wait for Pagefind to load + debounce settle.
+    await expect(page.getByText(/honking/i).first()).toBeVisible({ timeout: 5_000 });
+    // A published hit renders without the .soon modifier (and so without the chip).
+    await expect(page.locator('.search-result:not(.soon)').first()).toBeVisible();
+  });
+
+  test('flags coming-soon results with a chip', async ({ page }) => {
+    // Search the unwritten lesson by its own title so it ranks into the results,
+    // rather than pinning a query whose lesson later gets published.
+    const found = await findComingSoon(page);
+    test.skip(!found, 'every candidate subtopic is fully published');
+    await page.goto('/');
+    const input = await openSearchOverlay(page);
+    await input.fill(found!.title.replace(/[^\w\s]/g, ' '));
+    await expect(page.locator('.search-result-chip').first()).toContainText(/coming soon/i, {
+      timeout: 5_000,
+    });
   });
 });
 

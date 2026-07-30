@@ -18,6 +18,16 @@ import {
   extractRuleSections,
 } from '../../src/lib/content';
 
+/** First planned lesson that still has no .md on disk. Coming-soon coverage
+ *  shrinks with every publish batch, so tests discover an unwritten lesson
+ *  rather than pinning one that gets published out from under them. */
+function anyComingSoonArticle() {
+  return getNavCategories()
+    .flatMap((c) => c.subtopics)
+    .flatMap((s) => s.articles)
+    .find((a) => !a.published);
+}
+
 describe('extractRuleSections()', () => {
   const ruleBody = [
     '## The rule',
@@ -161,9 +171,11 @@ describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
   });
 
   it('flags planned-but-not-written lessons as not published', () => {
-    // This water-pools lesson remains unwritten (no .md on disk) → coming-soon.
-    const a = findPlannedArticle('water-pools', 'pool-hygiene', 'what-chlorine-does-and-doesnt-do');
-    expect(a?.published).toBe(false);
+    // Discovered, not hardcoded: any specific lesson gets published eventually
+    // and would flip this assertion out from under us.
+    const a = anyComingSoonArticle();
+    expect(a, 'taxonomy should still plan at least one unwritten lesson').toBeDefined();
+    expect(a!.published).toBe(false);
   });
 
   it('returns undefined for unknown slugs / categories', () => {
@@ -194,8 +206,9 @@ describe('loadLessonForArticle()', () => {
   });
 
   it('returns null for a coming-soon (unwritten) article', () => {
-    const a = findPlannedArticle('water-pools', 'pool-hygiene', 'what-chlorine-does-and-doesnt-do');
-    expect(a?.published).toBe(false);
+    const a = anyComingSoonArticle();
+    expect(a, 'taxonomy should still plan at least one unwritten lesson').toBeDefined();
+    expect(a!.published).toBe(false);
     expect(loadLessonForArticle(a!)).toBeNull();
   });
 
