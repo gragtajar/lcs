@@ -18,14 +18,16 @@ import {
   extractRuleSections,
 } from '../../src/lib/content';
 
-/** First planned lesson that still has no .md on disk. Coming-soon coverage
- *  shrinks with every publish batch, so tests discover an unwritten lesson
- *  rather than pinning one that gets published out from under them. */
+/** First planned lesson that still has no loadable .md on disk. Coming-soon
+ *  coverage shrinks with every publish batch, so tests discover an unwritten
+ *  lesson rather than pinning one that gets published out from under them.
+ *  Checks the file, not just the nav flag: a local `status: draft` file is
+ *  unpublished yet still loads, and would otherwise satisfy the flag alone. */
 function anyComingSoonArticle() {
   return getNavCategories()
     .flatMap((c) => c.subtopics)
     .flatMap((s) => s.articles)
-    .find((a) => !a.published);
+    .find((a) => !a.published && loadLessonForArticle(a) === null);
 }
 
 describe('extractRuleSections()', () => {

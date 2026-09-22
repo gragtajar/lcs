@@ -1,0 +1,106 @@
+/* Hind — the site's single typeface, self-hosted (SIL OFL 1.1, see /fonts/hind/OFL.txt).
+   Files are the Google Fonts v18 subsets. Latin is ~8.5 KB per weight; Devanagari
+   (which also carries U+20B9 ₹) only downloads on pages that use those glyphs,
+   because each face is scoped with unicode-range. Four weights are loaded because
+   all four carry a role: 400 body, 500 UI/labels, 600 subheads, 700 display. */
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hind/hind-400-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/hind/hind-500-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/hind/hind-600-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hind/hind-700-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hind/hind-400-devanagari.woff2') format('woff2');
+  unicode-range:
+    U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF,
+    U+11B00-11B09;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/hind/hind-500-devanagari.woff2') format('woff2');
+  unicode-range:
+    U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF,
+    U+11B00-11B09;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/hind/hind-600-devanagari.woff2') format('woff2');
+  unicode-range:
+    U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF,
+    U+11B00-11B09;
+}
+
+@font-face {
+  font-family: Hind;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hind/hind-700-devanagari.woff2') format('woff2');
+  unicode-range:
+    U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF,
+    U+11B00-11B09;
+}
+
+/* Metric-compatible fallback so the swap from the system face to Hind does not
+   reflow the page. Overrides computed from Hind-Regular (UPM 1000, ascent 1055,
+   descent 546, line gap 0) against Arial's advance widths over a representative
+   English sample: size-adjust 94.72 %. */
+@font-face {
+  font-family: 'Hind Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Roboto');
+  size-adjust: 94.72%;
+  ascent-override: 111.38%;
+  descent-override: 57.64%;
+  line-gap-override: 0%;
+}

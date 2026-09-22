@@ -20,7 +20,7 @@ const publishedCount = category.subtopics
   .filter((a) => a.published).length;
 ---
 
-<article class="cluster-card">
+<article class="cluster-card" data-cluster={category.id}>
   <header class="cluster-head">
     <span class="cluster-icon">
       <Icon name={categoryIconName(category.icon)} />
@@ -64,10 +64,12 @@ const publishedCount = category.subtopics
 </article>
 
 <style>
+  /* A resting container: elevation 1 instead of border-only flatness. */
   .cluster-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-1);
     padding: var(--space-5);
     max-width: 960px;
     margin-inline: auto;
@@ -84,9 +86,9 @@ const publishedCount = category.subtopics
     place-items: center;
     width: 44px;
     height: 44px;
-    border-radius: 12px;
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
+    border-radius: var(--radius-md);
+    background: var(--cluster-soft, var(--color-primary-soft));
+    color: var(--cluster-ink, var(--color-primary));
     flex-shrink: 0;
   }
   .cluster-icon :global(.icon) {
@@ -98,7 +100,6 @@ const publishedCount = category.subtopics
   }
   .cluster-name {
     font-size: var(--text-xl);
-    line-height: 1.25;
     margin: 0 0 2px;
   }
   .cluster-desc {
@@ -106,6 +107,7 @@ const publishedCount = category.subtopics
     font-size: var(--text-sm);
     line-height: 1.5;
     margin: 0;
+    max-width: var(--measure);
   }
 
   .cluster-previews {
@@ -119,6 +121,7 @@ const publishedCount = category.subtopics
     }
   }
 
+  /* Hover lifts to elevation 2; the resting state is flat inside the card. */
   .preview {
     display: flex;
     flex-direction: column;
@@ -130,11 +133,17 @@ const publishedCount = category.subtopics
     color: var(--color-text);
     height: 100%;
     transition:
-      border-color 0.12s ease,
-      transform 0.12s ease;
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
   }
   .preview:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    border-color: color-mix(
+      in srgb,
+      var(--cluster-ink, var(--color-primary)) 35%,
+      var(--color-border)
+    );
+    box-shadow: var(--elevation-2);
     text-decoration: none;
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -151,21 +160,22 @@ const publishedCount = category.subtopics
   .preview-format {
     font-size: var(--text-xs);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-    color: var(--color-primary);
+    letter-spacing: var(--tracking-label);
+    font-weight: var(--weight-heading);
+    color: var(--cluster-ink, var(--color-primary));
   }
   .preview-en-badge {
     font-size: 11px;
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     padding: 1px 8px;
   }
   .preview-title {
     font-size: var(--text-base);
-    font-weight: 600;
+    font-weight: var(--weight-heading);
     line-height: 1.35;
+    letter-spacing: var(--tracking-heading);
   }
   .preview-excerpt {
     font-size: var(--text-sm);
@@ -187,7 +197,7 @@ const publishedCount = category.subtopics
     display: inline-block;
     margin-top: var(--space-4);
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     color: var(--color-primary);
   }
 </style>

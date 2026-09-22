@@ -1,76 +1,246 @@
-/* Design tokens — palette, typography, spacing, layout.
-   Direct implementation of spec §7. Edit here, not in component files. */
+/* Design tokens — palette, typography, spacing, elevation, radius, motion.
+   Direct implementation of spec §7, revised in the 2026-09 design foundation.
+   Edit here, not in component files.
+
+   Colour is derived in OKLCH so lightness steps are perceptually even. Every
+   neutral shares one hue (≈80°, warm paper) so the grays never mix warm and
+   cool. Every text/surface pair below was checked against WCAG AA at ≥4.6:1
+   (a 0.1 margin over the 4.5:1 floor for browser rounding). */
 
 :root,
 [data-theme='light'] {
-  /* Backgrounds */
-  --color-bg: #faf8f3;
+  /* Backgrounds — paper, not cream: same warm hue as before, chroma halved. */
+  --color-bg: #fbfaf7;
   --color-surface: #fff;
-  --color-surface-alt: #f2eee6;
+  --color-surface-alt: #f2f0ec;
 
-  /* Text */
+  /* Text — muted was 4.0:1 on white; now 5.2:1 (4.6:1 on surface-alt). */
   --color-text: #1b1a17;
   --color-text-secondary: #57534b;
-  --color-text-muted: #847e73;
+  --color-text-muted: #706b65;
 
-  /* Brand */
+  /* Brand. on-primary is the text colour for primary-filled surfaces; it flips
+     to the dark ground in dark mode because the primary itself turns light. */
   --color-primary: #0e6e62;
   --color-primary-hover: #0a574d;
   --color-primary-soft: #e1efec;
+  --color-on-primary: #fff;
   /* Text-selection highlight — a soft brand teal, gentler than the browser default. */
   --color-selection: #cfe7e1;
 
-  /* Accent */
-  --color-accent: #b5641e;
+  /* Accent (amber): status + "forthcoming". Ink was 3.7:1 on its soft; now 4.6:1. */
+  --color-accent: #a35304;
   --color-accent-soft: #f6e9db;
 
   /* Lines & states */
-  --color-border: #e4dfd5;
+  --color-border: #e2dfda;
   --color-focus: #0e6e62;
   --color-success: #2e7d5b;
-  --color-warning: #b5641e;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
-  --shadow-md: 0 2px 8px rgb(0 0 0 / 0.06);
+  --color-warning: #a35304;
+
+  /* Elevation — three levels, each with an offset and a soft blur, tinted with
+     the ink colour rather than pure black. 1 = resting container, 2 = raised or
+     hovered, 3 = overlay (search panel, drawer). */
+  --shadow-color: 27 26 23;
+  --elevation-1:
+    0 1px 2px rgb(var(--shadow-color) / 0.06), 0 1px 1px rgb(var(--shadow-color) / 0.04);
+  --elevation-2:
+    0 4px 12px rgb(var(--shadow-color) / 0.08), 0 1px 3px rgb(var(--shadow-color) / 0.06);
+  --elevation-3:
+    0 24px 48px rgb(var(--shadow-color) / 0.18), 0 8px 16px rgb(var(--shadow-color) / 0.1);
 }
 
 [data-theme='dark'] {
-  --color-bg: #15181a;
-  --color-surface: #1e2225;
-  --color-surface-alt: #262b2e;
-  --color-text: #ece8e0;
-  --color-text-secondary: #b0aaa0;
-  --color-text-muted: #8a847a;
-  --color-primary: #46b8a8;
-  --color-primary-hover: #5dc7b8;
+  /* Same warm hue as light; surface steps are explicit (not an inverted light). */
+  --color-bg: #171613;
+  --color-surface: #22201d;
+  --color-surface-alt: #2d2b27;
+  --color-text: #eae7e3;
+  --color-text-secondary: #b4b0aa;
+  --color-text-muted: #96938c;
+  /* Dark primary keeps the brand hue at lower chroma: a saturated teal on a near-
+     black ground reads as neon (the detector's cyan tell); this one is 7.5:1 on
+     the ground and still 7.5:1 as the ground for on-primary text. */
+  --color-primary: #6bb5a2;
+  --color-primary-hover: #7bc5b1;
   --color-primary-soft: #173430;
+  --color-on-primary: #171613; /* white on the old #46b8a8 was 2.4:1 */
   --color-selection: #2b4f48;
   --color-accent: #e0a35c;
   --color-accent-soft: #3a2c1b;
-  --color-border: #2f3437;
-  --color-focus: #46b8a8;
+  --color-border: #3a3833;
+  --color-focus: #6bb5a2;
   --color-success: #5bbe8c;
   --color-warning: #e0a35c;
 
-  /* In dark mode, prefer borders over shadows (shadows invisible on dark). */
-  --shadow-sm: 0 0 0 1px rgb(255 255 255 / 0.03);
-  --shadow-md: 0 0 0 1px rgb(255 255 255 / 0.05);
+  /* On dark, elevation is a lighter surface plus a hairline ring; the shadow is
+     a true black cast underneath so raised surfaces still read as raised. */
+  --shadow-color: 0 0 0;
+  --elevation-1: 0 0 0 1px rgb(255 255 255 / 0.04), 0 1px 2px rgb(var(--shadow-color) / 0.3);
+  --elevation-2: 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 16px rgb(var(--shadow-color) / 0.4);
+  --elevation-3: 0 0 0 1px rgb(255 255 255 / 0.08), 0 24px 48px rgb(var(--shadow-color) / 0.6);
+}
+
+/* Per-cluster accents — wayfinding colour for the 14 navigable categories.
+   Set `data-cluster="<id>"` on any ancestor; consumers read --cluster-ink and
+   --cluster-soft with the brand primary as the fallback. All 14 pairs sit at one
+   OKLCH lightness/chroma per theme so no cluster shouts louder than another, and
+   each ink is ≥4.6:1 on its soft and ≥5:1 on every page surface. */
+[data-cluster='traffic'] {
+  --cluster-ink: #a15338;
+  --cluster-soft: #ffe6dc;
+}
+[data-cluster='water-pools'] {
+  --cluster-ink: #1970a2;
+  --cluster-soft: #d9f1ff;
+}
+[data-cluster='public-spaces'] {
+  --cluster-ink: #3a783e;
+  --cluster-soft: #dff4df;
+}
+[data-cluster='queues-and-waiting'] {
+  --cluster-ink: #81599c;
+  --cluster-soft: #f4e7ff;
+}
+[data-cluster='spitting-and-hygiene'] {
+  --cluster-ink: #8c5590;
+  --cluster-soft: #f9e5fa;
+}
+[data-cluster='air-travel'] {
+  --cluster-ink: #4b68aa;
+  --cluster-soft: #e1edff;
+}
+[data-cluster='public-transport-and-elevators'] {
+  --cluster-ink: #7e6800;
+  --cluster-soft: #f4edd3;
+}
+[data-cluster='restaurants-hotels-buffets'] {
+  --cluster-ink: #a24f52;
+  --cluster-soft: #ffe4e3;
+}
+[data-cluster='religious-sites-and-monuments'] {
+  --cluster-ink: #995a1d;
+  --cluster-soft: #ffe8d6;
+}
+[data-cluster='noise-and-attention'] {
+  --cluster-ink: #a04f64;
+  --cluster-soft: #ffe4ea;
+}
+[data-cluster='online-civic-sense'] {
+  --cluster-ink: #6063a9;
+  --cluster-soft: #e8ebff;
+}
+[data-cluster='universal-core'] {
+  --cluster-ink: #007683;
+  --cluster-soft: #d3f4f8;
+}
+[data-cluster='uk-and-schengen'] {
+  --cluster-ink: #5a7222;
+  --cluster-soft: #e7f1d8;
+}
+[data-cluster='singapore-uae-southeast-asia'] {
+  --cluster-ink: #99517c;
+  --cluster-soft: #ffe4f2;
+}
+
+[data-theme='dark'] [data-cluster='traffic'] {
+  --cluster-ink: #cd8268;
+  --cluster-soft: #41261c;
+}
+[data-theme='dark'] [data-cluster='water-pools'] {
+  --cluster-ink: #579ecd;
+  --cluster-soft: #173142;
+}
+[data-theme='dark'] [data-cluster='public-spaces'] {
+  --cluster-ink: #6ca56d;
+  --cluster-soft: #1f3420;
+}
+[data-theme='dark'] [data-cluster='queues-and-waiting'] {
+  --cluster-ink: #ab87c6;
+  --cluster-soft: #35273f;
+}
+[data-theme='dark'] [data-cluster='spitting-and-hygiene'] {
+  --cluster-ink: #b883ba;
+  --cluster-soft: #39263a;
+}
+[data-theme='dark'] [data-cluster='air-travel'] {
+  --cluster-ink: #7895d5;
+  --cluster-soft: #232d45;
+}
+[data-theme='dark'] [data-cluster='public-transport-and-elevators'] {
+  --cluster-ink: #a99649;
+  --cluster-soft: #352e11;
+}
+[data-theme='dark'] [data-cluster='restaurants-hotels-buffets'] {
+  --cluster-ink: #cf7f7e;
+  --cluster-soft: #422424;
+}
+[data-theme='dark'] [data-cluster='religious-sites-and-monuments'] {
+  --cluster-ink: #c48855;
+  --cluster-soft: #3e2815;
+}
+[data-theme='dark'] [data-cluster='noise-and-attention'] {
+  --cluster-ink: #cd7e90;
+  --cluster-soft: #41242b;
+}
+[data-theme='dark'] [data-cluster='online-civic-sense'] {
+  --cluster-ink: #8a90d3;
+  --cluster-soft: #292b44;
+}
+[data-theme='dark'] [data-cluster='universal-core'] {
+  --cluster-ink: #68a1a7;
+  --cluster-soft: #0a3438;
+}
+[data-theme='dark'] [data-cluster='uk-and-schengen'] {
+  --cluster-ink: #87a059;
+  --cluster-soft: #293218;
+}
+[data-theme='dark'] [data-cluster='singapore-uae-southeast-asia'] {
+  --cluster-ink: #c47fa6;
+  --cluster-soft: #3e2433;
 }
 
 :root {
-  /* Typography */
-  --font-family-base: 'Hind', system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
+  /* Typography — one family, four weights, each with a job. Hind is self-hosted
+     (src/styles/fonts.css); 'Hind Fallback' is Arial with Hind's metrics so the
+     swap does not reflow. */
+  --font-family-base:
+    'Hind', 'Hind Fallback', system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
   --font-family-mono: ui-monospace, sfmono-regular, menlo, consolas, monospace;
-  --text-xs: 0.8125rem;
-  --text-sm: 0.9375rem;
-  --text-base: 1.0625rem;
-  --text-lg: 1.1875rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.625rem;
-  --text-3xl: 2.125rem;
-  --text-4xl: 2.5rem;
+
+  /* Weights, each with a job. */
+  --weight-body: 400;
+  --weight-ui: 500;
+  --weight-heading: 600;
+  --weight-display: 700;
+
+  /* Role scale. Above the body size every step is ×1.25, so adjacent roles are
+     unmistakably different (the old scale stepped 17 → 19 → 22). */
+  --text-xs: 0.8125rem; /* 13 — metadata */
+  --text-sm: 0.9375rem; /* 15 — secondary UI */
+  --text-base: 1.0625rem; /* 17 — body */
+  --text-lg: 1.3125rem; /* 21 — lede, card titles */
+  --text-xl: 1.625rem; /* 26 — h3, section heads */
+  --text-2xl: 2.0625rem; /* 33 — h2 */
+  --text-3xl: 2.5625rem; /* 41 — page h1 */
+  --text-4xl: 3.25rem; /* 52 — display */
+
+  /* Leading: display text tight, body tuned to a ~66-character measure. Hind's
+     own line box is 1.6 em, so body sits on it exactly. */
+  --leading-display: 1.08;
+  --leading-heading: 1.2;
+  --leading-body: 1.6;
   --leading-tight: 1.25;
-  --leading-body: 1.7;
-  --measure: 68ch;
+
+  /* Tracking: negative on display sizes, positive only on small labels. */
+  --tracking-display: -0.022em;
+  --tracking-heading: -0.012em;
+  --tracking-label: 0.04em;
+
+  /* Reading measure. Hind's "0" is 0.544 em and its prose averages 0.419 em per
+     character, so 54ch ≈ 29.4 em ≈ 70 characters per line at the body size.
+     (The old 68ch resolved to ~85 characters in the system fallback.) */
+  --measure: 54ch;
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -82,10 +252,25 @@
   --space-7: 3rem;
   --space-8: 4rem;
 
-  /* Radius */
+  /* Radius: tighter on inner elements, softer on containers. `full` is for
+     genuine chips and circular icon buttons only, not for fields or buttons. */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* Motion: brief, ease-out from an already-visible state. */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Stacking */
+  --z-tooltip: 20;
+  --z-sticky: 50;
+  --z-drawer: 80;
+  --z-overlay: 100;
+  --z-skip-link: 1000;
 
   /* Layout widths */
   --width-content: 1200px;

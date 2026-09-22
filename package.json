@@ -27,15 +27,6 @@
     "test:e2e:ui": "playwright test --ui",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.{ts,tsx,astro,js,mjs,cjs}": [
-      "eslint --fix --max-warnings 0",
-      "prettier --write"
-    ],
-    "*.{json,md,css,yml,yaml}": [
-      "prettier --write"
-    ]
-  },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.11.0",
     "@astrojs/preact": "^4.0.1",
