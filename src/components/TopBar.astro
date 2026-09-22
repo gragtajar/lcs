@@ -63,7 +63,7 @@ import { t } from '../lib/i18n';
   .topbar {
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: var(--z-sticky);
     background: color-mix(in srgb, var(--color-bg) 92%, transparent);
     backdrop-filter: saturate(180%) blur(8px);
     -webkit-backdrop-filter: saturate(180%) blur(8px);
@@ -88,8 +88,8 @@ import { t } from '../lib/i18n';
     align-items: center;
     gap: var(--space-2);
     color: var(--color-text);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
   }
   .brand:hover {
     color: var(--color-text);
@@ -100,16 +100,17 @@ import { t } from '../lib/i18n';
     place-items: center;
     width: 28px;
     height: 28px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: var(--weight-heading);
     letter-spacing: 0;
   }
   .brand-name {
     font-size: 0.95rem;
   }
+  /* Reads as a field (what it opens), not a pill. */
   .search-trigger {
     flex: 1;
     display: inline-flex;
@@ -117,13 +118,12 @@ import { t } from '../lib/i18n';
     gap: var(--space-2);
     background: var(--color-surface-alt);
     color: var(--color-text-muted);
-    border-radius: 999px;
+    border-radius: var(--radius-md);
     padding: 0.4rem 0.8rem;
     font-size: var(--text-sm);
     border: 1px solid transparent;
     max-width: 420px;
     margin-inline: auto;
-    transition: border-color 0.12s ease;
   }
   .search-trigger:hover {
     border-color: var(--color-border);
@@ -156,7 +156,7 @@ import { t } from '../lib/i18n';
     height: 38px;
     display: inline-grid;
     place-items: center;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     color: var(--color-text-secondary);
   }
   :global(.theme-toggle:hover) {
@@ -168,7 +168,7 @@ import { t } from '../lib/i18n';
   :global(.search-overlay) {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: var(--z-overlay);
   }
   :global(.search-backdrop) {
     /* Rendered as a button for keyboard accessibility; styled to look like a backdrop. */
@@ -186,7 +186,7 @@ import { t } from '../lib/i18n';
     background: var(--color-surface);
     color: var(--color-text);
     border-radius: var(--radius-lg);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--elevation-3);
     overflow: hidden;
     border: 1px solid var(--color-border);
   }
@@ -218,7 +218,7 @@ import { t } from '../lib/i18n';
     color: var(--color-text-muted);
     font-size: var(--text-xs);
     border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 2px 6px;
   }
   :global(.search-results) {
@@ -251,7 +251,7 @@ import { t } from '../lib/i18n';
     flex-wrap: wrap;
   }
   :global(.search-result-title) {
-    font-weight: 500;
+    font-weight: var(--weight-ui);
   }
   :global(.search-result.soon .search-result-title) {
     color: var(--color-text-secondary);
@@ -261,10 +261,10 @@ import { t } from '../lib/i18n';
     background: var(--color-accent-soft);
     color: var(--color-accent);
     padding: 1px 7px;
-    border-radius: 999px;
-    font-weight: 500;
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-ui);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--tracking-label);
   }
   :global(.search-result-breadcrumb) {
     color: var(--color-text-muted);

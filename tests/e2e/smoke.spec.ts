@@ -7,11 +7,13 @@ import type { Page } from '@playwright/test';
  *  still has a COMING SOON chip, instead of pinning one lesson that gets
  *  published out from under them. Refresh the list if all of these fill in. */
 const COMING_SOON_CANDIDATES = [
-  '/spitting-and-hygiene/paan-and-gutka/',
-  '/religious-sites-and-monuments/hindu-temples-general/',
-  '/religious-sites-and-monuments/leave-no-trace-monuments/',
-  '/spitting-and-hygiene/public-toilets-using/',
-  '/water-pools/sea-and-beach/',
+  // Refreshed 2026-09-22: every India-side subtopic is now fully published;
+  // only the abroad packs still carry unwritten lessons.
+  '/singapore-uae-southeast-asia/uae-public-conduct-and-laws/',
+  '/uk-and-schengen/tourist-sites-and-safety-uk-eu/',
+  '/singapore-uae-southeast-asia/country-specific-cultures-sea/',
+  '/uk-and-schengen/queueing-and-cultural-norms-uk-eu/',
+  '/singapore-uae-southeast-asia/photography-tipping-bargaining-sea/',
 ];
 
 /** Returns the first candidate subtopic that still lists a coming-soon lesson,

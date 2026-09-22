@@ -57,7 +57,7 @@ const visitors = loadVisitorsModule();
     place-items: center;
     width: 64px;
     height: 64px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: var(--color-accent-soft);
     color: var(--color-accent);
   }
@@ -68,14 +68,13 @@ const visitors = loadVisitorsModule();
   .vhero-eyebrow {
     color: var(--color-accent);
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-label);
     margin-bottom: var(--space-2);
   }
   .vhero-title {
     font-size: var(--text-3xl);
-    line-height: 1.2;
     margin-bottom: var(--space-3);
   }
   .vhero-body {
@@ -133,7 +132,7 @@ const visitors = loadVisitorsModule();
     border-radius: var(--radius-md);
   }
   .varea-title {
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     color: var(--color-text);
   }
   .varea-count {

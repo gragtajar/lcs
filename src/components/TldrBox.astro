@@ -22,19 +22,20 @@ const { items } = Astro.props;
 }
 
 <style>
+  /* The soft panel alone marks the summary; the 3px coloured side-tab was the
+     detector's most recognisable AI-UI tell. */
   .tldr {
     background: var(--color-accent-soft);
-    border-left: 3px solid var(--color-accent);
     padding: var(--space-4) var(--space-5);
     border-radius: var(--radius-md);
     margin: 0 0 var(--space-6);
   }
   .tldr-label {
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-label);
     font-size: var(--text-xs);
     color: var(--color-accent);
-    font-weight: 600;
+    font-weight: var(--weight-heading);
     margin-bottom: var(--space-2);
   }
   .tldr-list {

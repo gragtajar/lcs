@@ -10,3 +10,5 @@ pnpm-lock.yaml
 yarn.lock
 # Content repo is managed elsewhere; the website never formats it.
 ../learncivicsense-content/
+# Vendored agent skills — upstream files, not ours to reformat.
+.claude/skills/

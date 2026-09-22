@@ -50,7 +50,7 @@ const backLabel = t('article.comingSoonBack', { subtopic: subtopicTitle });
     place-items: center;
     width: 48px;
     height: 48px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: color-mix(in srgb, var(--color-accent) 18%, var(--color-accent-soft));
     color: var(--color-accent);
     margin-bottom: var(--space-3);
@@ -61,19 +61,19 @@ const backLabel = t('article.comingSoonBack', { subtopic: subtopicTitle });
   }
   .cs-heading {
     font-size: var(--text-lg);
-    font-weight: 600;
+    font-weight: var(--weight-heading);
     color: var(--color-text);
     margin-bottom: var(--space-2);
     line-height: 1.4;
   }
   .cs-phase {
     color: var(--color-accent);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     margin-bottom: var(--space-5);
   }
   .cs-back {
     display: inline-block;
     color: var(--color-primary);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
   }
 </style>

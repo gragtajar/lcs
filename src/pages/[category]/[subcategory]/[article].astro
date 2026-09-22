@@ -122,7 +122,11 @@ const howToLd =
         lesson.tags.map((tag) => <meta property="article:tag" content={tag} />)
     }
   </Fragment>
-  <div class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`} data-pagefind-body>
+  <div
+    class={`article-page ${isComingSoon ? 'article-page-soon' : ''}`}
+    data-cluster={cat.id}
+    data-pagefind-body
+  >
     {/* Pagefind meta — one attribute per key, kept hidden from layout. */}
     <span data-pagefind-meta={`cluster:${cat.title}`} hidden></span>
     <span data-pagefind-meta={`subtopic:${sub.title}`} hidden></span>
@@ -291,7 +295,7 @@ const howToLd =
     list-style: none;
     cursor: pointer;
     padding: var(--space-3) var(--space-4);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     color: var(--color-text);
   }
   .toc-mobile summary::-webkit-details-marker {
@@ -321,10 +325,10 @@ const howToLd =
   }
   :global(.toc-title) {
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-label);
     font-size: var(--text-xs);
     color: var(--color-text-muted);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     margin-bottom: var(--space-3);
   }
   :global(.toc-list) {
@@ -346,20 +350,24 @@ const howToLd =
   }
   :global(.toc-item.active a) {
     color: var(--color-primary);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
   }
   :global(.toc-item a:hover) {
     color: var(--color-text);
     text-decoration: none;
   }
 
+  /* Section heads: more space above than below (craft floor), display weight
+     from global.css, and the same measure as the prose so they align. */
   .article-body :global(h2) {
     font-size: var(--text-2xl);
-    margin: var(--space-7) 0 var(--space-3);
+    margin: var(--space-8) 0 var(--space-3);
+    max-width: var(--measure);
   }
   .article-body :global(h3) {
     font-size: var(--text-xl);
-    margin: var(--space-5) 0 var(--space-2);
+    margin: var(--space-6) 0 var(--space-2);
+    max-width: var(--measure);
   }
   .article-body :global(.anchor-link) {
     color: inherit;
@@ -381,13 +389,14 @@ const howToLd =
   .article-body :global(li) {
     margin-block: var(--space-2);
   }
+  /* Pull-quote: the soft panel alone marks it; the thick coloured side-tab was
+     the detector's most recognisable AI-UI tell and is gone. */
   .article-body :global(blockquote) {
     margin: var(--space-5) 0;
-    padding: var(--space-3) var(--space-5);
-    border-left: 3px solid var(--color-primary);
+    padding: var(--space-4) var(--space-5);
     background: var(--color-primary-soft);
     color: var(--color-text);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    border-radius: var(--radius-md);
     max-width: var(--measure);
   }
   .article-body :global(blockquote p) {
@@ -426,7 +435,7 @@ const howToLd =
   }
   .article-body :global(.table-wrap th) {
     background: var(--color-surface-alt);
-    font-weight: 600;
+    font-weight: var(--weight-heading);
     color: var(--color-text);
   }
   .article-body :global(.table-wrap tr:last-child td) {
@@ -447,7 +456,7 @@ const howToLd =
   }
   :global(.quiz-question) {
     font-size: var(--text-lg);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     margin-bottom: var(--space-2);
     line-height: 1.45;
   }
@@ -458,7 +467,7 @@ const howToLd =
   :global(.quiz-hint) {
     font-size: var(--text-xs);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-label);
     color: var(--color-text-muted);
     margin-bottom: var(--space-3);
   }
@@ -485,6 +494,7 @@ const howToLd =
   }
   :global(.quiz-opt:hover) {
     border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+    box-shadow: var(--elevation-1);
   }
   :global(.quiz-opt.picked) {
     background: var(--color-surface-alt);
@@ -501,7 +511,7 @@ const howToLd =
     width: 20px;
     flex-shrink: 0;
     text-align: center;
-    font-weight: 700;
+    font-weight: var(--weight-display);
   }
   :global(.quiz-feedback) {
     margin: var(--space-2) var(--space-4) var(--space-3) 40px;

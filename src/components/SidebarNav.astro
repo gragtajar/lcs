@@ -44,7 +44,11 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
             {g.items.map((c) => {
               const isActiveCategory = c.id === activeCategory;
               return (
-                <li class="sb-cluster" data-search-haystack={c.title.toLowerCase()}>
+                <li
+                  class="sb-cluster"
+                  data-cluster={c.id}
+                  data-search-haystack={c.title.toLowerCase()}
+                >
                   <details open={isActiveCategory}>
                     <summary class="sb-cluster-header">
                       <span class="sb-cluster-icon">
@@ -146,7 +150,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     gap: var(--space-2);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: var(--radius-md);
     padding: 0.4rem 0.8rem;
     margin-bottom: var(--space-4);
     color: var(--color-text-muted);
@@ -178,9 +182,9 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
   .sb-group-label {
     font-size: var(--text-xs);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-label);
     color: var(--color-text-muted);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     margin-bottom: var(--space-2);
     padding-inline: var(--space-1);
   }
@@ -195,7 +199,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     border-radius: var(--radius-sm);
     cursor: pointer;
     list-style: none;
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     color: var(--color-text);
   }
   .sb-cluster-header::-webkit-details-marker {
@@ -205,7 +209,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     background: var(--color-surface);
   }
   .sb-cluster-icon {
-    color: var(--color-primary);
+    color: var(--cluster-ink, var(--color-primary));
     display: inline-flex;
   }
   .sb-cluster-icon :global(.icon) {
@@ -218,7 +222,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
   }
   .sb-chevron {
     color: var(--color-text-muted);
-    transition: transform 0.15s ease;
+    transition: transform var(--dur-base) var(--ease-out);
     width: 18px;
     height: 18px;
   }
@@ -248,22 +252,22 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     text-decoration: none;
   }
   .sb-sub.active {
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-    font-weight: 500;
+    background: var(--cluster-soft, var(--color-primary-soft));
+    color: var(--cluster-ink, var(--color-primary));
+    font-weight: var(--weight-ui);
   }
   .sb-sub-count {
     font-size: var(--text-xs);
     color: var(--color-text-muted);
     background: var(--color-surface);
     padding: 1px 7px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     border: 1px solid var(--color-border);
   }
   .sb-sub.active .sb-sub-count {
     background: transparent;
-    border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
-    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--cluster-ink, var(--color-primary)) 30%, transparent);
+    color: var(--cluster-ink, var(--color-primary));
   }
   .sidebar-empty {
     color: var(--color-text-muted);

@@ -18,6 +18,10 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--topbar-h) + 1rem);
   text-size-adjust: 100%;
+  /* Browser surfaces belong to the palette too: caret, form controls, scrollbar. */
+  caret-color: var(--color-primary);
+  accent-color: var(--color-primary);
+  scrollbar-color: var(--color-border) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -36,6 +40,7 @@ body {
   margin: 0;
   font-family: var(--font-family-base);
   font-size: var(--text-base);
+  font-weight: var(--weight-body);
   line-height: var(--leading-body);
   color: var(--color-text);
   background: var(--color-bg);
@@ -59,27 +64,47 @@ video {
   display: block;
 }
 
+/* Headings carry their own weight: one family, so the display voice comes from
+   a heavier weight, negative tracking and tight leading rather than a second
+   face. h1/h2 are display; h3–h6 are subheads. Balanced wrapping avoids the
+   single orphaned word on the last line. */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-weight: 600;
-  line-height: var(--leading-tight);
   margin: 0;
   color: var(--color-text);
-  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+h1,
+h2 {
+  font-weight: var(--weight-display);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--weight-heading);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-heading);
 }
 
 p {
   margin: 0;
+  text-wrap: pretty;
 }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
   text-underline-offset: 2px;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 a:hover {
   color: var(--color-primary-hover);
@@ -93,12 +118,21 @@ button {
   border: 0;
   cursor: pointer;
   padding: 0;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+/* Pressed feedback: a 1px settle, not a bounce. */
+button:active {
+  transform: translateY(1px);
 }
 
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 /* Visually hidden but available to screen readers. */
@@ -119,12 +153,16 @@ button {
   top: -100px;
   left: 0;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   padding: var(--space-2) var(--space-4);
-  z-index: 1000;
+  z-index: var(--z-skip-link);
 }
 .skip-link:focus {
   top: 0;
+}
+/* The global a:hover colour would otherwise paint dark teal on teal here. */
+.skip-link:hover {
+  color: var(--color-on-primary);
 }
 
 .container {
@@ -158,6 +196,6 @@ kbd {
   font-size: 0.85em;
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 0.05em 0.4em;
 }

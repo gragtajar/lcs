@@ -65,27 +65,24 @@ const { chips, lessonCount, clusterCount } = Astro.props;
     text-align: center;
   }
   .hero-h1 {
-    font-size: clamp(1.9rem, 7vw, var(--text-4xl));
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    font-size: clamp(2.25rem, 7vw, var(--text-4xl));
     margin: 0 0 var(--space-3);
   }
   .hero-subhead {
     font-size: var(--text-lg);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     color: var(--color-text);
     margin: 0 0 var(--space-3);
   }
   .hero-body {
     font-size: var(--text-base);
     color: var(--color-text-secondary);
-    line-height: 1.6;
-    max-width: 56ch;
+    max-width: var(--measure);
     margin: 0 auto var(--space-5);
   }
 
   /* Search: a proper bordered field (magnifier + input + submit). Kept calm in
-     weight — the chips remain the primary CTA. */
+     weight — the chips remain the primary CTA. Field radius, not a pill. */
   .hero-search {
     display: flex;
     align-items: center;
@@ -94,15 +91,18 @@ const { chips, lessonCount, clusterCount } = Astro.props;
     margin: 0 auto var(--space-5);
     padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: var(--radius-md);
     background: var(--color-surface);
+    box-shadow: var(--elevation-1);
     transition:
-      border-color 0.12s ease,
-      box-shadow 0.12s ease;
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
   }
   .hero-search:focus-within {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-soft);
+    box-shadow:
+      0 0 0 3px var(--color-primary-soft),
+      var(--elevation-1);
   }
   .hero-search-icon {
     display: inline-grid;
@@ -130,19 +130,19 @@ const { chips, lessonCount, clusterCount } = Astro.props;
     flex-shrink: 0;
     border: 0;
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     padding: var(--space-2) var(--space-4);
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background-color 0.12s ease;
   }
   .hero-search-btn:hover {
     background: var(--color-primary-hover);
   }
 
-  /* Chips: the primary CTA. Generous tap targets (>=48px). */
+  /* Chips: the primary CTA and a genuine chip, so they keep the full radius.
+     Generous tap targets (>=48px). */
   .hero-chips {
     list-style: none;
     margin: 0 0 var(--space-6);
@@ -157,14 +157,17 @@ const { chips, lessonCount, clusterCount } = Astro.props;
     align-items: center;
     min-height: 48px;
     padding: var(--space-2) var(--space-4);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--color-primary-soft);
     color: var(--color-primary);
     border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     line-height: 1.3;
     text-align: left;
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out);
   }
   .hero-chip:hover {
     background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));

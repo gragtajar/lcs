@@ -1,5 +1,6 @@
 ---
 import '../styles/tokens.css';
+import '../styles/fonts.css';
 import '../styles/global.css';
 import TopBar from '../components/TopBar.astro';
 import Footer from '../components/Footer.astro';
@@ -56,8 +57,8 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#15181A" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171613" media="(prefers-color-scheme: dark)" />
     <title>{meta.fullTitle}</title>
     <meta name="description" content={meta.description} />
     <link rel="canonical" href={meta.canonicalUrl} />
@@ -108,37 +109,26 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
 
     {
       /*
-      Self-hosting Hind would require shipping the woff2 files. Until those are
-      placed in /public/fonts/, the system fallback stack defined in tokens.css
-      keeps the site readable. To enable Hind, drop the subsetted woff2 files in
-      /public/fonts/ and uncomment the @font-face + preload below.
+      Hind is self-hosted (src/styles/fonts.css, files in /public/fonts/hind/).
+      Only the two Latin faces every page paints above the fold are preloaded:
+      400 for body and 700 for the h1. The other weights and the Devanagari
+      subsets load on demand via unicode-range.
     */
     }
-    <style is:inline>
-      /*
-      @font-face {
-        font-family: 'Hind';
-        src: url('/fonts/hind-regular.woff2') format('woff2');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'Hind';
-        src: url('/fonts/hind-medium.woff2') format('woff2');
-        font-weight: 500;
-        font-style: normal;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'Hind';
-        src: url('/fonts/hind-semibold.woff2') format('woff2');
-        font-weight: 600;
-        font-style: normal;
-        font-display: swap;
-      }
-      */
-    </style>
+    <link
+      rel="preload"
+      href="/fonts/hind/hind-400-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/hind/hind-700-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <slot name="head" />
 
     {

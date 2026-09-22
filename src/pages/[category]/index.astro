@@ -16,16 +16,18 @@ if (!cat) return Astro.redirect('/');
 ---
 
 <BaseLayout title={cat.title} description={cat.description} width="wide">
-  <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cat.title }]} />
+  <div data-cluster={cat.id}>
+    <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cat.title }]} />
 
-  <section class="cat-hero">
-    <h1 class="cat-hero-title">{cat.title}</h1>
-    <p class="cat-hero-body">{cat.description}</p>
-  </section>
+    <section class="cat-hero">
+      <h1 class="cat-hero-title">{cat.title}</h1>
+      <p class="cat-hero-body">{cat.description}</p>
+    </section>
 
-  <section class="cat-grid">
-    <CategoryCard category={cat} openByDefault={true} />
-  </section>
+    <section class="cat-grid">
+      <CategoryCard category={cat} openByDefault={true} />
+    </section>
+  </div>
 </BaseLayout>
 
 <style>

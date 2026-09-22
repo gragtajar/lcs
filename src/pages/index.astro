@@ -3,7 +3,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import ClusterCard from '../components/ClusterCard.astro';
 import MissionSection from '../components/MissionSection.astro';
-import EngagementSlot from '../components/EngagementSlot.astro';
 import { getFeaturedClusters, resolveHeroChips, getHomepageStats } from '../lib/homepage-data';
 import { DEFAULT_LOCALE } from '../config.ts';
 import { t } from '../lib/i18n';
@@ -44,8 +43,6 @@ const featured = getFeaturedClusters(locale, buildDate);
   <section class="home-mission">
     <MissionSection />
   </section>
-
-  <EngagementSlot />
 </BaseLayout>
 
 <style>
@@ -67,7 +64,7 @@ const featured = getFeaturedClusters(locale, buildDate);
     min-height: 48px;
     padding: var(--space-3) var(--space-5);
     font-size: var(--text-base);
-    font-weight: 500;
+    font-weight: var(--weight-ui);
     color: var(--color-primary);
   }
   .featured-empty {
