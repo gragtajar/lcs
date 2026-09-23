@@ -22,6 +22,7 @@ import {
   loadLessonForArticle,
   findArticleById,
   articleUrl,
+  categoryUrl,
   type NavCategory,
   type PlannedArticle,
   type Lesson,
@@ -184,6 +185,10 @@ export function getFeaturedClusters(locale: Locale, buildDate: Date): FeaturedCl
 export interface HeroChip {
   href: string;
   label: string;
+  /** Category id, so the row can carry its cluster's colour. */
+  category: string;
+  /** Reading time from the lesson file; absent only when the file failed to parse. */
+  minutes?: number;
 }
 
 /**
@@ -198,26 +203,72 @@ export function resolveHeroChips(locale: Locale = DEFAULT_LOCALE): HeroChip[] {
       log.warn('hero chip dropped (article not published)', { id: chip.article_id });
       continue;
     }
-    out.push({ href: articleUrl(planned), label: chip.label });
+    const { lesson } = localisedLesson(planned, locale);
+    out.push({
+      href: articleUrl(planned),
+      label: chip.label,
+      category: planned.category.id,
+      minutes: lesson?.length_min,
+    });
   }
   return out;
 }
 
-/** Total published lessons + the number of India clusters with content, for the scroll cue. */
+/** Published lessons a reader can open today, in one category. */
+function readableCount(cat: NavCategory): number {
+  return cat.subtopics.flatMap((s) => s.articles).filter((a) => a.published).length;
+}
+
+/**
+ * Total published lessons + the number of topics (any group) with at least one, for the
+ * hero's library line. Both numbers cover the same set, so they can never disagree.
+ */
 export function getHomepageStats(locale: Locale = DEFAULT_LOCALE): {
   lessonCount: number;
   clusterCount: number;
 } {
   let lessonCount = 0;
-  const indiaClusters = new Set<string>();
+  let clusterCount = 0;
   for (const cat of getNavCategories(locale)) {
-    for (const sub of cat.subtopics) {
-      for (const a of sub.articles) {
-        if (!a.published) continue;
-        lessonCount++;
-        if (cat.group === 'india') indiaClusters.add(cat.id);
-      }
-    }
+    const n = readableCount(cat);
+    lessonCount += n;
+    if (n > 0) clusterCount++;
   }
-  return { lessonCount, clusterCount: indiaClusters.size };
+  return { lessonCount, clusterCount };
+}
+
+export interface TopicIndexItem {
+  id: string;
+  title: string;
+  url: string;
+  /** Lessons a reader can open today (not lessons planned). */
+  published: number;
+}
+
+export interface TopicIndexGroup {
+  key: 'india' | 'abroad';
+  items: TopicIndexItem[];
+}
+
+/**
+ * Every navigable topic with its readable-lesson count, grouped the way the sidebar
+ * groups them. The homepage's index: whichever five clusters the rotation features,
+ * all fourteen stay one click away.
+ */
+export function getTopicIndex(locale: Locale = DEFAULT_LOCALE): TopicIndexGroup[] {
+  const groups: TopicIndexGroup[] = [
+    { key: 'india', items: [] },
+    { key: 'abroad', items: [] },
+  ];
+  for (const cat of getNavCategories(locale)) {
+    const group = groups.find((g) => g.key === cat.group);
+    if (!group) continue;
+    group.items.push({
+      id: cat.id,
+      title: cat.title,
+      url: categoryUrl(cat.id),
+      published: readableCount(cat),
+    });
+  }
+  return groups.filter((g) => g.items.length > 0);
 }

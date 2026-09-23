@@ -1,33 +1,65 @@
 ---
-// MissionSection — "Who this is for" long-form explanation (homepage brief §4).
-// Reusable so it can also appear on /about/ if needed. Single column, comfortable
-// measure. Carries the disclaimer that civic sense isn't a national trait/deficit
-// and the world-applicable / lifelong-learning framing.
+// MissionSection — "Who this is for" (homepage brief §4). Reusable so it can also
+// appear on /about/ if needed. Carries the disclaimer that civic sense isn't a
+// national trait/deficit and the world-applicable / lifelong-learning framing.
+// It sits on its own sheet (surface, hairlined top and bottom) so the page's
+// closing statement reads as a statement rather than three more paragraphs, and
+// it is set as a side-heading block: the heading in the left column, the copy in
+// the right at a reading measure, with the first paragraph as the lede.
 import { t } from '../lib/i18n';
 ---
 
 <section class="mission" aria-labelledby="mission-h">
-  <h2 id="mission-h" class="mission-h">{t('homepage.mission.h2')}</h2>
-  <p>{t('homepage.mission.para1')}</p>
-  <p>{t('homepage.mission.para2')}</p>
-  <p>{t('homepage.mission.para3')}</p>
+  <div class="mission-inner">
+    <h2 id="mission-h" class="mission-h">{t('homepage.mission.h2')}</h2>
+    <div class="mission-body">
+      <p class="mission-lede">{t('homepage.mission.para1')}</p>
+      <p>{t('homepage.mission.para2')}</p>
+      <p>{t('homepage.mission.para3')}</p>
+    </div>
+  </div>
 </section>
 
 <style>
   .mission {
-    max-width: 720px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-7) var(--space-4) var(--space-8);
+  }
+  @media (min-width: 768px) {
+    .mission {
+      padding-inline: var(--space-6);
+    }
+  }
+  .mission-inner {
+    max-width: var(--width-content);
     margin-inline: auto;
+    display: grid;
+    gap: var(--space-5) var(--space-7);
+  }
+  @media (min-width: 960px) {
+    .mission-inner {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    }
   }
   .mission-h {
     font-size: var(--text-2xl);
-    margin-bottom: var(--space-4);
+    margin: 0;
   }
-  .mission p {
+  .mission-body p {
     color: var(--color-text-secondary);
     max-width: var(--measure);
     margin: 0 0 var(--space-4);
   }
-  .mission p:last-child {
+  .mission-body p:last-child {
     margin-bottom: 0;
+  }
+  /* Qualified with `p` so it outranks the `.mission-body p` rule above once Astro
+     appends its scoping attribute to both. */
+  .mission-body p.mission-lede {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--color-text);
   }
 </style>
