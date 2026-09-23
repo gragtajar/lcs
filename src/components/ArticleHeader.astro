@@ -35,7 +35,7 @@ const { title, format, comingSoon, lesson } = Astro.props;
        shows); the icons and the "v1.0" stamp are gone — neither told a reader
        anything the words don't. */
   }
-  <p class="ah-meta">
+  <p class="ah-meta" data-pagefind-ignore>
     <span class={`ah-format ${comingSoon ? 'ah-format-soon' : ''}`}>
       {t(`article.format.${format}`)}
     </span>

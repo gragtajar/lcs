@@ -1,4 +1,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import {
+  loadPagefind,
+  plural,
+  toRow,
+  sortStubsLast,
+  searchUrl,
+  type PagefindAPI,
+  type ResultRow,
+} from '../lib/search';
 
 interface Strings {
   open: string;
@@ -8,58 +17,19 @@ interface Strings {
   prompt: string;
   noResults: string; // contains {query}
   comingSoonChip: string;
+  /** "See all {count} results" — the handoff to the shareable /search/ page. */
+  seeAllOne: string;
+  seeAllOther: string;
 }
 
-interface PagefindResult {
-  id: string;
-  data: () => Promise<PagefindResultData>;
-}
-
-interface PagefindResultData {
-  url: string;
-  meta: { title?: string } & Record<string, string>;
-  excerpt: string;
-  filters?: Record<string, string[]>;
-}
-
-interface PagefindAPI {
-  search: (q: string) => Promise<{ results: PagefindResult[] }>;
-}
-
-declare global {
-  interface Window {
-    __pagefind?: PagefindAPI | Promise<PagefindAPI>;
-  }
-}
-
-async function loadPagefind(): Promise<PagefindAPI | null> {
-  if (window.__pagefind) {
-    return (await window.__pagefind) as PagefindAPI;
-  }
-  try {
-    // Vite needs to leave this path alone — Pagefind writes this file post-build.
-    const url = '/pagefind/pagefind.js';
-    // @vite-ignore
-    const mod = (await import(/* @vite-ignore */ url)) as PagefindAPI;
-    window.__pagefind = mod;
-    return mod;
-  } catch (err) {
-    console.warn('[search] Pagefind not available yet (run a production build).', err);
-    return null;
-  }
-}
-
-interface ResultRow {
-  url: string;
-  title: string;
-  breadcrumb: string;
-  comingSoon: boolean;
-}
+/** Rows the overlay fetches; the /search/ page shows the rest. */
+const MAX_ROWS = 20;
 
 export default function SearchOverlay({ strings }: { strings: Strings }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ResultRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -108,6 +78,7 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!query.trim()) {
       setResults([]);
+      setTotal(0);
       setLoading(false);
       return;
     }
@@ -120,17 +91,9 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
         return;
       }
       const r = await api.search(query.trim());
-      const top = await Promise.all(r.results.slice(0, 20).map((res) => res.data()));
-      const rows: ResultRow[] = top.map((d) => ({
-        url: d.url,
-        title: d.meta.title ?? d.url,
-        breadcrumb: extractBreadcrumb(d),
-        comingSoon: (d.meta.status ?? '').toLowerCase().includes('coming-soon'),
-      }));
-      // Sort coming-soon below published when relevance is similar (preserve Pagefind
-      // order within each bucket).
-      rows.sort((a, b) => Number(a.comingSoon) - Number(b.comingSoon));
-      setResults(rows);
+      const top = await Promise.all(r.results.slice(0, MAX_ROWS).map((res) => res.data()));
+      setResults(sortStubsLast(top.map(toRow)));
+      setTotal(r.results.length);
       setActiveIdx(0);
       setLoading(false);
     }, 150);
@@ -206,21 +169,20 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
                 <span class="search-result-title">{r.title}</span>
                 {r.comingSoon && <span class="search-result-chip">{strings.comingSoonChip}</span>}
               </span>
-              {r.breadcrumb && <span class="search-result-breadcrumb">{r.breadcrumb}</span>}
+              {r.where && <span class="search-result-breadcrumb">{r.where}</span>}
             </a>
           ))}
         </div>
+
+        {results.length > 0 && (
+          <a class="search-see-all" href={searchUrl(query)}>
+            {plural(total, strings.seeAllOne, strings.seeAllOther)}
+            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </a>
+        )}
       </div>
     </div>
   );
-}
-
-function extractBreadcrumb(d: PagefindResultData): string {
-  // We tag each article with data-pagefind-meta="cluster:..., subtopic:..., status:..."
-  // in the article template. Pagefind surfaces those as `meta` keys.
-  const cluster = d.meta.cluster ?? '';
-  const subtopic = d.meta.subtopic ?? '';
-  if (cluster && subtopic) return `${cluster} → ${subtopic}`;
-  if (cluster) return cluster;
-  return '';
 }

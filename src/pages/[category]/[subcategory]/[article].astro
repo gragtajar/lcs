@@ -138,9 +138,16 @@ const tocItems = isComingSoon
     data-cluster={cat.id}
     data-pagefind-body
   >
-    {/* Pagefind meta — one attribute per key, kept hidden from layout. */}
+    {
+      /* Pagefind meta — one attribute per key, kept hidden from layout. The search
+        surfaces read these to draw a row: where the lesson lives, its colour,
+        its format, how long it takes, and whether it can be read yet. */
+    }
     <span data-pagefind-meta={`cluster:${cat.title}`} hidden></span>
     <span data-pagefind-meta={`subtopic:${sub.title}`} hidden></span>
+    <span data-pagefind-meta={`clusterId:${cat.id}`} hidden></span>
+    <span data-pagefind-meta={`format:${t(`article.format.${planned.format}`)}`} hidden></span>
+    {!isComingSoon && lesson && <span data-pagefind-meta={`minutes:${lesson.length_min}`} hidden />}
     {isComingSoon && <span data-pagefind-meta="status:coming-soon" hidden />}
 
     {
@@ -187,7 +194,7 @@ const tocItems = isComingSoon
 
               {/* Mobile-only TOC collapse, above the body. */}
               {tocItems.length > 0 && (
-                <details class="toc-mobile" name="toc-mobile">
+                <details class="toc-mobile" name="toc-mobile" data-pagefind-ignore>
                   <summary>
                     <span>{t('article.contents')}</span>
                     <Icon name="expand_more" class="toc-mobile-chevron" />
@@ -239,7 +246,7 @@ const tocItems = isComingSoon
 
       {
         tocItems.length > 0 && (
-          <aside class="toc-side">
+          <aside class="toc-side" data-pagefind-ignore>
             <TableOfContents client:visible items={tocItems} label={t('article.contents')} />
           </aside>
         )

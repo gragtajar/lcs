@@ -9,6 +9,11 @@
 
 :root,
 [data-theme='light'] {
+  /* The browser's own surfaces (form controls, scrollbars, the canvas before
+     paint) follow the site's theme, not the OS preference: with the two out of
+     step, a light input took the OS-dark text colour and typed text vanished. */
+  color-scheme: light;
+
   /* Backgrounds — paper, not cream: same warm hue as before, chroma halved. */
   --color-bg: #fbfaf7;
   --color-surface: #fff;
@@ -51,6 +56,8 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
+
   /* Same warm hue as light; surface steps are explicit (not an inverted light). */
   --color-bg: #171613;
   --color-surface: #22201d;

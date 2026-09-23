@@ -11,7 +11,9 @@ const { items } = Astro.props;
 {
   items.length > 0 && (
     <aside class="tldr" aria-label={t('article.tldr')}>
-      <p class="tldr-label">{t('article.tldr')}</p>
+      <p class="tldr-label" data-pagefind-ignore>
+        {t('article.tldr')}
+      </p>
       <ul class="tldr-list">
         {items.map((item) => (
           <li set:html={renderInline(item)} />

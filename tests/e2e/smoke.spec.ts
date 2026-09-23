@@ -171,6 +171,8 @@ test.describe('Global search', () => {
     await expect(page.getByText(/honking/i).first()).toBeVisible({ timeout: 5_000 });
     // A published hit renders without the .soon modifier (and so without the chip).
     await expect(page.locator('.search-result:not(.soon)').first()).toBeVisible();
+    // The overlay hands over to the shareable results page.
+    await expect(page.locator('.search-see-all')).toHaveAttribute('href', '/search/?q=honking');
   });
 
   test('flags coming-soon results with a chip', async ({ page }) => {
@@ -184,6 +186,48 @@ test.describe('Global search', () => {
     await expect(page.locator('.search-result-chip').first()).toContainText(/coming soon/i, {
       timeout: 5_000,
     });
+  });
+});
+
+test.describe('Search page', () => {
+  test('a shared ?q= renders results in the search row and keeps the URL current', async ({
+    page,
+  }) => {
+    await page.goto('/search/?q=honking');
+    await expect(page.locator('.sp-list .search-result').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.sp-status')).toContainText(/lessons match/i);
+    // The match is marked inside a lesson-text excerpt.
+    await expect(page.locator('.sp-list .search-result-excerpt mark').first()).toBeVisible();
+    // The topic index steps aside while results show.
+    await expect(page.locator('#search-browse')).toBeHidden();
+    // Typing over the shared query rewrites the URL, so the page stays shareable.
+    await page
+      .getByPlaceholder(/search lessons/i)
+      .first()
+      .fill('chlorine');
+    await expect(page).toHaveURL(/\/search\/\?q=chlorine$/);
+    await expect(page.locator('.sp-status')).toContainText(/chlorine/i);
+  });
+
+  test('the empty state focuses the field and offers the topic index and examples', async ({
+    page,
+  }) => {
+    await page.goto('/search/');
+    await expect(page.getByPlaceholder(/search lessons/i).first()).toBeFocused();
+    await expect(page.locator('#search-browse .topics-link')).toHaveCount(14);
+    // An example query runs the search (as a link it also works before hydration).
+    await page.locator('.sp-example').first().click();
+    await expect(page.locator('.sp-list .search-result').first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('a query with no matches says so and keeps the topic index as the way out', async ({
+    page,
+  }) => {
+    await page.goto('/search/?q=zzzzqq');
+    await expect(page.locator('.sp-status')).toContainText(/no lessons found/i, {
+      timeout: 10_000,
+    });
+    await expect(page.locator('#search-browse')).toBeVisible();
   });
 });
 

@@ -1,0 +1,131 @@
+---
+// The library's index: every navigable topic with its readable-lesson count, in
+// the two groups the sidebar uses. Hairline rows, two columns when there is room.
+// The homepage renders it after the featured clusters; the search page renders it
+// as the empty state and as the way out of a no-results search.
+import Icon from './Icon.astro';
+import { t } from '../lib/i18n';
+import type { TopicIndexGroup } from '../lib/homepage-data';
+
+interface Props {
+  groups: TopicIndexGroup[];
+  heading: string;
+  /** Prefix for the heading id, so the parent section can point aria-labelledby at it. */
+  id: string;
+  /** Two columns from 768px (the default), or one inside a narrow column. */
+  columns?: 1 | 2;
+}
+
+const { groups, heading, id, columns = 2 } = Astro.props;
+const groupLabel: Record<string, string> = {
+  india: t('home.sectionIndia'),
+  abroad: t('home.sectionAbroad'),
+};
+---
+
+<h2 id={`${id}-h`} class="topics-h">{heading}</h2>
+{
+  groups.map((g) => (
+    <div class="topics-group">
+      <h3 class="topics-group-h">{groupLabel[g.key]}</h3>
+      <ul class:list={['topics-list', { 'topics-list-single': columns === 1 }]}>
+        {g.items.map((item) => (
+          <li class="topics-item" data-cluster={item.id}>
+            <a class="topics-link" href={item.url}>
+              <span class="topics-title">{item.title}</span>
+              <span class="topics-count">
+                {item.published > 0
+                  ? t('list.lessonCount', { count: item.published })
+                  : t('list.comingSoonBadge')}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))
+}
+<a class="topics-more" href="/topics/">
+  {t('homepage.topics.bySubtopic')}
+  <Icon name="chevron_right" />
+</a>
+
+<style>
+  .topics-h {
+    font-size: var(--text-2xl);
+    margin: 0 0 var(--space-5);
+  }
+  .topics-group + .topics-group {
+    margin-top: var(--space-6);
+  }
+  .topics-group-h {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-2);
+  }
+  .topics-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0 var(--space-7);
+  }
+  @media (min-width: 768px) {
+    .topics-list:not(.topics-list-single) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .topics-item {
+    border-top: 1px solid var(--color-border);
+  }
+  /* The closing hairline is a full-width grid row of its own, so it sits under
+     whichever column ends last. */
+  .topics-list::after {
+    content: '';
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--color-border);
+  }
+  /* A long title wraps within its box; the count stays on the first line, right-
+     aligned, so the counts line up down the column. */
+  .topics-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-2) 0;
+    color: var(--color-text);
+  }
+  .topics-link:hover {
+    text-decoration: none;
+  }
+  .topics-title {
+    min-width: 0;
+    font-weight: var(--weight-ui);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .topics-link:hover .topics-title,
+  .topics-link:focus-visible .topics-title {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .topics-count {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+  .topics-more {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    margin-top: var(--space-5);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+  }
+  .topics-more :global(.icon) {
+    width: 18px;
+    height: 18px;
+  }
+</style>

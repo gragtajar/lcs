@@ -1,55 +1,202 @@
 ---
+// The shareable search surface: `/search/?q=honking` is a results page a reader can
+// send, bookmark or land on from the overlay's "See all". Same Pagefind index and
+// the same result row as the overlay, so search is one product with two surfaces.
+// Without a query (or without JavaScript) the page is the library's index.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchPage from '../islands/SearchPage.tsx';
+import TopicIndex from '../components/TopicIndex.astro';
+import { getTopicIndex } from '../lib/homepage-data';
+import { DEFAULT_LOCALE } from '../config.ts';
 import { t } from '../lib/i18n';
+
+const topics = getTopicIndex(DEFAULT_LOCALE);
+// Example queries, each checked against the index when chosen (see en.json).
+const examples = t('search.examples')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 ---
 
 <BaseLayout title={t('search.title')} width="narrow">
   <h1 class="search-h1">{t('search.fullPageHeading')}</h1>
-  <p class="search-intro" data-pagefind-ignore>{t('search.prompt')}</p>
 
-  <div id="search-root" data-pagefind-ignore></div>
+  <SearchPage
+    client:load
+    browseId="search-browse"
+    strings={{
+      placeholder: t('search.placeholder'),
+      clear: t('search.clear'),
+      prompt: t('search.prompt'),
+      countOne: t('search.resultCount_one'),
+      countOther: t('search.resultCount_other'),
+      comingSoonOne: t('list.comingSoonCount_one'),
+      comingSoonOther: t('list.comingSoonCount_other'),
+      noResults: t('search.noResults'),
+      noResultsHint: t('search.noResultsHint'),
+      showMoreOne: t('search.showMore_one'),
+      showMoreOther: t('search.showMore_other'),
+      minRead: t('list.minRead'),
+      comingSoonChip: t('search.comingSoonChip'),
+      tryLabel: t('search.tryLabel'),
+      examples,
+      unavailable: t('search.unavailable'),
+    }}
+  />
+
+  <section id="search-browse" class="search-browse" aria-labelledby="browse-h">
+    <TopicIndex groups={topics} heading={t('search.browseHeading')} id="browse" columns={1} />
+  </section>
 </BaseLayout>
-
-<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
-<script src="/pagefind/pagefind-ui.js" defer></script>
-<script is:inline>
-  /* The /search page hosts the Pagefind default UI as a no-JS-overlay fallback
-     and a shareable search URL surface (e.g. /search?q=honking). */
-  window.addEventListener('DOMContentLoaded', function () {
-    if (typeof window.PagefindUI !== 'function') return;
-    // Instantiated for its side-effect of mounting into #search-root; no handle needed.
-    new window.PagefindUI({
-      element: '#search-root',
-      showImages: false,
-      showSubResults: false,
-      excerptLength: 18,
-      resetStyles: false,
-    });
-    const qs = new URL(window.location.href).searchParams.get('q');
-    if (qs) {
-      // Pagefind UI inserts an input — find it and seed the query.
-      setTimeout(function () {
-        const input = document.querySelector('#search-root input[type="text"]');
-        if (input) {
-          input.value = qs;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      }, 100);
-    }
-  });
-</script>
 
 <style>
   .search-h1 {
     font-size: var(--text-3xl);
-    margin-top: var(--space-5);
-    margin-bottom: var(--space-3);
+    margin: var(--space-5) 0 var(--space-4);
   }
-  .search-intro {
-    color: var(--color-text-secondary);
+
+  /* The island renders without Astro's scoping attribute, hence :global. */
+  :global(.sp-form) {
     margin-bottom: var(--space-5);
   }
-  #search-root {
-    margin-top: var(--space-3);
+  /* The site's field idiom: hairline, field radius, resting elevation, focus ring. */
+  :global(.sp-field) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--elevation-1);
+    color: var(--color-text-muted);
+    cursor: text;
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
+  :global(.sp-field:focus-within) {
+    border-color: var(--color-primary);
+    box-shadow:
+      0 0 0 3px var(--color-primary-soft),
+      var(--elevation-1);
+  }
+  :global(.sp-field .icon) {
+    width: 20px;
+    height: 20px;
+  }
+  :global(.sp-input) {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    padding: var(--space-2) 0;
+  }
+  :global(.sp-input:focus) {
+    outline: none;
+  }
+  /* One clear control, ours; the browser's own is hidden. */
+  :global(.sp-input::-webkit-search-cancel-button) {
+    display: none;
+  }
+  :global(.sp-clear) {
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--color-text-secondary);
+  }
+  :global(.sp-clear:hover) {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+  }
+  :global(.sp-hint) {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* "Try honking · queue jumping · …": links that run the search. */
+  :global(.sp-try) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-4);
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+  :global(.sp-try-label) {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-ui);
+  }
+  :global(.sp-example) {
+    display: inline-block;
+    padding: var(--space-3) 0;
+    font-weight: var(--weight-ui);
+  }
+
+  /* The count (or the no-results line) in the facts-line register. */
+  :global(.sp-status) {
+    min-height: 1.6em;
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--color-text-muted);
+  }
+  :global(.sp-status-hint) {
+    font-weight: var(--weight-body);
+  }
+
+  /* Rows: the overlay's `.search-result` on hairlines. The hover ground is pulled
+     out by the row's own inset so the text keeps the column's left edge. */
+  :global(.sp-list) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  :global(.sp-list > li) {
+    border-top: 1px solid var(--color-border);
+  }
+  :global(.sp-list > li:last-child) {
+    border-bottom: 1px solid var(--color-border);
+  }
+  :global(.sp-list .search-result) {
+    margin-inline: calc(-1 * var(--space-4));
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    gap: var(--space-1);
+  }
+  :global(.sp-list .search-result-title) {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-tight);
+  }
+
+  :global(.sp-more) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: var(--space-4);
+    padding: 0 var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--color-primary);
+  }
+  :global(.sp-more:hover) {
+    background: var(--color-surface-alt);
+  }
+
+  /* The index: the empty state, and the way out of a no-results search. */
+  .search-browse {
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
   }
 </style>
