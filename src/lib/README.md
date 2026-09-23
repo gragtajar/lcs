@@ -14,6 +14,7 @@ threshold is 80% statements / 75% branches; new files here need new tests.
 | `markdown.ts` | Marked-based renderer with anchored h2/h3 headings, scroll-spy TOC extraction, horizontal-scroll table wrapping, inline-only mode, HTML escaping.    |
 | `i18n.ts`     | Tiny `t()` with dotted-path lookup, plural variants by `count`, and `{var}` interpolation. Reads `src/i18n/{locale}.json`.                           |
 | `seo.ts`      | `buildMeta()` for OG/Twitter/canonical; `articleJsonLd()`, `collectionJsonLd()`, `breadcrumbJsonLd()` for schema.org.                                |
+| `search.ts`   | Shared by both search islands: `loadPagefind()` on demand, Pagefind record → result row (`toRow`), stubs-last sort, `?q=` helpers.                   |
 | `icons.ts`    | Maps taxonomy `icon` strings (e.g. `traffic-cone`) to the IconName enum used by the inline SVG sprite.                                               |
 
 ## Conventions

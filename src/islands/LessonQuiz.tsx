@@ -151,7 +151,7 @@ function QuestionBlock({
                 aria-pressed={isPicked}
               >
                 {/* Letter before the pick; verdict glyph after. */}
-                <span class="quiz-opt-marker" aria-hidden="true">
+                <span class="quiz-opt-marker" aria-hidden="true" data-pagefind-ignore>
                   {isPicked ? (opt.correct ? '✓' : '×') : (LETTERS[oi] ?? '')}
                 </span>
                 <span class="quiz-opt-text">{opt.text}</span>

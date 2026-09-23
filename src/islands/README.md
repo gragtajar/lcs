@@ -20,6 +20,7 @@ If you said "no" to all three, you have an island.
 | `SearchOverlay.tsx`   | `client:idle` (TopBar)          | full-screen modal; loads Pagefind on demand; debounced query; keyboard nav; coming-soon chip flagging |
 | `TableOfContents.tsx` | `client:visible` (article page) | sticky right-rail list of h2/h3; IntersectionObserver scroll-spy; smooth-scrolls to anchors           |
 | `LessonQuiz.tsx`      | `client:visible` (article page) | inline quiz; per-option feedback + explanation reveal; no score (deliberate)                          |
+| `SearchPage.tsx`      | `client:load` (/search/)        | the shareable results page: same index + row as the overlay; `?q=` kept current; count; "Show more"   |
 
 (`CategoryAccordion.tsx` was prototyped early but removed — native `<details>`
 

@@ -2,8 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import FeaturedCluster from '../components/FeaturedCluster.astro';
+import TopicIndex from '../components/TopicIndex.astro';
 import MissionSection from '../components/MissionSection.astro';
-import Icon from '../components/Icon.astro';
 import {
   getFeaturedClusters,
   resolveHeroChips,
@@ -22,10 +22,6 @@ const heroChips = resolveHeroChips(locale);
 const { lessonCount, clusterCount } = getHomepageStats(locale);
 const featured = getFeaturedClusters(locale, buildDate);
 const topics = getTopicIndex(locale);
-const groupLabel: Record<string, string> = {
-  india: t('home.sectionIndia'),
-  abroad: t('home.sectionAbroad'),
-};
 ---
 
 <BaseLayout title="" width="flush">
@@ -44,32 +40,7 @@ const groupLabel: Record<string, string> = {
 
   {/* Whichever five the rotation features, every topic stays one click away. */}
   <section id="topics" class="home-topics" aria-labelledby="topics-h">
-    <h2 id="topics-h" class="topics-h">{t('homepage.topics.heading')}</h2>
-    {
-      topics.map((g) => (
-        <div class="topics-group">
-          <h3 class="topics-group-h">{groupLabel[g.key]}</h3>
-          <ul class="topics-list">
-            {g.items.map((item) => (
-              <li class="topics-item" data-cluster={item.id}>
-                <a class="topics-link" href={item.url}>
-                  <span class="topics-title">{item.title}</span>
-                  <span class="topics-count">
-                    {item.published > 0
-                      ? t('list.lessonCount', { count: item.published })
-                      : t('list.comingSoonBadge')}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))
-    }
-    <a class="topics-more" href="/topics/">
-      {t('homepage.topics.bySubtopic')}
-      <Icon name="chevron_right" />
-    </a>
+    <TopicIndex groups={topics} heading={t('homepage.topics.heading')} id="topics" />
   </section>
 
   <MissionSection />
@@ -92,87 +63,8 @@ const groupLabel: Record<string, string> = {
     color: var(--color-text-secondary);
     padding: var(--space-6) 0;
   }
-
-  /* The index: two groups of hairline rows, two columns when there is room. */
   .home-topics {
     border-top: 1px solid var(--color-border);
     padding-block: var(--space-7) var(--space-8);
-  }
-  .topics-h {
-    font-size: var(--text-2xl);
-    margin: 0 0 var(--space-5);
-  }
-  .topics-group + .topics-group {
-    margin-top: var(--space-6);
-  }
-  .topics-group-h {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-ui);
-    color: var(--color-text-muted);
-    margin: 0 0 var(--space-2);
-  }
-  .topics-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 0 var(--space-7);
-  }
-  @media (min-width: 768px) {
-    .topics-list {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-  .topics-item {
-    border-top: 1px solid var(--color-border);
-  }
-  /* The closing hairline is a full-width grid row of its own, so it sits under
-     whichever column ends last. */
-  .topics-list::after {
-    content: '';
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--color-border);
-  }
-  /* A long title wraps within its box; the count stays on the first line, right-
-     aligned, so the counts line up down the column. */
-  .topics-link {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-3);
-    min-height: 44px;
-    padding: var(--space-2) 0;
-    color: var(--color-text);
-  }
-  .topics-link:hover {
-    text-decoration: none;
-  }
-  .topics-title {
-    min-width: 0;
-    font-weight: var(--weight-ui);
-    transition: color var(--dur-fast) var(--ease-out);
-  }
-  .topics-link:hover .topics-title,
-  .topics-link:focus-visible .topics-title {
-    color: var(--cluster-ink, var(--color-primary));
-  }
-  .topics-count {
-    flex-shrink: 0;
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    white-space: nowrap;
-  }
-  .topics-more {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-height: 44px;
-    margin-top: var(--space-5);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-ui);
-  }
-  .topics-more :global(.icon) {
-    width: 18px;
-    height: 18px;
   }
 </style>

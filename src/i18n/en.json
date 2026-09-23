@@ -94,10 +94,22 @@
   "search": {
     "title": "Search all lessons",
     "placeholder": "Search lessons",
-    "noResults": "No lessons found for “{query}”.",
     "prompt": "Type to search across all lessons — including ones we haven’t written yet.",
     "fullPageHeading": "Search",
-    "comingSoonChip": "Coming soon"
+    "comingSoonChip": "Coming soon",
+    "clear": "Clear",
+    "resultCount_one": "{count} lesson matches “{query}”",
+    "resultCount_other": "{count} lessons match “{query}”",
+    "noResults": "No lessons found for “{query}”.",
+    "noResultsHint": "Try a shorter word, or browse by topic below.",
+    "showMore_one": "Show 1 more",
+    "showMore_other": "Show {count} more",
+    "tryLabel": "Try",
+    "examples": "honking, queue jumping, spitting, tipping, elevator",
+    "unavailable": "Search isn’t available right now. Browse by topic below.",
+    "browseHeading": "Browse by topic",
+    "seeAll_one": "See all {count} results",
+    "seeAll_other": "See all {count} results"
   },
   "errors": {
     "notFoundTitle": "Page not found",
