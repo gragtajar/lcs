@@ -41,7 +41,19 @@
     "comingSoon": "Lessons coming soon for this topic.",
     "comingSoonBadge": "Coming soon",
     "filterCategoriesPlaceholder": "Filter categories",
-    "allCategories": "All categories"
+    "allCategories": "All categories",
+    "browseCategories": "Browse categories",
+    "closeCategories": "Close categories",
+    "lessonCount_one": "{count} lesson",
+    "lessonCount_other": "{count} lessons",
+    "totalMinutes": "{n} min in total",
+    "comingSoonCount_one": "{count} coming soon",
+    "comingSoonCount_other": "{count} coming soon",
+    "moreIn": "More in {category}",
+    "lessonsIn": "Lessons in {subtopic}",
+    "noneReadable": "None of these lessons is readable yet; the first is being written.",
+    "soonShort": "soon",
+    "noCategoriesMatch": "No categories match."
   },
   "visitors": {
     "heroTitle": "For visitors to India",

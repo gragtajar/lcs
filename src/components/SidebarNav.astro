@@ -20,9 +20,15 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
   { key: 'india', label: t('home.sectionIndia'), items: indiaCats },
   { key: 'abroad', label: t('home.sectionAbroad'), items: abroadCats },
 ];
+
+// Counts are of lessons a reader can open today, not of lessons planned: a
+// "6" beside a subtopic with two readable lessons trains readers to distrust
+// the numbers.
+const readable = (s: NavCategory['subtopics'][number]) =>
+  s.articles.filter((a) => a.published).length;
 ---
 
-<aside class="sidebar" aria-label={t('list.allCategories')}>
+<aside class="sidebar" aria-label={t('list.browseCategories')}>
   <label class="sidebar-search">
     <Icon name="search" />
     <input
@@ -45,7 +51,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
               const isActiveCategory = c.id === activeCategory;
               return (
                 <li
-                  class="sb-cluster"
+                  class={`sb-cluster ${isActiveCategory ? 'is-active' : ''}`}
                   data-cluster={c.id}
                   data-search-haystack={c.title.toLowerCase()}
                 >
@@ -61,6 +67,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
                       {c.subtopics.map((s) => {
                         const isActive = isActiveCategory && s.id === activeSubtopic;
                         const haystack = `${c.title} ${s.title}`.toLowerCase();
+                        const n = readable(s);
                         return (
                           <li data-search-haystack={haystack}>
                             <a
@@ -69,7 +76,7 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
                               aria-current={isActive ? 'page' : undefined}
                             >
                               <span>{s.title}</span>
-                              <span class="sb-sub-count">{s.articles.length}</span>
+                              <span class="sb-sub-count">{n > 0 ? n : t('list.soonShort')}</span>
                             </a>
                           </li>
                         );
@@ -83,11 +90,24 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
         </div>
       ))
     }
-    <p class="sidebar-empty" data-sidebar-empty hidden>No categories match.</p>
+    <p class="sidebar-empty" data-sidebar-empty hidden>{t('list.noCategoriesMatch')}</p>
   </nav>
 </aside>
 
 <script>
+  /* Bring the current subtopic into view inside the sidebar's own scroll box.
+     For categories late in the list the active entry otherwise sits below the
+     fold of the sidebar, exactly where "you are here" matters most. */
+  document.querySelectorAll<HTMLElement>('.sidebar').forEach((box) => {
+    const active = box.querySelector<HTMLElement>('.sb-sub.active');
+    if (!active) return;
+    const top = active.offsetTop;
+    const bottom = top + active.offsetHeight;
+    if (top < box.scrollTop || bottom > box.scrollTop + box.clientHeight) {
+      box.scrollTop = Math.max(0, top - box.clientHeight / 2);
+    }
+  });
+
   /* Sidebar name-only filter (spec §11.2). Filters categories AND their subtopics
      by string match on their titles. Pure client-side, no Pagefind required.
      Also hides whole groups whose categories all filter out. */
@@ -136,10 +156,11 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
 </script>
 
 <style>
+  /* A quiet navigation column: no panel behind it, no tree lines, no pills.
+     Only the current category carries its colour; the other thirteen icons
+     stay in muted ink so a 14-hue column does not out-shout the page. */
   .sidebar {
-    background: var(--color-surface-alt);
-    border-right: 1px solid var(--color-border);
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-3) var(--space-6);
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -151,9 +172,16 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: 0.4rem 0.8rem;
-    margin-bottom: var(--space-4);
+    padding: 0.45rem 0.8rem;
+    margin: 0 var(--space-1) var(--space-5);
     color: var(--color-text-muted);
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .sidebar-search:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
   .sidebar-search :global(.icon) {
     width: 18px;
@@ -175,46 +203,53 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
     padding: 0;
   }
   .sb-group + .sb-group {
-    margin-top: var(--space-5);
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-6);
   }
   .sb-group-label {
     font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
     color: var(--color-text-muted);
     font-weight: var(--weight-ui);
-    margin-bottom: var(--space-2);
-    padding-inline: var(--space-1);
+    margin: 0 0 var(--space-2);
+    padding-inline: var(--space-2);
   }
   .sb-cluster + .sb-cluster {
-    margin-top: var(--space-1);
+    margin-top: 2px;
   }
   .sb-cluster-header {
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: 44px;
     padding: var(--space-2);
     border-radius: var(--radius-sm);
     cursor: pointer;
     list-style: none;
     font-weight: var(--weight-ui);
-    color: var(--color-text);
+    color: var(--color-text-secondary);
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
   }
   .sb-cluster-header::-webkit-details-marker {
     display: none;
   }
   .sb-cluster-header:hover {
-    background: var(--color-surface);
+    background: var(--color-surface-alt);
+    color: var(--color-text);
   }
   .sb-cluster-icon {
-    color: var(--cluster-ink, var(--color-primary));
+    color: var(--color-text-muted);
     display: inline-flex;
   }
   .sb-cluster-icon :global(.icon) {
     width: 18px;
     height: 18px;
+  }
+  .is-active .sb-cluster-header {
+    color: var(--color-text);
+  }
+  .is-active .sb-cluster-icon {
+    color: var(--cluster-ink, var(--color-primary));
   }
   .sb-cluster-title {
     flex: 1;
@@ -229,25 +264,28 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
   details[open] .sb-chevron {
     transform: rotate(180deg);
   }
+  /* Sub-lists indent to the title's left edge (icon + gap); no tree line. */
   .sb-sub-list {
-    padding-left: var(--space-5);
-    border-left: 1px solid var(--color-border);
-    margin-left: 15px;
-    margin-top: var(--space-1);
+    padding-left: calc(18px + var(--space-2));
+    margin: var(--space-1) 0 var(--space-2);
   }
   .sb-sub {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    min-height: 40px;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     color: var(--color-text-secondary);
     font-size: var(--text-sm);
     line-height: 1.4;
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
   }
   .sb-sub:hover {
-    background: var(--color-surface);
+    background: var(--color-surface-alt);
     color: var(--color-text);
     text-decoration: none;
   }
@@ -259,14 +297,8 @@ const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
   .sb-sub-count {
     font-size: var(--text-xs);
     color: var(--color-text-muted);
-    background: var(--color-surface);
-    padding: 1px 7px;
-    border-radius: var(--radius-full);
-    border: 1px solid var(--color-border);
   }
   .sb-sub.active .sb-sub-count {
-    background: transparent;
-    border-color: color-mix(in srgb, var(--cluster-ink, var(--color-primary)) 30%, transparent);
     color: var(--cluster-ink, var(--color-primary));
   }
   .sidebar-empty {
