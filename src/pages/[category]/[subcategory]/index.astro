@@ -9,6 +9,7 @@ import {
   getSubtopic,
   loadLessonForArticle,
   categoryUrl,
+  subtopicUrl,
 } from '../../../lib/content';
 import { t } from '../../../lib/i18n';
 
@@ -35,6 +36,30 @@ for (const a of articles) {
   if (a.published) lessonsByArticleId.set(a.id, loadLessonForArticle(a));
 }
 
+// One line of facts a picker needs: how many lessons are readable, how long
+// they take together, how many are still being written.
+const published = articles.filter((a) => lessonsByArticleId.get(a.id));
+const comingSoonCount = articles.length - published.length;
+const totalMinutes = published.reduce(
+  (n, a) => n + (lessonsByArticleId.get(a.id)?.length_min ?? 0),
+  0,
+);
+const facts = [
+  t('list.lessonCount', { count: published.length }),
+  published.length > 0 ? t('list.totalMinutes', { n: totalMinutes }) : '',
+  comingSoonCount > 0 ? t('list.comingSoonCount', { count: comingSoonCount }) : '',
+].filter(Boolean);
+
+// The page's ending: the sibling subtopics, so a one-lesson page (57 of the
+// 120) still leads somewhere.
+const siblings = cat.subtopics
+  .filter((s) => s.id !== sub.id)
+  .map((s) => ({
+    title: s.title,
+    url: subtopicUrl(cat.id, s.id),
+    count: s.articles.filter((a) => a.published).length,
+  }));
+
 const pageTitle = `${sub.title} — ${cat.title}`;
 ---
 
@@ -48,66 +73,139 @@ const pageTitle = `${sub.title} — ${cat.title}`;
       aria-controls="sidebar-drawer"
     >
       <Icon name="menu" />
-      {t('list.allCategories')}
+      {t('list.browseCategories')}
     </button>
 
+    {
+      /* Content first in the DOM, navigation second: the visual order (sidebar
+         on the left) is done with grid placement. Keyboard and screen-reader
+         users reach the lessons without tabbing through 25 sidebar links first. */
+    }
     <div class="layout">
-      <div id="sidebar-drawer" class="sidebar-wrap" data-drawer>
-        <button class="sidebar-close" type="button" data-drawer-close aria-label="Close menu">
-          <Icon name="close" />
-        </button>
-        <SidebarNav categories={categories} activeCategory={cat.id} activeSubtopic={sub.id} />
-      </div>
-
-      <main class="main-col">
+      <div class="main-col">
         <Breadcrumb
           items={[
             { label: t('nav.home'), href: '/' },
             { label: cat.title, href: categoryUrl(cat.id) },
-            { label: sub.title },
           ]}
         />
 
         <header class="head">
-          <p class="eyebrow">{cat.title}</p>
           <h1 class="head-title">{sub.title}</h1>
+          <p class="head-facts">
+            {
+              facts.map((f, i) => (
+                <>
+                  {i > 0 && (
+                    <span class="head-sep" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  <span>{f}</span>
+                </>
+              ))
+            }
+          </p>
         </header>
 
+        <ul class="article-list" aria-label={t('list.lessonsIn', { subtopic: sub.title })}>
+          {
+            articles.map((a) => (
+              <li>
+                <ArticleListItem article={a} lesson={lessonsByArticleId.get(a.id)} />
+              </li>
+            ))
+          }
+        </ul>
+
+        {published.length === 0 && <p class="none-readable">{t('list.noneReadable')}</p>}
+
         {
-          articles.length === 0 ? (
-            <div class="empty">
-              <p>{t('list.comingSoon')}</p>
-            </div>
-          ) : (
-            <ul class="article-list">
-              {articles.map((a) => (
-                <li>
-                  <ArticleListItem article={a} lesson={lessonsByArticleId.get(a.id)} />
-                </li>
-              ))}
-            </ul>
+          siblings.length > 0 && (
+            <section class="siblings" aria-labelledby="siblings-h">
+              <h2 id="siblings-h" class="siblings-title">
+                {t('list.moreIn', { category: cat.title })}
+              </h2>
+              <ul class="siblings-list">
+                {siblings.map((s) => (
+                  <li>
+                    <a class="sibling" href={s.url}>
+                      <span class="sibling-title">{s.title}</span>
+                      <span class="sibling-count">
+                        {s.count > 0
+                          ? t('list.lessonCount', { count: s.count })
+                          : t('list.comingSoonBadge')}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )
         }
-      </main>
+      </div>
+
+      <div id="sidebar-drawer" class="sidebar-wrap" data-drawer>
+        <div class="drawer-head">
+          <span class="drawer-title">{t('list.browseCategories')}</span>
+          <button
+            class="sidebar-close"
+            type="button"
+            data-drawer-close
+            aria-label={t('list.closeCategories')}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+        <SidebarNav categories={categories} activeCategory={cat.id} activeSubtopic={sub.id} />
+      </div>
     </div>
   </div>
 </BaseLayout>
 
 <script>
+  // The sidebar is a static column from 960px up and a modal drawer below it.
+  // As a drawer it behaves like a dialog: it takes focus, the page behind it is
+  // inert, Escape and the close button dismiss it, and focus returns to the
+  // button that opened it.
   const toggle = document.querySelector<HTMLButtonElement>('[data-drawer-toggle]');
   const drawer = document.querySelector<HTMLElement>('[data-drawer]');
   const close = document.querySelector<HTMLButtonElement>('[data-drawer-close]');
+  const behind = [
+    document.querySelector<HTMLElement>('.main-col'),
+    document.querySelector<HTMLElement>('.topbar'),
+  ].filter((el): el is HTMLElement => !!el);
+  const wide = window.matchMedia('(min-width: 960px)');
 
   function setOpen(open: boolean) {
     if (!drawer || !toggle) return;
+    const wasOpen = drawer.classList.contains('open');
     drawer.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', String(open));
     document.body.style.overflow = open ? 'hidden' : '';
+    if (open) {
+      drawer.setAttribute('role', 'dialog');
+      drawer.setAttribute('aria-modal', 'true');
+      drawer.setAttribute('aria-label', toggle.textContent?.trim() || '');
+      behind.forEach((el) => el.setAttribute('inert', ''));
+      (close ?? drawer.querySelector<HTMLElement>('input, a, button'))?.focus();
+    } else {
+      drawer.removeAttribute('role');
+      drawer.removeAttribute('aria-modal');
+      drawer.removeAttribute('aria-label');
+      behind.forEach((el) => el.removeAttribute('inert'));
+      if (wasOpen) toggle.focus();
+    }
   }
   toggle?.addEventListener('click', () => setOpen(!drawer?.classList.contains('open')));
   close?.addEventListener('click', () => setOpen(false));
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && drawer?.classList.contains('open')) setOpen(false);
+  });
+  // Rotating or resizing past the breakpoint turns the drawer back into a
+  // column; make sure the page is not left locked and inert behind it.
+  wide.addEventListener('change', () => {
+    if (wide.matches && drawer?.classList.contains('open')) setOpen(false);
   });
 </script>
 
@@ -120,8 +218,9 @@ const pageTitle = `${sub.title} — ${cat.title}`;
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    margin: var(--space-4);
-    padding: 0.45rem 0.75rem;
+    min-height: 44px;
+    margin: var(--space-4) var(--space-4) 0;
+    padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-md);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -137,97 +236,181 @@ const pageTitle = `${sub.title} — ${cat.title}`;
 
   .layout {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 60vh;
   }
   @media (min-width: 960px) {
     .layout {
-      grid-template-columns: var(--width-sidebar) 1fr;
+      grid-template-columns: var(--width-sidebar) minmax(0, 1fr);
+    }
+    .sidebar-wrap {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .main-col {
+      grid-column: 2;
+      grid-row: 1;
     }
   }
 
-  .sidebar-wrap {
-    display: none;
-  }
+  /* Column (≥960px): sticky, its own scroll, a hairline to its right. */
   @media (min-width: 960px) {
     .sidebar-wrap {
-      display: block;
       position: sticky;
       top: var(--topbar-h);
       height: calc(100vh - var(--topbar-h));
+      border-right: 1px solid var(--color-border);
     }
-    .sidebar-close {
+    .drawer-head {
       display: none;
     }
   }
 
+  /* Drawer (<960px): a full-height sheet that slides in. At rest it is
+     display: none — closed navigation is not page content — and the slide
+     plays through @starting-style + a discrete display transition in browsers
+     that support them; older ones simply show it. The global reduced-motion
+     rule zeroes the duration. */
   @media (max-width: 959.98px) {
     .sidebar-wrap {
       position: fixed;
       inset: 0;
       z-index: var(--z-drawer);
+      display: none;
+      flex-direction: column;
       background: var(--color-bg);
       box-shadow: var(--elevation-3);
       transform: translateX(-100%);
-      transition: transform var(--dur-base) var(--ease-out);
-      overflow-y: auto;
+      transition:
+        transform var(--dur-base) var(--ease-out),
+        display var(--dur-base) allow-discrete;
     }
     .sidebar-wrap.open {
-      transform: translateX(0);
-      display: block;
+      display: flex;
+      transform: none;
+    }
+    @starting-style {
+      .sidebar-wrap.open {
+        transform: translateX(-100%);
+      }
+    }
+    .sidebar-wrap :global(.sidebar) {
+      flex: 1;
+      min-height: 0;
+    }
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      flex-shrink: 0;
+      min-height: 56px;
+      padding: 0 var(--space-2) 0 var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .drawer-title {
+      font-weight: var(--weight-ui);
+      color: var(--color-text);
     }
     .sidebar-close {
-      position: absolute;
-      top: var(--space-3);
-      right: var(--space-3);
-      z-index: 1;
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       display: inline-grid;
       place-items: center;
       border-radius: var(--radius-full);
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+    .sidebar-close:hover {
+      background: var(--color-surface-alt);
       color: var(--color-text);
     }
   }
 
   .main-col {
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-4) var(--space-7);
     min-width: 0;
   }
   @media (min-width: 768px) {
     .main-col {
-      padding: var(--space-5) var(--space-6);
+      padding: var(--space-5) var(--space-6) var(--space-8);
     }
   }
+
+  /* Header: the subtopic name and one line of facts. The category is in the
+     trail one line up and in the sidebar; it is not repeated as a kicker. */
   .head {
-    margin: var(--space-3) 0 var(--space-5);
-  }
-  .eyebrow {
-    color: var(--cluster-ink, var(--color-primary));
-    font-size: var(--text-sm);
-    font-weight: var(--weight-ui);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
-    margin-bottom: var(--space-2);
+    margin: var(--space-5) 0 var(--space-5);
+    max-width: var(--width-reading);
   }
   .head-title {
-    font-size: var(--text-3xl);
+    font-size: clamp(2rem, 1.2rem + 3vw, var(--text-3xl));
   }
+  .head-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .head-sep {
+    color: var(--color-border);
+  }
+
   .article-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: grid;
-    gap: var(--space-3);
+    max-width: var(--width-reading);
   }
-  .empty {
-    padding: var(--space-7) var(--space-5);
-    text-align: center;
-    background: var(--color-surface);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-lg);
+  .none-readable {
+    max-width: var(--measure);
+    margin: var(--space-5) 0 0;
     color: var(--color-text-secondary);
+  }
+
+  /* The ending: sibling subtopics as a plain list, at the appendix step. */
+  .siblings {
+    max-width: var(--width-reading);
+    margin-top: var(--space-8);
+  }
+  .siblings-title {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    margin-bottom: var(--space-2);
+  }
+  .siblings-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .siblings-list li + li {
+    border-top: 1px solid var(--color-border);
+  }
+  .sibling {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: 44px;
+    padding: var(--space-3) 0;
+    color: var(--color-text);
+  }
+  .sibling:hover {
+    text-decoration: none;
+  }
+  .sibling:hover .sibling-title {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .sibling-title {
+    font-weight: var(--weight-ui);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .sibling-count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    white-space: nowrap;
   }
 </style>

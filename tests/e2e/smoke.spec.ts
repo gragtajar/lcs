@@ -93,7 +93,7 @@ test.describe('Category and subcategory pages', () => {
     const found = await findComingSoon(page);
     test.skip(!found, 'every candidate subtopic is fully published');
     // Same page still lists at least one published lesson alongside the chip.
-    await expect(page.locator('.li-meta-soon').first()).toBeVisible();
+    await expect(page.locator('.li-soon-badge').first()).toBeVisible();
     await expect(page.locator('article.li:not(.li-soon)').first()).toBeVisible();
   });
 });

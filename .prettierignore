@@ -12,3 +12,5 @@ yarn.lock
 ../learncivicsense-content/
 # Vendored agent skills — upstream files, not ours to reformat.
 .claude/skills/
+# impeccable critique snapshots are tool-generated; never reformat them.
+.impeccable/

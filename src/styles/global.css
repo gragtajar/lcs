@@ -25,6 +25,11 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* The cross-document transition is not reached by the duration override
+     below (it lives on ::view-transition-* pseudo-elements), so opt it out. */
+  @view-transition {
+    navigation: none;
+  }
   html {
     scroll-behavior: auto;
   }
@@ -54,6 +59,12 @@ body {
 ::selection {
   background-color: var(--color-selection);
   color: var(--color-text);
+}
+
+/* Placeholder text from the palette, not the browser's default grey. */
+::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
 }
 
 img,
