@@ -230,7 +230,7 @@
   --leading-display: 1.08;
   --leading-heading: 1.2;
   --leading-body: 1.6;
-  --leading-tight: 1.25;
+  --leading-tight: 1.3; /* card titles: the floor for multi-line non-heading text */
 
   /* Tracking: negative on display sizes, positive only on small labels. */
   --tracking-display: -0.022em;
@@ -272,9 +272,12 @@
   --z-overlay: 100;
   --z-skip-link: 1000;
 
-  /* Layout widths */
+  /* Layout widths. --width-reading is the article column: wide enough for a
+     16:9 image or a table, narrow enough that the ~70-character prose measure
+     does not leave a dead strip beside it. */
   --width-content: 1200px;
   --width-article: 760px;
+  --width-reading: 40rem;
   --width-sidebar: 280px;
   --width-toc: 240px;
 

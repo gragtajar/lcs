@@ -65,13 +65,19 @@
     "comingSoonBadge": "Coming soon",
     "comingSoonHeading": "This lesson is being written.",
     "comingSoonPhase": "Expected in Phase {n}.",
-    "comingSoonBack": "← All lessons in {subtopic}"
+    "comingSoonBack": "← All lessons in {subtopic}",
+    "upNext": "Up next",
+    "moreLessons": "More lessons",
+    "inCategory": "in {category}"
   },
   "quiz": {
     "title": "Quick check",
     "selectAnswer": "Select an answer.",
     "selectAllThatApply": "Select all that apply.",
-    "explanationLabel": "Why"
+    "explanationLabel": "Why",
+    "summary": "{correct} of {total} right.",
+    "summaryAll": "All {total} right.",
+    "answered": "Answered"
   },
   "search": {
     "title": "Search all lessons",
@@ -113,7 +119,7 @@
   },
   "share": {
     "share": "Share",
-    "shareThis": "Share this article",
+    "shareThis": "Share this lesson",
     "shareThisLesson": "Share this lesson",
     "copyLink": "Copy link",
     "copied": "Link copied",
@@ -121,6 +127,7 @@
     "onTwitter": "Share on X",
     "onLinkedin": "Share on LinkedIn",
     "onTelegram": "Share on Telegram",
-    "viaEmail": "Share via email"
+    "viaEmail": "Share via email",
+    "copyFailed": "Couldn't copy the link"
   }
 }

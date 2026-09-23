@@ -96,6 +96,7 @@ const platforms = [
             data-tooltip={t('share.copyLink')}
             data-copy-label={t('share.copyLink')}
             data-copied-label={t('share.copied')}
+            data-failed-label={t('share.copyFailed')}
             aria-label={t('share.copyLink')}
           >
             <Icon name="link" />
@@ -135,6 +136,7 @@ const platforms = [
             data-tooltip={t('share.copyLink')}
             data-copy-label={t('share.copyLink')}
             data-copied-label={t('share.copied')}
+            data-failed-label={t('share.copyFailed')}
             aria-label={t('share.copyLink')}
           >
             <Icon name="link" />
@@ -203,12 +205,16 @@ const platforms = [
       const copyBtn = bar.querySelector<HTMLButtonElement>('[data-share-copy]');
       let copyTimer: number | undefined;
       copyBtn?.addEventListener('click', async () => {
-        if (!(await copyToClipboard(url))) return;
-        trackArticleShare({ articleId, platform: 'copy_link' });
-        const copiedLabel = copyBtn.dataset.copiedLabel || 'Link copied';
-        copyBtn.dataset.tooltip = copiedLabel;
+        const ok = await copyToClipboard(url);
+        if (ok) trackArticleShare({ articleId, platform: 'copy_link' });
+        // A blocked clipboard (insecure context, permission denied) used to fail
+        // silently; now the tooltip says so, the same way it confirms success.
+        const label = ok
+          ? copyBtn.dataset.copiedLabel || 'Link copied'
+          : copyBtn.dataset.failedLabel || "Couldn't copy the link";
+        copyBtn.dataset.tooltip = label;
         copyBtn.classList.add('sb-tooltip-show');
-        if (live) live.textContent = copiedLabel;
+        if (live) live.textContent = label;
         if (copyTimer) clearTimeout(copyTimer);
         copyTimer = window.setTimeout(() => {
           copyBtn.classList.remove('sb-tooltip-show');
@@ -266,23 +272,25 @@ const platforms = [
     align-items: center;
   }
 
+  /* The bottom bar is an appendix, not a toolbar: a quiet inline label and
+     ghost icon buttons on one line. Targets stay 44px; the visible mark is small. */
   .sharebar-full {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
     margin-top: var(--space-7);
-    padding-top: var(--space-5);
+    padding-top: var(--space-4);
     border-top: 1px solid var(--color-border);
   }
   .sb-label {
-    display: block;
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
-    margin-bottom: var(--space-3);
   }
   .sb-row {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: var(--space-1);
     align-items: center;
   }
 
@@ -297,6 +305,10 @@ const platforms = [
     background: var(--color-surface);
     color: var(--color-text-secondary);
     cursor: pointer;
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
   }
   .sb-icon:hover {
     border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
@@ -307,6 +319,23 @@ const platforms = [
     width: 22px;
     height: 22px;
   }
+  /* Ghost variant for the bottom bar. */
+  .sharebar-full .sb-icon {
+    border-color: transparent;
+    background: transparent;
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+  }
+  .sharebar-full .sb-icon:hover,
+  .sharebar-full .sb-icon:focus-visible {
+    background: var(--color-surface-alt);
+    border-color: transparent;
+    color: var(--color-text);
+  }
+  .sharebar-full .sb-icon :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
 
   /* Hover/focus tooltip above each icon (also force-shown for the copy "Link
      copied" state via .sb-tooltip-show). High-contrast, inverted per theme. */
@@ -316,7 +345,7 @@ const platforms = [
     bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%) translateY(4px);
-    padding: 4px 8px;
+    padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
     background: var(--color-text);
     color: var(--color-bg);

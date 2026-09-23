@@ -64,6 +64,13 @@ video {
   display: block;
 }
 
+/* Make the `hidden` attribute win over any authored `display`. Without this a
+   component's own `display: flex` beats the UA stylesheet and `hidden` does
+   nothing (the ShareBar's fallback row was permanently visible because of it). */
+[hidden] {
+  display: none !important;
+}
+
 /* Headings carry their own weight: one family, so the display voice comes from
    a heavier weight, negative tracking and tight leading rather than a second
    face. h1/h2 are display; h3–h6 are subheads. Balanced wrapping avoids the

@@ -184,9 +184,14 @@ test.describe('Theme toggle persistence', () => {
     await page.goto('/');
     const toggle = page.locator('.theme-toggle');
     const before = await page.evaluate(() => document.documentElement.dataset.theme);
-    await toggle.click();
+    // The toggle is a Preact island; a click before hydration is dropped, so
+    // retry until the theme actually flips (same pattern as the search/quiz tests).
+    await expect(async () => {
+      await toggle.click();
+      const now = await page.evaluate(() => document.documentElement.dataset.theme);
+      expect(now).not.toBe(before);
+    }).toPass({ timeout: 15_000 });
     const after = await page.evaluate(() => document.documentElement.dataset.theme);
-    expect(after).not.toBe(before);
     await page.reload();
     const reloaded = await page.evaluate(() => document.documentElement.dataset.theme);
     expect(reloaded).toBe(after);

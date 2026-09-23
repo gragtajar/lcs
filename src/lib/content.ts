@@ -660,6 +660,11 @@ export interface RelatedLink {
   id: string;
   title: string;
   url: string;
+  /** Category and subtopic titles, so a link can say where it leads. */
+  category: string;
+  subtopic: string;
+  /** Reading time in minutes when the target is published; undefined otherwise. */
+  minutes?: number;
 }
 
 /**
@@ -677,7 +682,15 @@ export function resolveRelated(related: string[], locale: Locale = DEFAULT_LOCAL
   for (const id of related) {
     const a = byId.get(id);
     if (!a) continue;
-    out.push({ id: a.id, title: a.title, url: articleUrl(a) });
+    const target = a.published ? loadLessonForArticle(a) : null;
+    out.push({
+      id: a.id,
+      title: a.title,
+      url: articleUrl(a),
+      category: a.category.title,
+      subtopic: a.subtopic.title,
+      minutes: target?.length_min,
+    });
   }
   return out;
 }
