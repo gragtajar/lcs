@@ -34,6 +34,23 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/** Plain text of an inline token list (for attributes, not for display). */
+function cellText(tokens: Tokens.Generic[]): string {
+  return tokens
+    .map((t) => {
+      if ('tokens' in t && Array.isArray(t.tokens)) return cellText(t.tokens as Tokens.Generic[]);
+      const text = (t as unknown as { text?: unknown }).text;
+      return text == null ? '' : String(text);
+    })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 export function renderLessonBody(md: string): RenderedMarkdown {
   const toc: TocItem[] = [];
   const usedIds = new Set<string>();
@@ -54,11 +71,18 @@ export function renderLessonBody(md: string): RenderedMarkdown {
       toc.push({ id: candidate, text, level: depth });
     }
 
+    // Plain headings: the id is enough for the TOC and for section links. Wrapping
+    // the text in an anchor made every heading announce as "link" to screen
+    // readers and turn teal on hover, promising an action that only scrolled.
     const inner = this.parser.parseInline(tokens);
-    return `<h${depth} id="${candidate}"><a class="anchor-link" href="#${candidate}">${inner}</a></h${depth}>\n`;
+    return `<h${depth} id="${candidate}">${inner}</h${depth}>\n`;
   };
 
   renderer.table = function ({ header, rows }: Tokens.Table) {
+    // Each cell carries its column header as data-label so the stylesheet can
+    // stack rows into label/value pairs on narrow screens instead of clipping
+    // the last column behind a horizontal scroll nobody discovers.
+    const labels = header.map((cell) => escapeAttr(cellText(cell.tokens)));
     const headRow = header
       .map((cell) => `<th>${this.parser.parseInline(cell.tokens)}</th>`)
       .join('');
@@ -66,7 +90,12 @@ export function renderLessonBody(md: string): RenderedMarkdown {
       .map(
         (row) =>
           '<tr>' +
-          row.map((cell) => `<td>${this.parser.parseInline(cell.tokens)}</td>`).join('') +
+          row
+            .map(
+              (cell, i) =>
+                `<td data-label="${labels[i] ?? ''}">${this.parser.parseInline(cell.tokens)}</td>`,
+            )
+            .join('') +
           '</tr>',
       )
       .join('');

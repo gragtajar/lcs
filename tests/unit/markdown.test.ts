@@ -57,12 +57,23 @@ describe('renderLessonBody()', () => {
     expect(toc[0]?.id).toBe('whats-actually-happening-really');
   });
 
-  it('wraps tables in a horizontal-scroll container', () => {
+  it('wraps tables in a horizontal-scroll container and labels cells by column', () => {
     const md = ['| a | b |', '|---|---|', '| 1 | 2 |'].join('\n');
     const { html } = renderLessonBody(md);
     expect(html).toContain('<div class="table-wrap">');
     expect(html).toContain('<th>a</th>');
-    expect(html).toContain('<td>1</td>');
+    // data-label carries the column header so narrow screens can stack rows.
+    expect(html).toContain('<td data-label="a">1</td>');
+    expect(html).toContain('<td data-label="b">2</td>');
+  });
+
+  it('escapes quotes in table data-labels and keeps heading text unwrapped', () => {
+    const md = ['| Say "hi" | b |', '|---|---|', '| x | y |'].join('\n');
+    const { html } = renderLessonBody(md);
+    expect(html).toContain('data-label="Say &quot;hi&quot;"');
+    const { html: h } = renderLessonBody('## The moment');
+    expect(h).toContain('<h2 id="the-moment">The moment</h2>');
+    expect(h).not.toContain('anchor-link');
   });
 
   it('h1 does not appear in the toc (only h2/h3)', () => {

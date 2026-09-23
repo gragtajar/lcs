@@ -7,8 +7,9 @@ import SourcesList from '../../../components/SourcesList.astro';
 import RelatedLinks from '../../../components/RelatedLinks.astro';
 import ComingSoonBody from '../../../components/ComingSoonBody.astro';
 import ShareBar from '../../../components/ShareBar.astro';
+import Icon from '../../../components/Icon.astro';
 import TableOfContents from '../../../islands/TableOfContents.tsx';
-import LessonQuiz from '../../../islands/LessonQuiz.tsx';
+import LessonQuiz, { QUIZ_SECTION_ID } from '../../../islands/LessonQuiz.tsx';
 import {
   getNavCategories,
   findPlannedArticle,
@@ -98,6 +99,16 @@ const howToLd =
     ? howToJsonLd({ lesson, sections: extractRuleSections(lesson.body) })
     : null;
 
+// The contents list covers the quiz too: it is a section of the lesson, and
+// readers who want to jump straight to it should be able to.
+const hasQuiz = !isComingSoon && !!lesson?.quiz && lesson.quiz.length > 0;
+const tocItems = isComingSoon
+  ? []
+  : [
+      ...rendered!.toc,
+      ...(hasQuiz ? [{ id: QUIZ_SECTION_ID, text: t('quiz.title'), level: 2 as const }] : []),
+    ];
+
 // Pagefind only parses ONE key:value per `data-pagefind-meta` attribute, so we
 // render each meta as a separate hidden span (see the article template below).
 ---
@@ -132,12 +143,16 @@ const howToLd =
     <span data-pagefind-meta={`subtopic:${sub.title}`} hidden></span>
     {isComingSoon && <span data-pagefind-meta="status:coming-soon" hidden />}
 
+    {
+      /* The trail stops at the subtopic: the page's own title sits 28px below as
+         the h1, and repeating it here wrapped the crumb to four lines on phones.
+         The BreadcrumbList JSON-LD above still carries all four levels. */
+    }
     <Breadcrumb
       items={[
         { label: t('nav.home'), href: '/' },
         { label: cat.title, href: categoryUrl(cat.id) },
         { label: sub.title, href: subtopicUrl(cat.id, sub.id) },
-        { label: planned.title },
       ]}
     />
 
@@ -171,13 +186,14 @@ const howToLd =
               <TldrBox items={lesson!.tldr} />
 
               {/* Mobile-only TOC collapse, above the body. */}
-              {rendered!.toc.length > 0 && (
+              {tocItems.length > 0 && (
                 <details class="toc-mobile" name="toc-mobile">
                   <summary>
                     <span>{t('article.contents')}</span>
+                    <Icon name="expand_more" class="toc-mobile-chevron" />
                   </summary>
                   <ol>
-                    {rendered!.toc.map((it) => (
+                    {tocItems.map((it) => (
                       <li class={`toc-${it.level}`}>
                         <a href={`#${it.id}`}>{it.text}</a>
                       </li>
@@ -188,22 +204,26 @@ const howToLd =
 
               <div class="article-body" set:html={rendered!.html} />
 
-              {lesson!.quiz && lesson!.quiz.length > 0 && (
+              {hasQuiz && (
                 <LessonQuiz
                   client:visible
                   articleId={planned.id}
-                  questions={lesson!.quiz}
+                  questions={lesson!.quiz!}
                   strings={{
                     title: t('quiz.title'),
                     selectAnswer: t('quiz.selectAnswer'),
                     selectAllThatApply: t('quiz.selectAllThatApply'),
                     explanationLabel: t('quiz.explanationLabel'),
+                    summary: t('quiz.summary'),
+                    summaryAll: t('quiz.summaryAll'),
                   }}
                 />
               )}
 
-              <SourcesList sources={lesson!.sources} />
+              {/* The ending, in this order: the next lesson (the page's last real
+                   content), then the references, then a quiet share line. */}
               <RelatedLinks items={related} />
+              <SourcesList sources={lesson!.sources} />
 
               <ShareBar
                 variant="full"
@@ -218,9 +238,9 @@ const howToLd =
       </article>
 
       {
-        !isComingSoon && rendered!.toc.length > 0 && (
-          <aside class="toc-side" aria-hidden="false">
-            <TableOfContents client:visible items={rendered!.toc} label={t('article.contents')} />
+        tocItems.length > 0 && (
+          <aside class="toc-side">
+            <TableOfContents client:visible items={tocItems} label={t('article.contents')} />
           </aside>
         )
       }
@@ -240,26 +260,28 @@ const howToLd =
     }
   }
 
+  /* The reading column and its contents list are laid out as one centred pair,
+     so the list sits beside the prose instead of across a dead strip. */
   .article-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, var(--width-reading));
+    justify-content: center;
     gap: var(--space-6);
     margin-top: var(--space-3);
   }
   @media (min-width: 1024px) {
     .article-grid {
-      grid-template-columns: minmax(0, 1fr) var(--width-toc);
+      grid-template-columns: minmax(0, var(--width-reading)) var(--width-toc);
+      column-gap: var(--space-8);
     }
     .article-page-soon .article-grid {
-      /* No TOC on coming-soon — use full width. */
-      grid-template-columns: 1fr;
+      /* No TOC on coming-soon — single centred column. */
+      grid-template-columns: minmax(0, var(--width-reading));
     }
   }
 
   .article {
-    max-width: var(--width-article);
     width: 100%;
-    margin-inline: auto;
     min-width: 0;
   }
 
@@ -281,10 +303,9 @@ const howToLd =
   /* Mobile TOC */
   .toc-mobile {
     display: block;
-    margin-bottom: var(--space-5);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
+    margin-bottom: var(--space-6);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
   }
   @media (min-width: 1024px) {
     .toc-mobile {
@@ -294,21 +315,38 @@ const howToLd =
   .toc-mobile summary {
     list-style: none;
     cursor: pointer;
-    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 48px;
+    padding: var(--space-2) 0;
     font-weight: var(--weight-ui);
     color: var(--color-text);
   }
   .toc-mobile summary::-webkit-details-marker {
     display: none;
   }
+  .toc-mobile :global(.toc-mobile-chevron) {
+    width: 20px;
+    height: 20px;
+    color: var(--color-text-muted);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+  .toc-mobile[open] :global(.toc-mobile-chevron) {
+    transform: rotate(180deg);
+  }
   .toc-mobile ol {
     margin: 0;
-    padding: 0 var(--space-4) var(--space-3) var(--space-5);
+    padding: 0 0 var(--space-4) var(--space-5);
     list-style: decimal;
     color: var(--color-text-secondary);
   }
   .toc-mobile li {
     padding: var(--space-1) 0;
+  }
+  .toc-mobile li::marker {
+    color: var(--color-text-muted);
   }
   .toc-mobile li.toc-3 {
     padding-left: var(--space-3);
@@ -318,15 +356,15 @@ const howToLd =
     color: var(--color-text-secondary);
   }
 
+  /* Desktop contents: a sentence-case label, muted items, and the current one
+     in the cluster's ink with a small square marker in the gutter. */
   :global(.toc) {
     font-size: var(--text-sm);
-    border-left: 1px solid var(--color-border);
     padding-left: var(--space-4);
   }
   :global(.toc-title) {
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
     font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
     color: var(--color-text-muted);
     font-weight: var(--weight-ui);
     margin-bottom: var(--space-3);
@@ -339,18 +377,35 @@ const howToLd =
     gap: var(--space-1);
   }
   :global(.toc-item a) {
+    position: relative;
     color: var(--color-text-secondary);
     display: block;
-    padding: 4px 0;
+    padding: var(--space-1) 0;
     line-height: 1.4;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  :global(.toc-item a::before) {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--space-4));
+    top: calc(0.7em + var(--space-1) - 3px);
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+    background: var(--cluster-ink, var(--color-primary));
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
   :global(.toc-item.toc-3 a) {
     padding-left: var(--space-3);
     font-size: var(--text-xs);
   }
   :global(.toc-item.active a) {
-    color: var(--color-primary);
+    color: var(--cluster-ink, var(--color-primary));
     font-weight: var(--weight-ui);
+  }
+  :global(.toc-item.active a::before) {
+    opacity: 1;
   }
   :global(.toc-item a:hover) {
     color: var(--color-text);
@@ -359,22 +414,24 @@ const howToLd =
 
   /* Section heads: more space above than below (craft floor), display weight
      from global.css, and the same measure as the prose so they align. */
+  /* Reading size: Hind's compact letterforms read small at 17px, so the lesson
+     body sits one step up. The measure token is in ch, so it scales with it
+     (54ch ≈ 529px ≈ 70 characters). */
+  .article-body {
+    font-size: 1.125rem;
+    line-height: var(--leading-body);
+  }
   .article-body :global(h2) {
     font-size: var(--text-2xl);
     margin: var(--space-8) 0 var(--space-3);
     max-width: var(--measure);
+    scroll-margin-top: calc(var(--topbar-h) + var(--space-4));
   }
   .article-body :global(h3) {
     font-size: var(--text-xl);
     margin: var(--space-6) 0 var(--space-2);
     max-width: var(--measure);
-  }
-  .article-body :global(.anchor-link) {
-    color: inherit;
-  }
-  .article-body :global(.anchor-link:hover) {
-    color: var(--color-primary);
-    text-decoration: none;
+    scroll-margin-top: calc(var(--topbar-h) + var(--space-4));
   }
   .article-body :global(p) {
     margin: 0 0 var(--space-4);
@@ -411,13 +468,13 @@ const howToLd =
     border-bottom-color: var(--color-primary);
   }
 
+  /* Tables read as typeset rows, not a boxed widget: hairlines between rows, a
+     heavier rule under the header, and the first/last columns flush with the
+     prose edge. The wrapper only exists for horizontal overflow on phones. */
   .article-body :global(.table-wrap) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin: var(--space-5) 0;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
+    margin: var(--space-6) 0;
   }
   .article-body :global(.table-wrap table) {
     width: 100%;
@@ -433,41 +490,97 @@ const howToLd =
     vertical-align: top;
     line-height: 1.55;
   }
+  .article-body :global(.table-wrap th:first-child),
+  .article-body :global(.table-wrap td:first-child) {
+    padding-left: 0;
+  }
+  .article-body :global(.table-wrap th:last-child),
+  .article-body :global(.table-wrap td:last-child) {
+    padding-right: 0;
+  }
   .article-body :global(.table-wrap th) {
-    background: var(--color-surface-alt);
     font-weight: var(--weight-heading);
     color: var(--color-text);
+    border-bottom: 1px solid var(--color-text-secondary);
   }
-  .article-body :global(.table-wrap tr:last-child td) {
-    border-bottom: 0;
+  /* On phones the third column of a comparison was 199px off-screen behind a
+     scroll nobody found. Each row becomes a stack of label/value pairs, the
+     label coming from the cell's data-label (set by the markdown renderer). */
+  @media (max-width: 640px) {
+    .article-body :global(.table-wrap table) {
+      min-width: 0;
+    }
+    .article-body :global(.table-wrap thead) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+    .article-body :global(.table-wrap tr) {
+      display: block;
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .article-body :global(.table-wrap td) {
+      display: block;
+      padding: var(--space-1) 0;
+      border-bottom: 0;
+    }
+    .article-body :global(.table-wrap td::before) {
+      content: attr(data-label);
+      display: block;
+      font-size: var(--text-xs);
+      letter-spacing: var(--tracking-label);
+      color: var(--color-text-muted);
+      font-weight: var(--weight-ui);
+    }
+    .article-body :global(.table-wrap td:first-child) {
+      font-weight: var(--weight-heading);
+      color: var(--color-text);
+    }
   }
 
+  /* The quiz is the one panel in the body: a surface-alt ground with the
+     appendix-step heading, so it reads as a designed component rather than a
+     run of bordered rectangles. */
   :global(.quiz) {
-    margin-top: var(--space-7);
-    padding-top: var(--space-5);
-    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-8);
+    padding: var(--space-5);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-lg);
+    scroll-margin-top: calc(var(--topbar-h) + var(--space-4));
+  }
+  @media (min-width: 768px) {
+    :global(.quiz) {
+      padding: var(--space-6);
+    }
   }
   :global(.quiz-title) {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-4);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    margin-bottom: var(--space-5);
   }
-  :global(.quiz-q) {
-    margin-bottom: var(--space-6);
+  :global(.quiz-q + .quiz-q) {
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
   }
   :global(.quiz-question) {
-    font-size: var(--text-lg);
-    font-weight: var(--weight-ui);
-    margin-bottom: var(--space-2);
+    font-size: var(--text-base);
+    font-weight: var(--weight-heading);
+    margin-bottom: var(--space-1);
     line-height: 1.45;
+    text-wrap: pretty;
   }
   :global(.quiz-q-num) {
-    color: var(--color-primary);
-    margin-right: 4px;
+    color: var(--cluster-ink, var(--color-primary));
+    margin-right: var(--space-1);
   }
   :global(.quiz-hint) {
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
     margin-bottom: var(--space-3);
   }
@@ -484,37 +597,53 @@ const howToLd =
     display: flex;
     gap: var(--space-3);
     align-items: flex-start;
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--color-border);
+    padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+    border: 1px solid transparent;
     background: var(--color-surface);
     border-radius: var(--radius-md);
     color: var(--color-text);
     line-height: 1.45;
     cursor: pointer;
-  }
-  :global(.quiz-opt:hover) {
-    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
     box-shadow: var(--elevation-1);
   }
-  :global(.quiz-opt.picked) {
-    background: var(--color-surface-alt);
+  :global(.quiz-opt:hover) {
+    border-color: color-mix(in srgb, var(--cluster-ink, var(--color-primary)) 40%, transparent);
   }
   :global(.quiz-opt.correct) {
     border-color: var(--color-success);
-    background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
   }
   :global(.quiz-opt.wrong) {
     border-color: var(--color-warning);
-    background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface));
   }
+  /* A letter before the pick, the verdict glyph after. */
   :global(.quiz-opt-marker) {
-    width: 20px;
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
     flex-shrink: 0;
-    text-align: center;
-    font-weight: var(--weight-display);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-alt);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-heading);
+    line-height: 1;
+  }
+  :global(.quiz-opt.correct .quiz-opt-marker) {
+    background: var(--color-success);
+    color: #fff;
+  }
+  :global(.quiz-opt.wrong .quiz-opt-marker) {
+    background: var(--color-warning);
+    color: #fff;
+  }
+  :global(.quiz-opt-text) {
+    padding-top: 4px;
   }
   :global(.quiz-feedback) {
-    margin: var(--space-2) var(--space-4) var(--space-3) 40px;
+    margin: var(--space-2) 0 var(--space-3) calc(28px + var(--space-3) + var(--space-3));
     font-size: var(--text-sm);
     line-height: 1.5;
     color: var(--color-text-secondary);
@@ -525,10 +654,29 @@ const howToLd =
   :global(.quiz-explanation) {
     margin-top: var(--space-3);
     padding: var(--space-3) var(--space-4);
-    background: var(--color-primary-soft);
+    background: var(--color-surface);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
     color: var(--color-text);
     line-height: 1.55;
+  }
+  /* The result line appears once every question is answered. */
+  :global(.quiz-summary) {
+    margin: var(--space-5) 0 0;
+    font-weight: var(--weight-heading);
+    color: var(--cluster-ink, var(--color-primary));
+    min-height: 1.5em;
+  }
+  :global(.quiz-summary:not(.is-done)) {
+    margin: 0;
+    min-height: 0;
+  }
+  :global(.quiz-sr) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 </style>

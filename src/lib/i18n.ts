@@ -109,11 +109,12 @@ export function formatDate(iso: string, locale: Locale = DEFAULT_LOCALE): string
       'Dec',
     ];
     // Use UTC parts so an ISO date like "2026-06-04" doesn't shift by a day
-    // depending on the build server's timezone.
+    // depending on the build server's timezone. Day-first, unpadded, no comma:
+    // the en-IN convention ("4 Jun 2026"), not the US "Jun 04, 2026".
     const month = months[d.getUTCMonth()];
-    const day = String(d.getUTCDate()).padStart(2, '0');
+    const day = d.getUTCDate();
     const year = d.getUTCFullYear();
-    return `${month} ${day}, ${year}`;
+    return `${day} ${month} ${year}`;
   }
 
   return new Intl.DateTimeFormat(locale, {

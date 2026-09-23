@@ -2,6 +2,7 @@
 import Icon from './Icon.astro';
 import ArticleHero from './ArticleHero.astro';
 import { t, formatDate } from '../lib/i18n';
+import { hasArticleImage } from '../lib/images';
 import type { LessonFormat, Lesson } from '../lib/content';
 
 // Header renders identically for published and coming-soon articles
@@ -28,8 +29,14 @@ const { title, format, comingSoon, lesson } = Astro.props;
   data-article-id={!comingSoon && lesson ? lesson.id : undefined}
 >
   <h1 class="ah-title">{title}</h1>
-  <div class="ah-meta">
-    <span class={`ah-format ah-format-${format} ${comingSoon ? 'ah-format-outline' : ''}`}>
+  {
+    /* One quiet line: what kind of lesson, how long, how fresh. The format leads
+       in the cluster's ink (it names the lesson's structure, which the TOC then
+       shows); the icons and the "v1.0" stamp are gone — neither told a reader
+       anything the words don't. */
+  }
+  <p class="ah-meta">
+    <span class={`ah-format ${comingSoon ? 'ah-format-soon' : ''}`}>
       {t(`article.format.${format}`)}
     </span>
     {
@@ -40,19 +47,17 @@ const { title, format, comingSoon, lesson } = Astro.props;
         </span>
       ) : (
         <>
-          <span class="ah-meta-item">
-            <Icon name="schedule" /> {t('list.minRead', { n: lesson?.length_min ?? 3 })}
+          <span class="ah-sep" aria-hidden="true">
+            ·
           </span>
+          <span>{t('list.minRead', { n: lesson?.length_min ?? 3 })}</span>
           {lesson?.last_updated && (
-            <span class="ah-meta-item">
-              <Icon name="calendar" />{' '}
-              {lesson.version
-                ? t('list.lastUpdatedWithVersion', {
-                    date: formatDate(lesson.last_updated),
-                    version: lesson.version,
-                  })
-                : t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
-            </span>
+            <>
+              <span class="ah-sep" aria-hidden="true">
+                ·
+              </span>
+              <span>{t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}</span>
+            </>
           )}
         </>
       )
@@ -66,13 +71,14 @@ const { title, format, comingSoon, lesson } = Astro.props;
     <span class="ah-fav-slot" data-future-favorite hidden>
       <Icon name="bookmark" label={t('article.favoritePlaceholder')} />
     </span>
-  </div>
+  </p>
   {
-    comingSoon || !lesson ? (
-      <div class="ah-image" aria-hidden="true">
-        <div class={`ah-image-ph ${comingSoon ? 'ah-image-ph-soon' : ''}`} />
-      </div>
-    ) : (
+    /* A hero only when there is a real one. 194 of 198 lessons have no image; the
+       old 16:9 placeholder (a clock glyph and the wordmark) took 59% of a desktop
+       fold and read as "coming soon". Without it the summary is above the fold. */
+  }
+  {
+    !comingSoon && lesson && hasArticleImage(lesson.id) && (
       <ArticleHero articleId={lesson.id} alt={title} aspectRatio="16:9" />
     )
   }
@@ -123,17 +129,15 @@ const { title, format, comingSoon, lesson } = Astro.props;
   .ah-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: var(--space-2);
     align-items: center;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+    margin: 0;
   }
-  .ah-meta-item {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
+  .ah-sep {
+    color: var(--color-border);
   }
-  .ah-meta-item :global(.icon),
   .ah-soon-badge :global(.icon) {
     width: 15px;
     height: 15px;
@@ -151,49 +155,13 @@ const { title, format, comingSoon, lesson } = Astro.props;
     text-transform: uppercase;
     letter-spacing: var(--tracking-label);
   }
+  /* The format is a word in the cluster's ink, not a pill: it names the lesson's
+     structure (scenario / rule / comparison), which the contents list then shows. */
   .ah-format {
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
-    padding: 3px 9px;
-    border-radius: var(--radius-full);
     font-weight: var(--weight-ui);
+    color: var(--cluster-ink, var(--color-primary));
   }
-  .ah-format-scenario {
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
-  .ah-format-rule {
-    background: var(--color-accent-soft);
-    color: var(--color-accent);
-  }
-  .ah-format-comparison {
-    background: color-mix(in srgb, var(--color-text) 8%, transparent);
-    color: var(--color-text-secondary);
-  }
-  .ah-format-outline {
-    background: transparent !important;
-    border: 1px solid currentColor;
-    color: var(--color-text-muted) !important;
-  }
-  .ah-image {
-    margin-top: var(--space-5);
-    aspect-ratio: 16 / 9;
-    background: var(--color-surface-alt);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-  }
-  .ah-image-ph {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface-alt)),
-      var(--color-surface-alt)
-    );
-  }
-  .ah-image-ph-soon {
-    filter: grayscale(0.7);
-    opacity: 0.65;
+  .ah-format-soon {
+    color: var(--color-text-muted);
   }
 </style>

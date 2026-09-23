@@ -9,3 +9,6 @@ coverage/
 playwright-report/
 test-results/
 .lighthouseci/
+
+# impeccable live-session scratch (annotations, sessions); the critique snapshots are kept.
+.impeccable/live/
