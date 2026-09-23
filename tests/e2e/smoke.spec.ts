@@ -47,18 +47,26 @@ async function openSearchOverlay(page: Page) {
 }
 
 test.describe('Homepage', () => {
-  test('renders the hero, curated chips, cluster cards, and mission', async ({ page }) => {
+  test('renders the hero, start-here lessons, featured clusters, topic index, and mission', async ({
+    page,
+  }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/civic sense, learnable/i);
-    // At least one curated hero chip links to an article.
-    await expect(page.locator('.hero-chip').first()).toBeVisible();
-    // Featured cluster cards: each is an <article> with an <h3>.
-    await expect(page.locator('.cluster-card').first()).toBeVisible();
-    await expect(page.locator('.cluster-card h3').first()).toBeVisible();
+    // At least one curated start-here row links to an article.
+    await expect(page.locator('.start-link').first()).toBeVisible();
+    await expect(page.locator('.start-link').first()).toHaveAttribute('href', /^\/.+\/$/);
+    // Featured clusters: each is a <section> whose <h3> names (and links) the cluster.
+    await expect(page.locator('.cluster').first()).toBeVisible();
+    await expect(page.locator('.cluster h3 a').first()).toBeVisible();
+    // Every navigable topic (11 India + 3 abroad) is one click away from the index.
+    await expect(page.locator('#topics .topics-link')).toHaveCount(14);
     // Mission section below the fold.
     await expect(page.getByRole('heading', { name: /who this is for/i })).toBeVisible();
-    // "Browse all topics" leads to the catalog page.
-    await expect(page.getByRole('link', { name: /browse all topics/i })).toBeVisible();
+    // "Browse by subtopic" leads to the catalog page.
+    await expect(page.getByRole('link', { name: /browse by subtopic/i })).toHaveAttribute(
+      'href',
+      '/topics/',
+    );
   });
 });
 

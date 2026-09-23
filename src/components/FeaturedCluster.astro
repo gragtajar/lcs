@@ -1,0 +1,303 @@
+---
+// FeaturedCluster (homepage brief §2) — one featured cluster: its name, description
+// and colour on the left; on the right its three auto-selected lessons as a lead
+// (title, excerpt, meta) and two secondaries, in the hairline-row idiom the lesson
+// list uses. No card around it and no cards inside it: the page is paper, and each
+// lesson is a row whose title is the link, stretched over the row so the accessible
+// name is the title alone.
+import Icon from './Icon.astro';
+import { t } from '../lib/i18n';
+import { categoryIconName } from '../lib/icons';
+import { categoryUrl } from '../lib/content';
+import { getArticleImage, hasArticleImage } from '../lib/images';
+import type { FeaturedCluster } from '../lib/homepage-data';
+
+interface Props {
+  featured: FeaturedCluster;
+}
+
+const { featured } = Astro.props;
+const { category, articles } = featured;
+const [lead, ...rest] = articles;
+
+const publishedCount = category.subtopics
+  .flatMap((s) => s.articles)
+  .filter((a) => a.published).length;
+const headingId = `cluster-${category.id}`;
+const leadHasImage = lead ? hasArticleImage(lead.lesson.id) : false;
+---
+
+<section class="cluster" data-cluster={category.id} aria-labelledby={headingId}>
+  <div class="cluster-intro">
+    <h3 class="cluster-name" id={headingId}>
+      <span class="cluster-icon">
+        <Icon name={categoryIconName(category.icon)} />
+      </span>
+      <a href={categoryUrl(category.id)}>{category.title}</a>
+    </h3>
+    <p class="cluster-desc">{category.description}</p>
+    <a class="cluster-browse" href={categoryUrl(category.id)}>
+      {t('homepage.clusterCards.browseAll', { count: publishedCount })}
+      <Icon name="chevron_right" />
+    </a>
+  </div>
+
+  {
+    lead && (
+      <div class="cluster-lessons">
+        <article class:list={['lead', { 'has-img': leadHasImage }]}>
+          {leadHasImage && (
+            <img
+              class="lead-img"
+              src={getArticleImage(lead.lesson.id, 'card')}
+              alt=""
+              width="600"
+              height="338"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+          <div class="lead-text">
+            <h4 class="lead-title">
+              <a href={lead.url}>{lead.lesson.title}</a>
+            </h4>
+            <p class="lead-excerpt">{lead.lesson.meta_description || lead.lesson.tldr[0] || ''}</p>
+            <p class="row-meta">
+              <span class="row-format">{t(`article.format.${lead.lesson.format}`)}</span>
+              <span class="row-sep" aria-hidden="true">
+                ·
+              </span>
+              <span>{t('list.minRead', { n: lead.lesson.length_min })}</span>
+              {lead.englishOnly && (
+                <span class="row-note" role="note">
+                  {t('homepage.clusterCards.englishOnlyBadge')}
+                </span>
+              )}
+            </p>
+          </div>
+        </article>
+
+        {rest.length > 0 && (
+          <ul class="secondaries">
+            {rest.map(({ lesson, url, englishOnly }) => (
+              <li>
+                <article class="row">
+                  <h4 class="row-title">
+                    <a href={url}>{lesson.title}</a>
+                  </h4>
+                  <p class="row-meta">
+                    <span class="row-format">{t(`article.format.${lesson.format}`)}</span>
+                    <span class="row-sep" aria-hidden="true">
+                      ·
+                    </span>
+                    <span>{t('list.minRead', { n: lesson.length_min })}</span>
+                    {englishOnly && (
+                      <span class="row-note" role="note">
+                        {t('homepage.clusterCards.englishOnlyBadge')}
+                      </span>
+                    )}
+                  </p>
+                </article>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
+</section>
+
+<style>
+  /* A hairline-separated section on the page grid: intro left, lessons right. */
+  .cluster {
+    display: grid;
+    gap: var(--space-5) var(--space-7);
+    padding: var(--space-6) 0 var(--space-7);
+    border-top: 1px solid var(--color-border);
+  }
+  @media (min-width: 960px) {
+    .cluster {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    }
+  }
+
+  .cluster-name {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--text-xl);
+    margin: 0 0 var(--space-3);
+  }
+  /* The icon sits on the name's first line, not centred on a three-line wrap. */
+  .cluster-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin-top: 0.15em;
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .cluster-icon :global(.icon) {
+    width: 24px;
+    height: 24px;
+  }
+  .cluster-name a {
+    color: var(--color-text);
+  }
+  .cluster-name a:hover {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .cluster-desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    max-width: var(--measure);
+    margin: 0 0 var(--space-3);
+  }
+  .cluster-browse {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .cluster-browse:hover {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .cluster-browse :global(.icon) {
+    width: 18px;
+    height: 18px;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .cluster-browse:hover :global(.icon) {
+    transform: translateX(2px);
+  }
+
+  /* Lead and secondaries share one row grammar: the title is the link, stretched
+     over the row; the focus ring outlines the row; hover paints the title in the
+     cluster's ink. */
+  .lead,
+  .row {
+    position: relative;
+    cursor: pointer;
+  }
+  .lead-title a::after,
+  .row-title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .lead:has(:focus-visible),
+  .row:has(:focus-visible) {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 4px;
+    border-radius: var(--radius-xs);
+  }
+  .lead-title a:focus-visible,
+  .row-title a:focus-visible {
+    outline: none;
+  }
+  .lead-title a,
+  .row-title a {
+    color: var(--color-text);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .lead:hover .lead-title a,
+  .row:hover .row-title a {
+    color: var(--cluster-ink, var(--color-primary));
+    text-decoration: none;
+  }
+
+  .lead {
+    display: grid;
+    gap: var(--space-4);
+  }
+  /* A real thumbnail (4 of 198 lessons) sits beside the lead text; never a slot. */
+  @media (min-width: 640px) {
+    .lead.has-img {
+      grid-template-columns: minmax(0, 1fr) 200px;
+      align-items: start;
+    }
+    .lead.has-img .lead-img {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .lead.has-img .lead-text {
+      grid-column: 1;
+      grid-row: 1;
+    }
+  }
+  .lead-img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-alt);
+  }
+  .lead-title {
+    font-size: var(--text-lg);
+    line-height: var(--leading-tight);
+    margin: 0;
+    max-width: var(--measure);
+  }
+  /* Three lines hold a whole meta description (~155 characters at this measure);
+     the clamp is a guard for the odd long one, not the normal case. */
+  .lead-excerpt {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-secondary);
+    max-width: var(--measure);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  @media (max-width: 639px) {
+    /* ~45 characters per line on a phone: four lines for the same whole thought. */
+    .lead-excerpt {
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+    }
+  }
+
+  .row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .row-format {
+    font-weight: var(--weight-ui);
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .row-sep {
+    color: var(--color-border);
+  }
+  .row-note {
+    color: var(--color-text-muted);
+  }
+
+  .secondaries {
+    list-style: none;
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0 var(--space-6);
+  }
+  @media (min-width: 640px) {
+    .secondaries {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .row {
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .row-title {
+    font-size: var(--text-base);
+    line-height: var(--leading-tight);
+    margin: 0;
+  }
+</style>

@@ -113,14 +113,19 @@
       "h1": "Civic sense, learnable.",
       "subhead": "Free. Fast. Multilingual. India-rooted. World-applicable.",
       "body": "A lifelong learning library for being a better neighbour, at home, on the road, online, anywhere people share space.",
-      "searchPlaceholder": "Search 200+ lessons…",
-      "searchSubmitLabel": "Search",
-      "scrollCueText": "{count} lessons across {clusterCount} topics"
+      "startHere": "Start with one lesson",
+      "allLessons": "All {count} lessons in {clusterCount} topics"
+    },
+    "featured": {
+      "heading": "Featured topics"
     },
     "clusterCards": {
-      "browseAll": "Browse all {count} lessons in {clusterName} →",
-      "browseAllTopics": "Browse all topics →",
+      "browseAll": "Browse all {count} lessons",
       "englishOnlyBadge": "Available in English only"
+    },
+    "topics": {
+      "heading": "All topics",
+      "bySubtopic": "Browse by subtopic"
     },
     "mission": {
       "h2": "Who this is for",
