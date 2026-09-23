@@ -264,8 +264,10 @@ const readable = (s: NavCategory['subtopics'][number]) =>
   details[open] .sb-chevron {
     transform: rotate(180deg);
   }
-  /* Sub-lists indent to the title's left edge (icon + gap); no tree line. */
-  .sb-sub-list {
+  /* Sub-lists indent to the title's left edge (icon + gap); no tree line.
+     Qualified with `ul` so it outranks the `.sidebar-nav ul { padding: 0 }`
+     reset above once Astro appends its scoping attributes to both. */
+  .sidebar-nav ul.sb-sub-list {
     padding-left: calc(18px + var(--space-2));
     margin: var(--space-1) 0 var(--space-2);
   }
