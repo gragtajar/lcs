@@ -9,8 +9,10 @@ import type { RelatedLink } from '../lib/content';
 
 interface Props {
   items: RelatedLink[];
+  /** The section's heading; "Up next" unless the caller has a better word. */
+  heading?: string;
 }
-const { items } = Astro.props;
+const { items, heading = t('article.upNext') } = Astro.props;
 const [next, ...rest] = items;
 ---
 
@@ -18,7 +20,7 @@ const [next, ...rest] = items;
   next && (
     <section class="related" aria-labelledby="related-h" data-pagefind-ignore>
       <h2 id="related-h" class="related-title">
-        {t('article.upNext')}
+        {heading}
       </h2>
       <a class="next" href={next.url}>
         <span class="next-where">

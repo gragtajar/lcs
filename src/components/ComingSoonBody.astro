@@ -1,79 +1,103 @@
 ---
-// The placeholder body shown when a planned article has no .md file yet.
-// Per addendum §2.3 / §2.4: calm amber-soft block, schedule icon, phase line,
-// link back to the subcategory. No newsletter, no "notify me" form.
-
+// The body of a planned lesson that has no file yet. It says so once, in the
+// site's own words, then gives the reader something to read: the subtopic's
+// published lessons in the article's own ending grammar ("Up next" card + rows),
+// or the category's when the subtopic has none yet. No card, no clock, no
+// roadmap phase. Per ADR-006 the URL stays live; per the search work it stays
+// out of the index body (`data-pagefind-ignore`).
 import Icon from './Icon.astro';
+import RelatedLinks from './RelatedLinks.astro';
+import SubtopicIndex from './SubtopicIndex.astro';
 import { t } from '../lib/i18n';
 import { subtopicUrl } from '../lib/content';
+import type { RelatedLink } from '../lib/content';
 
 interface Props {
-  /** Phase number (2 for clusters + abroad packs; 4 for visitors). */
-  phase: number;
   categoryId: string;
+  categoryTitle: string;
   subtopicId: string;
   subtopicTitle: string;
+  /** Published lessons to read instead, nearest first (the caller caps them). */
+  onward: RelatedLink[];
+  /** Where `onward` comes from: this subtopic, or the category when it has none yet. */
+  onwardScope: 'subtopic' | 'category' | 'none';
+  /** The category's other subtopics, with readable counts. */
+  siblings: {
+    title: string;
+    url: string;
+    readable: number;
+    comingSoon: number;
+  }[];
 }
 
-const { phase, categoryId, subtopicId, subtopicTitle } = Astro.props;
-const backUrl = subtopicUrl(categoryId, subtopicId);
-const backLabel = t('article.comingSoonBack', { subtopic: subtopicTitle });
+const { categoryId, categoryTitle, subtopicId, subtopicTitle, onward, onwardScope, siblings } =
+  Astro.props;
+const where = onwardScope === 'subtopic' ? subtopicTitle : categoryTitle;
 ---
 
 <section class="cs" data-pagefind-ignore>
-  <div class="cs-card">
-    <span class="cs-icon">
-      <Icon name="schedule" />
-    </span>
-    <p class="cs-heading">{t('article.comingSoonHeading')}</p>
-    <p class="cs-phase">{t('article.comingSoonPhase', { n: phase })}</p>
-    <a class="cs-back" href={backUrl}>{backLabel}</a>
-  </div>
+  <p class="cs-status">{t('article.comingSoonHeading')}</p>
+
+  {
+    onward.length > 0 && (
+      <RelatedLinks items={onward} heading={t('article.meanwhileIn', { where })} />
+    )
+  }
+
+  {
+    onwardScope === 'subtopic' ? (
+      <a class="cs-all" href={subtopicUrl(categoryId, subtopicId)}>
+        {t('article.allLessonsIn', { subtopic: subtopicTitle })}
+        <Icon name="chevron_right" />
+      </a>
+    ) : (
+      <div class="cs-more">
+        <SubtopicIndex
+          rows={siblings}
+          heading={t('list.moreIn', { category: categoryTitle })}
+          id="more-in"
+          columns={1}
+        />
+        {onwardScope === 'none' && (
+          <a class="cs-all" href="/#topics">
+            {t('homepage.topics.heading')}
+            <Icon name="chevron_right" />
+          </a>
+        )}
+      </div>
+    )
+  }
 </section>
 
 <style>
   .cs {
-    margin: var(--space-5) 0 var(--space-7);
-    display: flex;
-    justify-content: center;
+    margin: var(--space-4) 0 var(--space-7);
   }
-  .cs-card {
-    text-align: center;
-    background: var(--color-accent-soft);
-    border-radius: var(--radius-lg);
-    padding: var(--space-7) var(--space-5);
-    max-width: 460px;
-    width: 100%;
-  }
-  .cs-icon {
-    display: inline-grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--color-accent) 18%, var(--color-accent-soft));
-    color: var(--color-accent);
-    margin-bottom: var(--space-3);
-  }
-  .cs-icon :global(.icon) {
-    width: 22px;
-    height: 22px;
-  }
-  .cs-heading {
+  /* The status, once, as the body's first line: a hairline above it, the same
+     weight as a lede, in the text colour rather than an alarm colour. */
+  .cs-status {
     font-size: var(--text-lg);
-    font-weight: var(--weight-heading);
+    line-height: 1.5;
     color: var(--color-text);
-    margin-bottom: var(--space-2);
-    line-height: 1.4;
+    max-width: var(--measure);
+    margin: 0;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
   }
-  .cs-phase {
-    color: var(--color-accent);
-    font-weight: var(--weight-ui);
-    margin-bottom: var(--space-5);
+  .cs-more {
+    margin-top: var(--space-7);
   }
-  .cs-back {
-    display: inline-block;
-    color: var(--color-primary);
+  .cs-all {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    margin-top: var(--space-5);
+    font-size: var(--text-sm);
     font-weight: var(--weight-ui);
+  }
+  .cs-all :global(.icon) {
+    width: 18px;
+    height: 18px;
   }
 </style>

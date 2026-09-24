@@ -12,12 +12,14 @@ first paint), it belongs in `src/islands/` instead.
 | `ArticleHeader.astro`   | article page                         | h1 + format chip + metadata row + image placeholder      |
 | `ArticleListItem.astro` | subcategory page                     | list-row card per article (real or coming-soon)          |
 | `Breadcrumb.astro`      | category, subcategory, article pages | `<nav>` with chevron-separated crumbs                    |
-| `CategoryCard.astro`    | homepage, category landing           | accordion card per India cluster / abroad pack           |
-| `ComingSoonBody.astro`  | article page (placeholder variant)   | calm amber card with phase line + back link              |
+| `CategoryCard.astro`    | topics catalog (`/topics/`)          | accordion card per India cluster / abroad pack           |
+| `ComingSoonBody.astro`  | article page (placeholder variant)   | status line + "Meanwhile, in …" lessons + a way onward   |
 | `Footer.astro`          | every page                           | minimal footer with About/Search/Privacy/Terms links     |
 | `Icon.astro`            | everywhere                           | inline SVG sprite (Material-Symbols-style outline icons) |
 | `RelatedLinks.astro`    | article page                         | "Related lessons" list (resolved by ID via taxonomy)     |
-| `SidebarNav.astro`      | category, subcategory pages          | left-rail accordion + name-only filter                   |
+| `SidebarNav.astro`      | subcategory pages                    | left-rail accordion + name-only filter                   |
+| `SubtopicIndex.astro`   | category page, coming-soon article   | hairline rows of subtopics with readable counts + times  |
+| `TopicIndex.astro`      | homepage, search page, category page | the 14 topics with readable counts, grouped India/abroad |
 | `SourcesList.astro`     | article page                         | numbered citations from frontmatter `sources:`           |
 | `TldrBox.astro`         | article page                         | amber-tinted "TL;DR" callout                             |
 | `TopBar.astro`          | every page (via BaseLayout)          | sticky header with logo + search trigger + theme toggle  |
