@@ -10,6 +10,7 @@ target_fingerprint: "sha256:26073712c0d4ccec4ddcb0dde019fb4dd0146b8cbd5d1f6f0899
 target_path: /Users/rajatg/Documents/Claude/Projects/civic sense/learncivicsense-website/src/components/ComingSoonBody.astro
 timestamp: 2026-09-24T00-53-53Z
 slug: src-components-comingsoonbody-astro
+closed: true
 ---
 Method: dual-agent (A: design review sub-agent · B: detector/browser sub-agent), synthesised by the parent. Mode: Read (H7 n/a).
 

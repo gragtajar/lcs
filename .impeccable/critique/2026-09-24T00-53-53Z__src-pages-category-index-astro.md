@@ -10,6 +10,7 @@ target_fingerprint: "sha256:f87b871b7631b9a6f36eb2e986d9397b0f6ecb815cbbfad88884
 target_path: /Users/rajatg/Documents/Claude/Projects/civic sense/learncivicsense-website/src/pages/[category]/index.astro
 timestamp: 2026-09-24T00-53-53Z
 slug: src-pages-category-index-astro
+closed: true
 ---
 Method: dual-agent (A: design review sub-agent · B: detector/browser sub-agent), synthesised by the parent. Mode: Operate/Read index (H10 n/a).
 
