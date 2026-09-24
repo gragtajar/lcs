@@ -55,6 +55,12 @@
     "soonShort": "soon",
     "noCategoriesMatch": "No categories match."
   },
+  "category": {
+    "subtopicCount_one": "{count} subtopic",
+    "subtopicCount_other": "{count} subtopics",
+    "subtopicsIn": "Subtopics in {category}",
+    "otherTopics": "Other topics"
+  },
   "visitors": {
     "heroTitle": "For visitors to India",
     "phaseNote": "This module is in design. Detailed lessons are scheduled for Phase 4.",
@@ -76,8 +82,9 @@
     "favoritePlaceholder": "Save lesson (coming soon)",
     "comingSoonBadge": "Coming soon",
     "comingSoonHeading": "This lesson is being written.",
-    "comingSoonPhase": "Expected in Phase {n}.",
-    "comingSoonBack": "← All lessons in {subtopic}",
+    "comingSoonDescription": "This lesson is being written. It belongs to {subtopic}, in {category}.",
+    "meanwhileIn": "Meanwhile, in {where}",
+    "allLessonsIn": "All lessons in {subtopic}",
     "upNext": "Up next",
     "moreLessons": "More lessons",
     "inCategory": "in {category}"

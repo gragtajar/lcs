@@ -1,0 +1,127 @@
+---
+// The subtopics of one category as an index a picker can use: hairline rows,
+// each naming the subtopic, how many lessons a reader can open today, and (when
+// the caller has them) what kind of lessons they are and how long they take
+// together. The category page renders it under the lede; the coming-soon
+// article uses it as "More in {Category}" when its own subtopic has nothing to
+// read yet. Rows carry the page's cluster ink on hover via data-cluster above.
+import { t } from '../lib/i18n';
+
+export interface SubtopicRow {
+  title: string;
+  url: string;
+  /** Lessons a reader can open today. */
+  readable: number;
+  /** Lessons still being written. */
+  comingSoon: number;
+  /** Display word for the subtopic's default format ("Scenario"). */
+  format?: string;
+  /** Total reading time of the readable lessons, in minutes. */
+  minutes?: number;
+}
+
+interface Props {
+  rows: SubtopicRow[];
+  /** Visible heading; omit when the page's h1 already names the list. */
+  heading?: string;
+  /** Prefix for the heading id (one per page), so the section can be labelled by it. */
+  id?: string;
+  /** Accessible name for the list when there is no visible heading. */
+  label?: string;
+  /** Two columns from 768px (the default), or one inside a narrow column. */
+  columns?: 1 | 2;
+}
+
+const { rows, heading, id = 'subtopics', label, columns = 2 } = Astro.props;
+const headingId = heading ? `${id}-h` : undefined;
+
+function metaOf(r: SubtopicRow): string {
+  if (r.readable === 0) return t('list.comingSoonBadge');
+  const parts = [r.format ?? '', t('list.lessonCount', { count: r.readable })];
+  if (r.minutes) parts.push(t('list.totalMinutes', { n: r.minutes }));
+  if (r.comingSoon > 0) parts.push(t('list.comingSoonCount', { count: r.comingSoon }));
+  return parts.filter(Boolean).join(' · ');
+}
+---
+
+<section class="si" aria-labelledby={headingId} aria-label={headingId ? undefined : label}>
+  {
+    heading && (
+      <h2 id={headingId} class="si-h">
+        {heading}
+      </h2>
+    )
+  }
+  <ul class:list={['si-list', { 'si-list-single': columns === 1 }]}>
+    {
+      rows.map((r) => (
+        <li class="si-item">
+          <a class:list={['si-link', { 'si-soon': r.readable === 0 }]} href={r.url}>
+            <span class="si-title">{r.title}</span>
+            <span class="si-meta">{metaOf(r)}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .si-h {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    margin: 0 0 var(--space-2);
+  }
+  .si-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0 var(--space-7);
+  }
+  @media (min-width: 768px) {
+    .si-list:not(.si-list-single) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .si-item {
+    border-top: 1px solid var(--color-border);
+  }
+  /* The closing hairline is a full-width grid row of its own, so it sits under
+     whichever column ends last. */
+  .si-list::after {
+    content: '';
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--color-border);
+  }
+  .si-link {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 44px;
+    padding: var(--space-3) 0;
+    color: var(--color-text);
+  }
+  .si-link:hover {
+    text-decoration: none;
+  }
+  .si-title {
+    font-weight: var(--weight-ui);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .si-link:hover .si-title,
+  .si-link:focus-visible .si-title {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .si-meta {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  /* Nothing to read yet: the row stays a link (the subtopic page exists) but
+     says so in the same words the lesson list and search use. */
+  .si-soon .si-title {
+    color: var(--color-text-secondary);
+  }
+</style>

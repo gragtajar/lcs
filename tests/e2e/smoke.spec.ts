@@ -86,6 +86,23 @@ test.describe('Topics catalog page', () => {
 });
 
 test.describe('Category and subcategory pages', () => {
+  test('category page is an index of its subtopics with readable counts', async ({ page }) => {
+    await page.goto('/traffic/');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/traffic and roads/i);
+    // The current page is the last crumb; no accordion repeats the title.
+    await expect(page.locator('.breadcrumb [aria-current="page"]')).toContainText(
+      /traffic and roads/i,
+    );
+    await expect(page.locator('details.cat')).toHaveCount(0);
+    // One row per subtopic (traffic has ten), each saying what can be read today.
+    await expect(page.locator('.si-link')).toHaveCount(10);
+    await expect(page.locator('.si-meta').first()).toContainText(/lessons?/i);
+    await expect(page.locator('.si-link').first()).toHaveAttribute('href', /^\/traffic\/.+\/$/);
+    // The ending: the other thirteen topics.
+    await expect(page.getByRole('heading', { name: /other topics/i })).toBeVisible();
+    await expect(page.locator('#other-h ~ .topics-group .topics-link')).toHaveCount(13);
+  });
+
   test('subcategory page lists articles with a sidebar', async ({ page }) => {
     await page.goto('/traffic/honking-discipline/');
     // breadcrumb leads back
@@ -110,6 +127,11 @@ test.describe('Article page (real)', () => {
   test('renders title, TL;DR, body, sources, related, and quiz', async ({ page }) => {
     await page.goto('/traffic/honking-discipline/the-case-against-honking/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/honking/i);
+    // The trail stops at the subtopic, which stays a link (the article is the page).
+    await expect(page.locator('.breadcrumb a').last()).toHaveAttribute(
+      'href',
+      '/traffic/honking-discipline/',
+    );
     await expect(page.getByText(/TL;DR/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /sources/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /quick check/i })).toBeVisible();
@@ -146,7 +168,14 @@ test.describe('Article page (coming-soon)', () => {
     test.skip(!found, 'every candidate subtopic is fully published');
     await page.goto(found!.article);
     await expect(page.locator('.ah-soon-badge')).toContainText(/coming soon/i);
-    await expect(page.locator('.cs-card')).toContainText(/lesson is being written/i);
+    await expect(page.locator('.cs-status')).toContainText(/lesson is being written/i);
+    // The stub leads somewhere: published lessons nearby ("Meanwhile, in …") and,
+    // when its subtopic has none, the category's other subtopics.
+    await expect(page.locator('.cs .related, .cs .si').first()).toBeVisible();
+    await expect(page.locator('.cs a').first()).toHaveAttribute('href', /^\/.+\/$/);
+    // The breadcrumb's subtopic crumb is a real link, not the "current page".
+    await expect(page.locator('.breadcrumb a').last()).toHaveAttribute('href', found!.subcategory);
+    await expect(page.locator('.breadcrumb [aria-current="page"]')).toHaveCount(0);
     // No TOC, quiz, sources, or ShareBar on coming-soon
     await expect(page.locator('.quiz')).toHaveCount(0);
     await expect(page.locator('.toc')).toHaveCount(0);

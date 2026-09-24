@@ -1,8 +1,21 @@
 ---
+// A category's front page: what the topic is about (the description as a real
+// lede), the facts a picker needs, its subtopics as an index of what can be read
+// today, and the rest of the library as the way onward. No card and no accordion:
+// the h1 is the category, once, in its own colour.
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import CategoryCard from '../../components/CategoryCard.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
-import { getNavCategories, getCategory } from '../../lib/content';
+import Icon from '../../components/Icon.astro';
+import SubtopicIndex from '../../components/SubtopicIndex.astro';
+import TopicIndex from '../../components/TopicIndex.astro';
+import {
+  getNavCategories,
+  getCategory,
+  subtopicUrl,
+  loadLessonForArticle,
+} from '../../lib/content';
+import { getTopicIndex } from '../../lib/homepage-data';
+import { categoryIconName } from '../../lib/icons';
 import { t } from '../../lib/i18n';
 
 // Static path generation covers all 14 navigable categories (clusters + abroad packs).
@@ -13,38 +26,96 @@ export function getStaticPaths() {
 const { category } = Astro.params;
 const cat = getCategory(category!);
 if (!cat) return Astro.redirect('/');
+
+// One row per subtopic, counting what a reader can open today (not what is
+// planned), with the kind of lesson and how long the readable ones take together.
+const rows = cat.subtopics.map((s) => {
+  const readable = s.articles.filter((a) => a.published);
+  const minutes = readable.reduce((n, a) => n + (loadLessonForArticle(a)?.length_min ?? 0), 0);
+  return {
+    title: s.title,
+    url: subtopicUrl(cat.id, s.id),
+    readable: readable.length,
+    comingSoon: s.articles.length - readable.length,
+    format: t(`article.format.${s.defaultFormat}`),
+    minutes,
+  };
+});
+const readableTotal = rows.reduce((n, r) => n + r.readable, 0);
+const comingSoonTotal = rows.reduce((n, r) => n + r.comingSoon, 0);
+const facts = [
+  t('category.subtopicCount', { count: rows.length }),
+  t('list.lessonCount', { count: readableTotal }),
+  comingSoonTotal > 0 ? t('list.comingSoonCount', { count: comingSoonTotal }) : '',
+].filter(Boolean);
+
+const topics = getTopicIndex();
 ---
 
 <BaseLayout title={cat.title} description={cat.description} width="wide">
-  <div data-cluster={cat.id}>
+  <div class="cat-page" data-cluster={cat.id}>
     <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cat.title }]} />
 
-    <section class="cat-hero">
-      <h1 class="cat-hero-title">{cat.title}</h1>
-      <p class="cat-hero-body">{cat.description}</p>
-    </section>
+    <header class="cat-head">
+      <h1 class="cat-title">
+        <span class="cat-icon">
+          <Icon name={categoryIconName(cat.icon)} />
+        </span>
+        {cat.title}
+      </h1>
+      <p class="cat-lede">{cat.description}</p>
+      <p class="cat-facts">{facts.join(' · ')}</p>
+    </header>
 
-    <section class="cat-grid">
-      <CategoryCard category={cat} openByDefault={true} />
+    <SubtopicIndex rows={rows} label={t('category.subtopicsIn', { category: cat.title })} />
+
+    <section class="cat-more" aria-labelledby="other-h">
+      <TopicIndex groups={topics} heading={t('category.otherTopics')} id="other" exclude={cat.id} />
     </section>
   </div>
 </BaseLayout>
 
 <style>
-  .cat-hero {
-    padding: var(--space-5) 0 var(--space-5);
-    max-width: 720px;
+  .cat-head {
+    padding: var(--space-5) 0 var(--space-6);
   }
-  .cat-hero-title {
-    font-size: var(--text-3xl);
-    margin-bottom: var(--space-3);
+  /* The category, once: its icon in its ink, on the first line of the title. */
+  .cat-title {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    font-size: clamp(2rem, 1.2rem + 3vw, var(--text-3xl));
+    margin: 0 0 var(--space-4);
   }
-  .cat-hero-body {
-    color: var(--color-text-secondary);
+  .cat-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin-top: 0.12em;
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .cat-icon :global(.icon) {
+    width: 0.85em;
+    height: 0.85em;
+  }
+  /* The description is the page's authored voice: a lede, not a caption. */
+  .cat-lede {
     font-size: var(--text-lg);
-    line-height: 1.55;
+    line-height: 1.5;
+    color: var(--color-text);
+    max-width: var(--measure);
+    margin: 0 0 var(--space-3);
   }
-  .cat-grid {
-    margin-top: var(--space-3);
+  .cat-facts {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  /* The ending: the rest of the library. */
+  .cat-more {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
   }
 </style>

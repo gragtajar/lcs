@@ -17,7 +17,10 @@ const { items } = Astro.props;
     {
       items.map((item, i) => (
         <li>
-          {item.href && i < items.length - 1 ? (
+          {/* A crumb with an href is a link wherever it sits: pages whose trail stops
+              at the parent (lesson lists, articles) pass the parent WITH its href, and
+              only a last crumb without one is the current page. */}
+          {item.href ? (
             <a href={item.href}>{item.label}</a>
           ) : (
             <span aria-current={i === items.length - 1 ? 'page' : undefined}>{item.label}</span>

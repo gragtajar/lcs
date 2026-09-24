@@ -14,9 +14,14 @@ interface Props {
   id: string;
   /** Two columns from 768px (the default), or one inside a narrow column. */
   columns?: 1 | 2;
+  /** A topic to leave out: the page's own, on a category page's "Other topics". */
+  exclude?: string;
 }
 
-const { groups, heading, id, columns = 2 } = Astro.props;
+const { groups: allGroups, heading, id, columns = 2, exclude } = Astro.props;
+const groups = allGroups
+  .map((g) => ({ ...g, items: g.items.filter((item) => item.id !== exclude) }))
+  .filter((g) => g.items.length > 0);
 const groupLabel: Record<string, string> = {
   india: t('home.sectionIndia'),
   abroad: t('home.sectionAbroad'),

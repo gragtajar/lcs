@@ -19,6 +19,8 @@ import {
   categoryUrl,
   subtopicUrl,
   articleUrl,
+  type PlannedArticle,
+  type RelatedLink,
 } from '../../../lib/content';
 import { renderLessonBody } from '../../../lib/markdown';
 import { getArticleImage } from '../../../lib/images';
@@ -62,9 +64,61 @@ const canonical = articleUrl(planned);
 const shareUrl = new URL(canonical, 'https://learncivicsense.in').toString();
 // <meta description>: prefer the authored meta_description, fall back to tldr[0]
 // for un-backfilled articles, then category/title. `||` (not `??`) so an empty
-// meta_description string falls through.
-const description =
-  lesson?.meta_description || lesson?.tldr?.[0] || cat.description || planned.title;
+// meta_description string falls through. A stub says what it is instead of
+// borrowing the category's blurb for a lesson that is not there.
+const description = isComingSoon
+  ? t('article.comingSoonDescription', { subtopic: sub.title, category: cat.title })
+  : lesson?.meta_description || lesson?.tldr?.[0] || cat.description || planned.title;
+
+// A stub still leads somewhere: the subtopic's published lessons, or the
+// category's when the subtopic has none yet, in the article's own ending grammar.
+const toOnward = (a: PlannedArticle): RelatedLink | null => {
+  const l = loadLessonForArticle(a);
+  return l
+    ? {
+        id: a.id,
+        title: l.title,
+        url: articleUrl(a),
+        category: cat.title,
+        subtopic: a.subtopic.title,
+        minutes: l.length_min,
+      }
+    : null;
+};
+const ONWARD_MAX = 4;
+let onward: RelatedLink[] = [];
+let onwardScope: 'subtopic' | 'category' | 'none' = 'none';
+if (isComingSoon) {
+  const inSubtopic = sub.articles
+    .filter((a) => a.published && a.id !== planned.id)
+    .map(toOnward)
+    .filter((x): x is RelatedLink => x !== null);
+  if (inSubtopic.length > 0) {
+    onward = inSubtopic.slice(0, ONWARD_MAX);
+    onwardScope = 'subtopic';
+  } else {
+    const inCategory = cat.subtopics
+      .filter((s) => s.id !== sub.id)
+      .flatMap((s) => s.articles)
+      .filter((a) => a.published)
+      .map(toOnward)
+      .filter((x): x is RelatedLink => x !== null);
+    if (inCategory.length > 0) {
+      onward = inCategory.slice(0, ONWARD_MAX);
+      onwardScope = 'category';
+    }
+  }
+}
+const siblingSubtopics = isComingSoon
+  ? cat.subtopics
+      .filter((s) => s.id !== sub.id)
+      .map((s) => ({
+        title: s.title,
+        url: subtopicUrl(cat.id, s.id),
+        readable: s.articles.filter((a) => a.published).length,
+        comingSoon: s.articles.filter((a) => !a.published).length,
+      }))
+  : [];
 
 // OG/social-card overrides apply only to real articles. og:title uses the bare
 // lesson title (or its og_title override); og:description prefers og_description,
@@ -175,10 +229,13 @@ const tocItems = isComingSoon
         {
           isComingSoon ? (
             <ComingSoonBody
-              phase={2}
               categoryId={cat.id}
+              categoryTitle={cat.title}
               subtopicId={sub.id}
               subtopicTitle={sub.title}
+              onward={onward}
+              onwardScope={onwardScope}
+              siblings={siblingSubtopics}
             />
           ) : (
             <>
