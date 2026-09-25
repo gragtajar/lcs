@@ -123,7 +123,10 @@ async function checkFiles() {
 async function expectRedirect(from, to) {
   const res = await request(from);
   const location = res.headers.get('location') ?? '';
-  if (res.status !== 301 || location !== to) {
+  // Apache's own trailing-slash redirect may send a relative Location; what
+  // matters is where it resolves to.
+  const target = location ? new URL(location, from).href : '';
+  if (res.status !== 301 || target !== to) {
     fail(`${from} → expected 301 to ${to}, got ${res.status} ${location}`);
   }
 }
