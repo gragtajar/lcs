@@ -12,3 +12,5 @@ test-results/
 
 # impeccable live-session scratch (annotations, sessions); the critique snapshots are kept.
 .impeccable/live/
+playwright-report-prod/
+test-results-prod/

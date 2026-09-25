@@ -25,6 +25,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:prod": "playwright test --config playwright.prod.config.ts",
+    "verify:deploy": "node scripts/verify-deploy.mjs",
     "prepare": "husky"
   },
   "dependencies": {

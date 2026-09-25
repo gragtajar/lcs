@@ -1,9 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Smoke + a11y suite. Talks to `npm run preview` (production build with
- * Pagefind index baked in) by default. Override `PLAYWRIGHT_BASE_URL` to
- * point at a preview deployment from CI.
+ * Smoke suite against the production build before it ships. Talks to
+ * `npm run preview` (the built dist/ with the Pagefind index) by default.
+ * Every test runs in four projects: desktop and mobile, light and dark.
+ *
+ * The same smoke suite also runs against the live site after each deploy,
+ * together with tests/prod/ — see playwright.prod.config.ts.
  */
 export default defineConfig({
   testDir: './tests/e2e',
@@ -18,8 +21,10 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'desktop-light', use: { ...devices['Desktop Chrome'], colorScheme: 'light' } },
+    { name: 'desktop-dark', use: { ...devices['Desktop Chrome'], colorScheme: 'dark' } },
+    { name: 'mobile-light', use: { ...devices['Pixel 7'], colorScheme: 'light' } },
+    { name: 'mobile-dark', use: { ...devices['Pixel 7'], colorScheme: 'dark' } },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined

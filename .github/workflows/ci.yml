@@ -1,20 +1,29 @@
 name: CI
 
+# Every check the site has, in one place. It runs on each pull request, and the
+# Deploy production workflow calls it on every push to main, then deploys the
+# exact build these jobs tested. A pull request is ready to merge when all of
+# these are green.
+
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
+  workflow_call:
 
-# Cancel in-progress runs when a new commit is pushed to the same PR.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # A new push to a pull request cancels its older run. When Deploy calls this
+  # workflow the group is unique to that run; Deploy serialises itself.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  lint-typecheck-build:
+  build:
     name: Lint, typecheck, build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,19 +32,11 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci --legacy-peer-deps
-      - name: Fetch content repo (private lcs-content)
+      - name: Fetch lcs-content and lcs-workflow (private)
         env:
           CONTENT_REPO_TOKEN: ${{ secrets.CONTENT_REPO_TOKEN }}
-        run: |
-          if [ -z "$CONTENT_REPO_TOKEN" ]; then
-            echo "::error::CONTENT_REPO_TOKEN not set — the build and content-reading tests need lcs-content."
-            exit 1
-          fi
-          # The website reads ../learncivicsense-content (sibling of the repo root).
-          git clone --depth 1 \
-            "https://x-access-token:${CONTENT_REPO_TOKEN}@github.com/gragtajar/lcs-content.git" \
-            ../learncivicsense-content
-          echo "Cloned lcs-content ($(find ../learncivicsense-content -name '*.en.md' | wc -l | tr -d ' ') lessons)."
+          WORKFLOW_REPO_TOKEN: ${{ secrets.WORKFLOW_REPO_TOKEN }}
+        run: bash scripts/ci/clone-sources.sh
       - name: Format check
         run: npm run format:check
       - name: ESLint
@@ -54,56 +55,124 @@ jobs:
           path: coverage/
           retention-days: 3
       - name: Build (Astro + Pagefind)
-        # IMAGEKIT_PRIVATE_KEY (optional secret) lets the prebuild step refresh the
-        # article-image registry from the ImageKit Media Library. Absent -> the
-        # committed registry is used; the build never depends on the API.
+        # IMAGEKIT_PRIVATE_KEY lets the prebuild step refresh the article-image
+        # registry from the ImageKit Media Library; without it the committed
+        # registry is used and the build still succeeds.
         run: npm run build
         env:
           IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
-      - name: Upload dist artifact
+      - name: Check the build is complete
+        run: |
+          for f in index.html 404.html .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
+            test -s "dist/$f" || { echo "::error::dist/$f is missing"; exit 1; }
+          done
+          node -e '
+            const b = require("./dist/build-info.json");
+            console.log(JSON.stringify(b, null, 2));
+            if (!b.site || !b.content) { console.error("build-info.json lacks the site or content commit"); process.exit(1); }
+            if (b.lessons.published < 1) { console.error("no published lessons in the build"); process.exit(1); }
+          '
+          echo "$(find dist -type f | wc -l | tr -d ' ') files, $(du -sh dist | cut -f1)"
+      - name: Upload the build
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
-          retention-days: 3
+          # .htaccess is a dotfile; upload-artifact skips those by default.
+          include-hidden-files: true
+          retention-days: 14
 
   content-lint:
     name: Content lint
     runs-on: ubuntu-latest
-    # The lint script itself lives in the private lcs-workflow repo. Until a
-    # WORKFLOW_REPO_TOKEN secret is added, lint.py is skipped (soft) — the build
-    # job already validates the content via the real Astro build.
-    continue-on-error: true
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch content + workflow repos
-        id: fetch
+      - name: Fetch lcs-content and lcs-workflow (private)
+        id: sources
         env:
           CONTENT_REPO_TOKEN: ${{ secrets.CONTENT_REPO_TOKEN }}
           WORKFLOW_REPO_TOKEN: ${{ secrets.WORKFLOW_REPO_TOKEN }}
-        run: |
-          if [ -n "$CONTENT_REPO_TOKEN" ]; then
-            git clone --depth 1 \
-              "https://x-access-token:${CONTENT_REPO_TOKEN}@github.com/gragtajar/lcs-content.git" \
-              ../learncivicsense-content
-          fi
-          if [ -n "$WORKFLOW_REPO_TOKEN" ]; then
-            git clone --depth 1 \
-              "https://x-access-token:${WORKFLOW_REPO_TOKEN}@github.com/gragtajar/lcs-workflow.git" \
-              ../learncivicsense-workflow
-          fi
-          if [ -f ../learncivicsense-workflow/04-auto-lint/lint.py ] && [ -f ../learncivicsense-content/01-taxonomy/taxonomy.json ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::lint.py or content not available (add WORKFLOW_REPO_TOKEN to enable); skipping content lint."
-          fi
+        run: bash scripts/ci/clone-sources.sh
       - uses: actions/setup-python@v5
-        if: steps.fetch.outputs.available == 'true'
+        if: steps.sources.outputs.workflow_available == 'true'
         with:
           python-version: '3.12'
       - name: Run lint.py
-        if: steps.fetch.outputs.available == 'true'
+        # lint.py lives in lcs-workflow. When no token here can read that repo
+        # the step is skipped (see the notice above); the build still validates
+        # every lesson it renders.
+        if: steps.sources.outputs.workflow_available == 'true'
         run: |
           pip install pyyaml
           python3 ../learncivicsense-workflow/04-auto-lint/lint.py --repo ../learncivicsense-content/
+
+  e2e:
+    name: E2E (desktop + mobile, light + dark)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright against the build
+        run: npm run test:e2e
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  lighthouse:
+    name: Lighthouse (${{ matrix.form }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        form: [desktop, mobile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Lighthouse CI
+        run: npx lhci autorun --config=${{ matrix.form == 'desktop' && 'lighthouserc.json' || 'lighthouserc.mobile.json' }}
+
+  size-limit:
+    name: Size limit
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Run size-limit
+        run: npx size-limit

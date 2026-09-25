@@ -9,6 +9,10 @@
 # site. Directory listings are already off on this host, so `Options` (which
 # not every host lets .htaccess change) is deliberately not used.
 
+# The site's own 404 page. NOTE: this host currently replaces every error body
+# with its own 13-byte "404 Not Found" / "403 Forbidden", whatever ErrorDocument
+# says (tested in every form on 2026-09-26, PR #28). The status codes are still
+# right; the designed page shows again as soon as the host honours this.
 ErrorDocument 404 /404.html
 ErrorDocument 403 /404.html
 

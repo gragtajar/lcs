@@ -1,20 +1,26 @@
 # Project notes for Claude
 
-## Git workflow — standing instruction (set 2026-06-11)
+## Git workflow — standing instruction (set 2026-06-11, extended 2026-09-26)
 
-From now on, land every website change through a PR-style flow, then merge to main:
+Every change to **any** of the lcs repos (`lcs`, `lcs-content`, `lcs-workflow`)
+goes through a pull request: commit, open a PR, merge it once its checks are
+green. Never push to `main` directly.
 
-1. Branch off `main`: `feat/…`, `fix/…`, `chore/…`, `docs/…`, or `content/…`.
+1. Branch off `main`: `feat/…`, `fix/…`, `chore/…`, `docs/…`, `ci/…`, or `content/…`.
 2. Commit (husky runs lint-staged + commitlint; subject must be sentence-case).
-3. Push the branch; surface the PR compare URL.
-4. Merge to `main` with a merge commit (`git merge --no-ff`) once green, then
-   `git push origin main`. Delete the merged branch.
+3. Push the branch as gragtajar; open the PR with `gh pr create`.
+4. Merge with a merge commit once green (`gh pr merge --merge --delete-branch`).
+   In `lcs`, green means every CI check on the PR. `lcs-content` and
+   `lcs-workflow` are private on GitHub Free, which offers neither auto-merge
+   nor branch protection there, and they have no CI: merge after verifying.
 5. Never force-push; never push secrets.
 
-**Tooling:** `gh` is installed at `~/.local/bin/gh` and authenticated (scopes
-`repo`, `workflow`). Use `gh pr create` / `gh pr merge` for the flow above.
-`main` is protected (PR + 1 review/clean status required), so changes land via
-PR merge, not direct push.
+**Tooling:** `gh` is installed at `~/.local/bin/gh` (accounts `rajat-lt` and
+`gragtajar`; the gragtajar token has `repo` + `workflow`). The laptop's default
+git credential cannot read the private repos: fetch and push with
+`https://gragtajar:$(gh auth token)@github.com/gragtajar/<repo>.git` after
+`gh auth switch --user gragtajar`, then switch back. `lcs`'s `main` requires a
+PR (no required reviews or status checks are configured).
 
 **Commit identity gotcha:** the GitHub account has email-privacy on, so commits
 must use the noreply email or pushes are rejected (`GH007`). All repos are
@@ -60,7 +66,17 @@ If `newly_published_since_last_build` is empty, rebuild idempotently and report
 
 ## Deploy note
 
-This repo deploys via cPanel FTP on push to `main` (`.github/workflows/deploy.yml`).
-Content lives in the sibling `../learncivicsense-content/` repo. A local build +
-manifest roll-forward does NOT deploy; only push to `main` does. Don't push or
-deploy unless asked.
+Production is `https://learncivicsense.in` on GoDaddy cPanel hosting (ADR 008,
+`docs/runbooks/deploy.md`). **Merging a PR into `lcs` deploys it**: the push to
+`main` runs **Deploy production** = the full CI, an FTPS upload of that exact
+build, then live verification (every file byte for byte, redirects, headers, and
+a Playwright pass on desktop/mobile × light/dark). Merges into `lcs-content` or
+`lcs-workflow` deploy through **Content sync** within ~15 minutes; start one at
+once with `gh workflow run deploy.yml --repo gragtajar/lcs --ref main -f reason="…"`.
+`/build-info.json` on the live site shows which commits are deployed. A deploy
+is done when its **Verify production** job is green; look at it, and at the
+`production-report` screenshots, before reporting a deploy as done.
+
+A local build + manifest roll-forward does NOT deploy. In the publishing
+procedure above, "built and live" now means live on learncivicsense.in: roll the
+manifest forward only after the deploy carrying those lessons is verified.
