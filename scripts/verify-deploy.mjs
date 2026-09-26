@@ -4,7 +4,8 @@
 //
 // 1. Every file in dist/ is served at its URL with status 200, the expected
 //    content type, and the same bytes (sha256). The live site is then exactly
-//    the build CI tested: no partial upload, no stale file, nothing rewritten.
+//    the build CI tested: no partial upload, no stale file, nothing rewritten
+//    (apart from the host's own script, recognised narrowly below).
 // 2. The Apache policy from public/.htaccess holds: one HTTPS origin (http and
 //    www redirect), 404 for missing pages, hidden dotfiles, security headers,
 //    cache lifetimes and compression.
@@ -40,6 +41,16 @@ const TYPES = {
   '.txt': /^text\/plain/,
   '.woff2': /^font\/woff2/,
 };
+
+// GoDaddy inserts its TCCL performance-monitoring loader into every HTML
+// response, immediately before </html>: an inline <script> that queues
+// `_trfd` settings and a <script src> from img1.wsimg.com (found by the first
+// deploy, 2026-09-26; the snippet says opting out means contacting GoDaddy
+// support). It is recognised this narrowly and reported on every run; any other
+// difference between a served page and the build still fails the check.
+const HOST_INJECTION =
+  /<script>'undefined'=== typeof _trfq \|\| \(window\._trfq = \[\]\);[^<]*<\/script><script src='https:\/\/img1\.wsimg\.com\/traffic-assets\/js\/tccl\.min\.js'><\/script>(?=<\/html>)/;
+let hostInjected = 0;
 
 const failures = [];
 const fail = (msg) => failures.push(msg);
@@ -91,9 +102,15 @@ async function checkFile(rel) {
   if (res.status !== 200) return fail(`${urlPath}: HTTP ${res.status}`);
   const body = Buffer.from(await res.arrayBuffer());
   if (sha256(body) !== sha256(local)) {
-    return fail(
-      `${urlPath}: served bytes differ from the build (${body.length} vs ${local.length} bytes)`,
-    );
+    const withoutHost = rel.endsWith('.html')
+      ? Buffer.from(body.toString('utf8').replace(HOST_INJECTION, ''), 'utf8')
+      : body;
+    if (withoutHost.length === body.length || sha256(withoutHost) !== sha256(local)) {
+      return fail(
+        `${urlPath}: served bytes differ from the build (${body.length} vs ${local.length} bytes)`,
+      );
+    }
+    hostInjected++;
   }
   const want = TYPES[path.extname(rel)];
   const type = res.headers.get('content-type') ?? '';
@@ -187,6 +204,11 @@ const live = await request(`${ORIGIN}/build-info.json?${BUST}`);
 if (live.status === 200) console.log(`Live build: ${(await live.text()).trim()}`);
 
 const count = await checkFiles();
+if (hostInjected) {
+  const note = `${hostInjected} HTML page(s) are served with GoDaddy's injected monitoring script (img1.wsimg.com/traffic-assets/js/tccl.min.js) before </html>; apart from that they match the build byte for byte. Opting out is done through GoDaddy support.`;
+  console.log(note);
+  if (process.env.GITHUB_ACTIONS) console.log(`::warning title=Host injects a script::${note}`);
+}
 if (POLICY) await checkPolicy(await walk(DIST));
 
 const secs = ((Date.now() - started) / 1000).toFixed(1);

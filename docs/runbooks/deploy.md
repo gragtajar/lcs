@@ -71,8 +71,17 @@ cause and re-run the deploy by hand; the next sync check continues from there.
 
 - Missing pages answer **404** with GoDaddy's own 13-byte text, not the site's
   404 page; `ErrorDocument` is ignored by the host (ADR 008).
-- FTPS runs with `security: loose`, because the FTP certificate is issued to
-  `*.prod.phx3.secureserver.net` rather than `learncivicsense.in`.
+- GoDaddy **injects a monitoring script into every HTML page** (before
+  `</html>`: an inline `_trfd` queue plus
+  `img1.wsimg.com/traffic-assets/js/tccl.min.js`), which sets `_tccl_visitor`,
+  `_tccl_visit` and `_scc_session` cookies and beacons to
+  `csp.secureserver.net`. Its own comment says opting out is done by contacting
+  GoDaddy hosting support. Verification recognises exactly this injection and
+  shows a warning on each run; anything else that differs from the build fails.
+- The FTP certificate is issued to `*.prod.phx3.secureserver.net`. With
+  `FTP_SERVER` = `learncivicsense.in` the upload uses `security: loose`
+  (encrypted, server not verified); set `FTP_SERVER` to
+  `p3plzcpnl505141.prod.phx3.secureserver.net` and it verifies the certificate.
 - The FTP account's home directory is the web root. Never delete `.well-known`
   (certificate renewal) or `.ftpquota`. The deploy never touches files it did
   not upload.

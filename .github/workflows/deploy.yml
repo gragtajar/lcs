@@ -75,9 +75,12 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           protocol: ftps
-          # The host's FTP certificate names *.prod.phx3.secureserver.net, not
-          # FTP_SERVER, so it cannot be verified; the session is still encrypted.
-          security: loose
+          # The host's FTP certificate names *.prod.phx3.secureserver.net. With
+          # FTP_SERVER set to the domain it cannot be verified (the session is
+          # still encrypted); set FTP_SERVER to the server's own name,
+          # p3plzcpnl505141.prod.phx3.secureserver.net (same IP, certificate
+          # verified 2026-09-26), and the certificate is checked from then on.
+          security: ${{ endsWith(secrets.FTP_SERVER, '.secureserver.net') && 'strict' || 'loose' }}
           local-dir: ./dist/
           # The FTP account's home directory is the web root (checked in PR #28
           # by writing a file over FTP and reading it back over HTTPS).
