@@ -17,6 +17,14 @@ import path from 'node:path';
 const EXPECTED_SITE_SHA = process.env.EXPECTED_SITE_SHA;
 const GROUND = { light: 'rgb(251, 250, 247)', dark: 'rgb(23, 22, 19)' } as const;
 
+// GoDaddy injects its own monitoring script into every page (a loader from
+// img1.wsimg.com that beacons to csp.secureserver.net; see the deploy runbook).
+// Those requests belong to the host, not the site: a beacon cut short by the
+// next navigation is not a site failure. scripts/verify-deploy.mjs reports the
+// injection on every deploy.
+const HOST_MONITORING = new Set(['img1.wsimg.com', 'csp.secureserver.net']);
+const isHostMonitoring = (url: string) => HOST_MONITORING.has(new URL(url).host);
+
 /** Console errors, page errors, and failed requests seen while the page is open. */
 function watch(page: Page): string[] {
   const problems: string[] = [];
@@ -24,11 +32,15 @@ function watch(page: Page): string[] {
     if (m.type() === 'error') problems.push(`console: ${m.text()}`);
   });
   page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
-  page.on('requestfailed', (r) =>
-    problems.push(`request failed: ${r.url()} (${r.failure()?.errorText})`),
-  );
+  page.on('requestfailed', (r) => {
+    if (!isHostMonitoring(r.url())) {
+      problems.push(`request failed: ${r.url()} (${r.failure()?.errorText})`);
+    }
+  });
   page.on('response', (r) => {
-    if (r.status() >= 400) problems.push(`HTTP ${r.status()}: ${r.url()}`);
+    if (r.status() >= 400 && !isHostMonitoring(r.url())) {
+      problems.push(`HTTP ${r.status()}: ${r.url()}`);
+    }
   });
   return problems;
 }

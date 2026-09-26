@@ -64,12 +64,23 @@ Host on the GoDaddy account and deploy from GitHub Actions:
 - **Deploys are not atomic.** While changed files upload, a visitor can get a
   new page with an old stylesheet for a few seconds. After the first deploy
   uploads are incremental and small.
-- **FTPS without certificate verification.** The host's FTP certificate names
-  `*.prod.phx3.secureserver.net`, not `learncivicsense.in`, so it cannot be
-  verified against the current `FTP_SERVER`. The session is encrypted but not
-  authenticated. Setting `FTP_SERVER` to the server's own host name in that
-  domain (cPanel → FTP Accounts → Configure FTP Client) and `security: strict`
-  in `deploy.yml` would close that gap.
+- **FTPS certificate check depends on `FTP_SERVER`.** The host's FTP
+  certificate names `*.prod.phx3.secureserver.net`, not `learncivicsense.in`.
+  With `FTP_SERVER` set to the domain the session is encrypted but the server is
+  not authenticated. The server's own name,
+  `p3plzcpnl505141.prod.phx3.secureserver.net`, resolves to the same IP and its
+  certificate verifies (2026-09-26); `deploy.yml` switches to `security: strict`
+  automatically when `FTP_SERVER` ends in `.secureserver.net`.
+- **The host injects a monitoring script into every page.** Found by the first
+  deploy's verification: each HTML response gets two `<script>` tags before
+  `</html>` (an inline `_trfd` settings queue and
+  `https://img1.wsimg.com/traffic-assets/js/tccl.min.js`), commented "If you want
+  to opt-out, please contact web hosting support." In a browser it sets
+  `_tccl_visitor` (one year), `_tccl_visit` and `_scc_session` cookies on
+  `.learncivicsense.in` and sends beacons to `csp.secureserver.net`. The site
+  itself sets no cookies, and `/privacy/` says there are no third-party trackers.
+  Verification recognises exactly this injection, reports it on every deploy,
+  and still fails on any other difference.
 - **The host replaces error bodies.** Missing pages answer 404 with the host's
   own 13-byte text; `ErrorDocument` is ignored in every form (quoted text, local
   path, with or without rewrites; PR #28). The designed `/404.html` is deployed
