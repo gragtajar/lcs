@@ -36,7 +36,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          head_of() { git ls-remote "https://x-access-token:${2}@github.com/gragtajar/${1}.git" refs/heads/main 2>/dev/null | cut -f1; }
+          # Prints the commit of main, or nothing when this token cannot read the
+          # repo. The `|| true` matters: under pipefail a failed ls-remote would
+          # otherwise end the script, and lcs-workflow is expected to be
+          # unreadable until a token with access to it is added.
+          head_of() { git ls-remote "https://x-access-token:${2}@github.com/gragtajar/${1}.git" refs/heads/main 2>/dev/null | cut -f1 || true; }
 
           content=$(head_of lcs-content "$CONTENT_REPO_TOKEN")
           if [ -z "$content" ]; then echo "::error::cannot read lcs-content"; exit 1; fi
