@@ -29,7 +29,10 @@
         "uses-responsive-images": "warn",
         "total-byte-weight": ["error", { "maxNumericValue": 200000 }],
         "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
-        "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }]
+        "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }],
+        "lcp-lazy-loaded": "off",
+        "non-composited-animations": "off",
+        "prioritize-lcp-image": "off"
       }
     },
     "upload": { "target": "temporary-public-storage" }

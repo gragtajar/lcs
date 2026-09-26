@@ -3,9 +3,8 @@
 A free, fast, multilingual reading library for civic sense in India.
 Built with Astro, Pagefind, and a tiny set of Preact islands.
 
+[![Deploy production](https://github.com/gragtajar/lcs/actions/workflows/deploy.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/deploy.yml)
 [![CI](https://github.com/gragtajar/lcs/actions/workflows/ci.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/ci.yml)
-[![E2E](https://github.com/gragtajar/lcs/actions/workflows/e2e.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/e2e.yml)
-[![Perf](https://github.com/gragtajar/lcs/actions/workflows/perf.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/perf.yml)
 
 ## Quick start
 
@@ -30,6 +29,16 @@ Search and JSON-LD only render against the production build (`npm run build` the
   (44 specs / ≥80% coverage), Playwright smoke suite (12 specs × 2 devices),
   Lighthouse CI (desktop + mobile), size-limit budgets, Cloudflare Web
   Analytics + Sentry (env-gated), sitemap, JSON-LD, OG/Twitter meta
+
+## Deployment
+
+Production is `https://learncivicsense.in` on GoDaddy cPanel hosting
+([ADR 008](./docs/adrs/008-godaddy-cpanel-hosting.md)). Every merge to `main`,
+and every content change in `lcs-content` / `lcs-workflow`, runs the full CI,
+uploads the tested build over FTPS, and verifies the live site: every file byte
+for byte, redirects, headers, and a browser pass on desktop and mobile in light
+and dark. See [`docs/runbooks/deploy.md`](./docs/runbooks/deploy.md);
+`/build-info.json` shows what is live.
 
 ## Cloudflare setup (Item 1)
 
@@ -85,7 +94,7 @@ deploy. See `learncivicsense-content/IMAGES-README.md` for the full checklist.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — system shape, data flow, tech stack
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — dev workflow, branching, commit conventions
 - [`docs/adrs/`](./docs/adrs/) — architecture decision records
-- [`docs/runbooks/`](./docs/runbooks/) — branch protection, observability setup, rollback
+- [`docs/runbooks/`](./docs/runbooks/) — deploy, rollback, branch protection, observability setup
 - [`WEBSITE-BUILD-SPEC.md`](./WEBSITE-BUILD-SPEC.md) — original v1 spec (what we built)
 - [`WEBSITE-BUILD-SPEC-v2-ADDENDUM.md`](./WEBSITE-BUILD-SPEC-v2-ADDENDUM.md) — v2 volumetric nav
 - [`PRODUCTION-READINESS-SPEC.md`](./PRODUCTION-READINESS-SPEC.md) — the Phase 1 hardening plan
@@ -104,6 +113,8 @@ deploy. See `learncivicsense-content/IMAGES-README.md` for the full checklist.
 | `npm run test`          | Vitest unit tests                        |
 | `npm run test:coverage` | Vitest + coverage with thresholds        |
 | `npm run test:e2e`      | Playwright (auto-starts `preview`)       |
+| `npm run test:prod`     | Playwright against the live site         |
+| `npm run verify:deploy` | Live site vs `dist/`, byte for byte      |
 | `npm run lhci`          | Lighthouse CI desktop preset             |
 | `npm run size`          | size-limit budget check                  |
 

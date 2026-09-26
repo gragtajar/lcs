@@ -1,0 +1,104 @@
+name: Content sync
+
+# The site is built from three repos, but only pushes to this one start a
+# deploy. Every 15 minutes this compares the lcs-content (and, when a token can
+# read it, lcs-workflow) commits recorded in the live /build-info.json with
+# those repos' main branches, and starts Deploy production when they differ.
+#
+# Each content state is attempted once. If that deploy fails, this workflow
+# does not retry it every 15 minutes; fix the cause and re-run the deploy from
+# the Actions tab (or push a fix), and the next check picks up from there.
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: content-sync
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  sync:
+    name: Deploy if content changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Compare the live build with the content repos
+        id: compare
+        env:
+          CONTENT_REPO_TOKEN: ${{ secrets.CONTENT_REPO_TOKEN }}
+          WORKFLOW_REPO_TOKEN: ${{ secrets.WORKFLOW_REPO_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          head_of() { git ls-remote "https://x-access-token:${2}@github.com/gragtajar/${1}.git" refs/heads/main 2>/dev/null | cut -f1; }
+
+          content=$(head_of lcs-content "$CONTENT_REPO_TOKEN")
+          if [ -z "$content" ]; then echo "::error::cannot read lcs-content"; exit 1; fi
+          workflow=""
+          for token in "${WORKFLOW_REPO_TOKEN:-}" "$CONTENT_REPO_TOKEN"; do
+            if [ -n "$token" ]; then workflow=$(head_of lcs-workflow "$token"); fi
+            if [ -n "$workflow" ]; then break; fi
+          done
+
+          live=$(curl -fsS --max-time 20 "https://learncivicsense.in/build-info.json?sync=${GITHUB_RUN_ID}" || echo '{}')
+          live_content=$(printf '%s' "$live" | jq -r '.content // ""')
+          live_workflow=$(printf '%s' "$live" | jq -r '.workflow // ""')
+          echo "lcs-content:  main ${content:0:7}, live ${live_content:0:7}"
+          echo "lcs-workflow: main ${workflow:0:7}, live ${live_workflow:0:7}"
+
+          if [ "$content" = "$live_content" ] && { [ -z "$workflow" ] || [ "$workflow" = "$live_workflow" ]; }; then
+            echo "The live site is current."
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          running=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 20 --json status \
+            --jq '[.[] | select(.status != "completed")] | length')
+          if [ "$running" != "0" ]; then
+            echo "A deploy is already running or queued; the next check re-evaluates after it."
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          reason="Content sync: lcs-content ${content:0:7}${workflow:+, lcs-workflow ${workflow:0:7}}"
+          {
+            echo "drift=true"
+            echo "key=content-sync-${content}-${workflow:-none}"
+            echo "reason=${reason}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Was this content state already attempted?
+        if: steps.compare.outputs.drift == 'true'
+        id: seen
+        uses: actions/cache/restore@v4
+        with:
+          path: .content-sync-marker
+          key: ${{ steps.compare.outputs.key }}
+          lookup-only: true
+
+      - name: Already attempted
+        if: steps.compare.outputs.drift == 'true' && steps.seen.outputs.cache-hit == 'true'
+        run: echo "::warning::A deploy for this content state was already started and the live site still differs. Look at the latest Deploy production run; re-run it once the cause is fixed."
+
+      - name: Start Deploy production
+        if: steps.compare.outputs.drift == 'true' && steps.seen.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.compare.outputs.reason }}
+        run: |
+          gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref main -f reason="$REASON"
+          echo "Started: $REASON"
+          echo "$REASON" > .content-sync-marker
+
+      - name: Remember this attempt
+        if: steps.compare.outputs.drift == 'true' && steps.seen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .content-sync-marker
+          key: ${{ steps.compare.outputs.key }}

@@ -1,6 +1,6 @@
 # ADR 003: Cloudflare Pages as future host (cPanel FTP transitional)
 
-**Status:** Accepted (planned migration; current deploy is cPanel FTP)
+**Status:** Superseded by [ADR 008](./008-godaddy-cpanel-hosting.md) (2026-09-26: the owner chose GoDaddy cPanel hosting)
 **Date:** 2026-05-25
 **Authors:** Rajat Garg
 

@@ -1,27 +1,120 @@
-name: Deploy Website to cPanel
+name: Deploy production
+
+# learncivicsense.in on GoDaddy cPanel hosting (ADR 008).
+#
+# On every push to main (and when the Content sync workflow sees lcs-content or
+# lcs-workflow move on, or when started by hand) this runs the complete CI,
+# uploads the exact build CI tested over FTPS, and then verifies the live site:
+# every file byte for byte, the redirects, headers and caching, and a browser
+# pass on desktop and mobile in light and dark. A green run means the live site
+# is that build and works; a red run says which step to look at
+# (docs/runbooks/deploy.md).
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why this deploy is running
+        required: false
+        default: Manual deploy
+
+concurrency:
+  # One deploy at a time, and never cancel an upload half way.
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
-  web-deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - name: Get latest code
-        uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0
+  checks:
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
 
-      - name: Sync files to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+  deploy:
+    name: Upload to GoDaddy (FTPS)
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://learncivicsense.in/
+    steps:
+      - name: Download the tested build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Refuse an incomplete build
+        env:
+          REASON: ${{ inputs.reason }}
+        run: |
+          echo "Trigger: ${GITHUB_EVENT_NAME}${REASON:+ ($REASON)}"
+          for f in index.html 404.html .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
+            test -s "dist/$f" || { echo "::error::dist/$f is missing"; exit 1; }
+          done
+          node -e '
+            const b = require("./dist/build-info.json");
+            if (b.site !== process.env.GITHUB_SHA) {
+              console.error(`build-info.json says ${b.site}, this run is ${process.env.GITHUB_SHA}`);
+              process.exit(1);
+            }
+            console.log(`Deploying ${b.site} with lcs-content ${b.content}${b.workflow ? " and lcs-workflow " + b.workflow : ""}: ${b.lessons.published} of ${b.lessons.planned} lessons published.`);
+          '
+      - name: Upload changed files over FTPS
+        # Pinned to the v4.4.0 commit. It keeps a state file on the server and
+        # uploads only what changed; it never deletes anything it did not upload,
+        # so the host's .well-known and .ftpquota are left alone.
+        uses: SamKirkland/FTP-Deploy-Action@110f9186c050f71550953127052e77650219c287 # v4.4.0
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: 21 # Forces GitHub to utilize standard FTP port 21
-          server-dir: /public_html/
+          port: 21
+          protocol: ftps
+          # The host's FTP certificate names *.prod.phx3.secureserver.net, not
+          # FTP_SERVER, so it cannot be verified; the session is still encrypted.
+          security: loose
+          local-dir: ./dist/
+          # The FTP account's home directory is the web root (checked in PR #28
+          # by writing a file over FTP and reading it back over HTTPS).
+          server-dir: ./
+          log-level: standard
+
+  verify:
+    name: Verify production
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Every file, redirect, header and cache rule
+        run: node scripts/verify-deploy.mjs --dist dist --origin https://learncivicsense.in
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Browser pass on the live site (desktop + mobile, light + dark)
+        run: npm run test:prod
+        env:
+          PROD_URL: https://learncivicsense.in
+          EXPECTED_SITE_SHA: ${{ github.sha }}
+      - name: Upload the report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-report
+          path: |
+            playwright-report-prod/
+            test-results-prod/
+          retention-days: 14

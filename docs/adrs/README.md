@@ -39,11 +39,12 @@ Links to relevant code, external docs, related ADRs.
 
 ## Index
 
-| #                                        | Title                                 | Status                                      |
-| ---------------------------------------- | ------------------------------------- | ------------------------------------------- |
-| [001](./001-astro-over-nextjs.md)        | Astro over Next.js                    | Accepted                                    |
-| [002](./002-pagefind-over-algolia.md)    | Pagefind over Algolia / Elasticsearch | Accepted                                    |
-| [003](./003-cloudflare-pages-hosting.md) | Cloudflare Pages as future host       | Accepted (current: cPanel FTP transitional) |
-| [004](./004-hind-font-family.md)         | Hind superfamily for typography       | Accepted                                    |
-| [005](./005-design-token-palette.md)     | Teal + amber design token palette     | Accepted                                    |
-| [006](./006-coming-soon-rendering.md)    | Coming-soon stubs from taxonomy       | Accepted                                    |
+| #                                        | Title                                 | Status                |
+| ---------------------------------------- | ------------------------------------- | --------------------- |
+| [001](./001-astro-over-nextjs.md)        | Astro over Next.js                    | Accepted              |
+| [002](./002-pagefind-over-algolia.md)    | Pagefind over Algolia / Elasticsearch | Accepted              |
+| [003](./003-cloudflare-pages-hosting.md) | Cloudflare Pages as future host       | Superseded by ADR 008 |
+| [004](./004-hind-font-family.md)         | Hind superfamily for typography       | Accepted              |
+| [005](./005-design-token-palette.md)     | Teal + amber design token palette     | Accepted              |
+| [006](./006-coming-soon-rendering.md)    | Coming-soon stubs from taxonomy       | Accepted              |
+| [008](./008-godaddy-cpanel-hosting.md)   | GoDaddy cPanel hosting, FTPS deploys  | Accepted              |

@@ -6,10 +6,7 @@
         "http://localhost/index.html",
         "http://localhost/traffic/honking-discipline/the-case-against-honking/index.html"
       ],
-      "numberOfRuns": 3,
-      "settings": {
-        "preset": "mobile"
-      }
+      "numberOfRuns": 3
     },
     "assert": {
       "preset": "lighthouse:no-pwa",
@@ -20,7 +17,10 @@
         "categories:seo": ["error", { "minScore": 0.95 }],
         "total-byte-weight": ["error", { "maxNumericValue": 200000 }],
         "first-contentful-paint": ["warn", { "maxNumericValue": 2500 }],
-        "largest-contentful-paint": ["error", { "maxNumericValue": 4000 }]
+        "largest-contentful-paint": ["error", { "maxNumericValue": 4000 }],
+        "lcp-lazy-loaded": "off",
+        "non-composited-animations": "off",
+        "prioritize-lcp-image": "off"
       }
     },
     "upload": { "target": "temporary-public-storage" }

@@ -1,85 +1,50 @@
 # Rollback runbook
 
-How to revert a bad production deploy. Two paths depending on the host.
+How to undo a bad production deploy of `learncivicsense.in` (GoDaddy cPanel,
+deployed over FTPS by **Deploy production** — see [deploy.md](./deploy.md) and
+[ADR 008](../adrs/008-godaddy-cpanel-hosting.md)).
 
-## Current host: cPanel via FTP
+The upload is **not atomic**, and there is no "previous version" button on this
+host. A rollback is a new deploy of the old code, through the same pipeline and
+the same checks. Never force-push `main`.
 
-The FTP push is **not atomic**. A bad deploy may leave the site partially
-uploaded. To roll back:
+## A bad site change (a merged pull request in `lcs`)
 
-### Option A: re-deploy a known-good commit
-
-1. Find the last green commit on `main`:
-   ```bash
-   git log --oneline origin/main
-   ```
-2. Revert local main to that commit and push:
-   ```bash
-   git checkout main
-   git reset --hard <known-good-sha>
-   git push --force-with-lease origin main
-   ```
-3. The `Deploy Website to cPanel` workflow will re-run and push the old
-   build via FTP. Wait ~3-5 min for the upload to finish.
-4. Verify: `curl -fsSL https://learncivicsense.in/` and the
-   `/traffic/honking-discipline/the-case-against-honking/` article.
-
-Note: `--force-with-lease` is destructive. If anyone has merged on top of
-your bad commit, prefer **Option B** (revert commit) so you don't lose work.
-
-### Option B: revert PR commit
-
-1. Identify the merge commit that introduced the regression:
+1. Find the merge commit that introduced it:
    ```bash
    git log --oneline -20 origin/main
    ```
-2. Revert it:
+2. Revert it on a branch and open a pull request:
    ```bash
-   git checkout main
-   git pull
+   git checkout -b revert/<short-name> origin/main
    git revert -m 1 <merge-sha>
-   git push origin main
+   git push origin revert/<short-name>
+   gh pr create --repo gragtajar/lcs --title "revert: <what>" --body "Why"
    ```
-3. The revert commit triggers a fresh deploy.
+3. Merge it once CI is green. The push to `main` deploys the reverted site and
+   verifies it.
 
-## Future host: Cloudflare Pages (post-migration)
+## A bad content change (a merged pull request in `lcs-content`)
 
-Atomic deploys mean rollback is one click.
-
-### Via dashboard
-
-1. **Cloudflare dashboard → Pages → learncivicsense → Deployments**
-2. Find the last good deployment in the list.
-3. Click **... → Rollback to this deployment**.
-4. Within ~30 seconds the CDN cache flips. Verify with `curl`.
-
-### Via CLI
+Revert the merge in `lcs-content` the same way (branch, `git revert -m 1`,
+pull request, merge). Content sync deploys it within ~15 minutes; to deploy at
+once:
 
 ```bash
-npx wrangler pages deployment list --project-name learncivicsense
-npx wrangler pages deployment promote <deployment-id> --project-name learncivicsense
+gh workflow run deploy.yml --repo gragtajar/lcs --ref main -f reason="Revert <what>"
 ```
 
-### Verify
+## The upload itself failed half way
+
+Re-run the failed jobs of that Deploy production run. The action's state file
+on the server makes the retry upload only what is missing.
+
+## Confirm
+
+The Verify production job of the new run must be green, and
 
 ```bash
-curl -sI https://learncivicsense.in/ | grep -E '^(HTTP|cf-cache)'
-curl -fsSL https://learncivicsense.in/ > /dev/null && echo OK
-curl -fsSL https://learncivicsense.in/sitemap-index.xml > /dev/null && echo OK
+curl -s https://learncivicsense.in/build-info.json
 ```
 
-## After the rollback
-
-1. **Open an incident issue** in the repo. Label: `incident`.
-2. **Write a postmortem** in `docs/runbooks/postmortems/YYYY-MM-DD-slug.md`.
-3. **Block forward progress** until the underlying bug is fixed and a
-   regression test exists.
-
-## What NOT to do
-
-- **Don't roll back by manually re-uploading via FTP.** It races with any
-  in-flight CI run.
-- **Don't disable CI to push a hotfix.** Either the gate is right and the
-  hotfix needs tests, or the gate is wrong and that's a separate fix.
-- **Don't force-push to `main` without `--force-with-lease`.** It will
-  silently overwrite a collaborator's push.
+must show the commits you expect.

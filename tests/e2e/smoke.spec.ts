@@ -37,7 +37,7 @@ async function findComingSoon(
  *  The trigger is a Preact island, so a click fired before hydration is a no-op —
  *  retry until the overlay's input actually shows up. */
 async function openSearchOverlay(page: Page) {
-  const trigger = page.getByRole('button', { name: /open search/i });
+  const trigger = page.getByRole('button', { name: /search lessons/i });
   const input = page.getByPlaceholder(/search lessons/i).first();
   await expect(async () => {
     await trigger.click();
@@ -300,6 +300,9 @@ test.describe('404', () => {
   test('renders the custom not-found page', async ({ page }) => {
     const res = await page.goto('/this-route-does-not-exist/');
     expect(res?.status()).toBe(404);
-    await expect(page.getByText(/page not found/i)).toBeVisible();
+    // On production only the status is the site's: GoDaddy replaces every error
+    // body with its own text whatever ErrorDocument says (tested 2026-09-26,
+    // PR #28). tests/prod/ checks that the designed /404.html is deployed.
+    if (!process.env.PROD_URL) await expect(page.getByText(/page not found/i)).toBeVisible();
   });
 });
