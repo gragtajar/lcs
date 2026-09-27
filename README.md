@@ -1,6 +1,6 @@
-# learncivicsense.in — website
+# Learn Civic Sense — website
 
-A free, fast, multilingual reading library for civic sense in India.
+A free reading library for civic sense in India, live at https://learncivicsense.in.
 Built with Astro, Pagefind, and a tiny set of Preact islands.
 
 [![Deploy production](https://github.com/gragtajar/lcs/actions/workflows/deploy.yml/badge.svg)](https://github.com/gragtajar/lcs/actions/workflows/deploy.yml)

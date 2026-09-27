@@ -62,6 +62,12 @@ test.describe('Homepage', () => {
     await expect(page.locator('#topics .topics-link')).toHaveCount(14);
     // Mission section below the fold.
     await expect(page.getByRole('heading', { name: /who this is for/i })).toBeVisible();
+    // Its sheet closes the page on the footer: no empty band of page ground between.
+    const mission = await page.locator('.mission').boundingBox();
+    const footer = await page.locator('.footer').boundingBox();
+    expect(Math.round(footer!.y - (mission!.y + mission!.height))).toBe(0);
+    // The facts line no longer carries "Free. Fast. Multilingual."
+    await expect(page.locator('.hero-facts')).toHaveText('India-rooted. World-applicable.');
     // "Browse by subtopic" leads to the catalog page.
     await expect(page.getByRole('link', { name: /browse by subtopic/i })).toHaveAttribute(
       'href',
@@ -285,6 +291,29 @@ test.describe('Theme toggle persistence', () => {
     const reloaded = await page.evaluate(() => document.documentElement.dataset.theme);
     expect(reloaded).toBe(after);
   });
+
+  test('says what it will do in the site’s own tooltip, which Escape hides', async ({
+    page,
+  }, info) => {
+    test.skip(!!info.project.use.isMobile, 'hover tooltips are for pointer devices');
+    await page.goto('/');
+    const toggle = page.locator('.theme-toggle');
+    const tip = page.locator('.theme-tip');
+    // No browser-native title bubble on top of ours.
+    await expect(toggle).not.toHaveAttribute('title', /.+/);
+    await expect(tip).toHaveCSS('opacity', '0');
+    // Hovering before hydration shows the server's tooltip too; retry until it shows.
+    await expect(async () => {
+      await page.mouse.move(0, 400);
+      await toggle.hover();
+      await expect(tip).toHaveCSS('opacity', '1', { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+    await expect(tip).toHaveText(/^Switch to (dark|light) theme$/);
+    // The tooltip repeats the button's name, so it is hidden from assistive tech.
+    await expect(toggle).toHaveAccessibleName((await tip.textContent())!.trim());
+    await page.keyboard.press('Escape');
+    await expect(tip).toHaveCSS('opacity', '0');
+  });
 });
 
 test.describe('Top bar', () => {
@@ -299,7 +328,7 @@ test.describe('Top bar', () => {
     ]) {
       await page.goto(url);
       await expect(page.locator('.topbar')).toBeVisible();
-      await expect(page.locator('.brand-name')).toContainText('learncivicsense.in');
+      await expect(page.locator('.brand-name')).toContainText('Learn Civic Sense');
     }
   });
 });

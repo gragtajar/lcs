@@ -68,7 +68,7 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
     <meta property="og:title" content={meta.ogTitle} />
     <meta property="og:description" content={meta.ogDescription} />
     <meta property="og:url" content={meta.canonicalUrl} />
-    <meta property="og:site_name" content="learncivicsense.in" />
+    <meta property="og:site_name" content={t('siteName')} />
     <meta property="og:locale" content="en_IN" />
     {meta.ogImage && <meta property="og:image" content={meta.ogImage} />}
 

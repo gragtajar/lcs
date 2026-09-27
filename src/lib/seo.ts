@@ -40,7 +40,7 @@ export interface RenderedMeta {
 }
 
 const SITE_ORIGIN = 'https://learncivicsense.in';
-const SITE_NAME = 'learncivicsense.in';
+const SITE_NAME = 'Learn Civic Sense';
 const SITE_TAGLINE = 'Practical civic sense for India';
 
 export function buildMeta(input: MetaInput): RenderedMeta {

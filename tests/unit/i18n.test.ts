@@ -3,7 +3,7 @@ import { t, formatDate } from '../../src/lib/i18n';
 
 describe('t()', () => {
   it('returns the literal string for simple keys', () => {
-    expect(t('siteName')).toBe('learncivicsense.in');
+    expect(t('siteName')).toBe('Learn Civic Sense');
   });
 
   it('walks dotted paths into nested objects', () => {
@@ -28,7 +28,7 @@ describe('t()', () => {
   });
 
   it('falls back to the bare key when no plural variant exists', () => {
-    expect(t('siteName', { count: 5 })).toBe('learncivicsense.in');
+    expect(t('siteName', { count: 5 })).toBe('Learn Civic Sense');
   });
 
   it('returns the key when a path is missing entirely', () => {
@@ -68,7 +68,7 @@ describe('t() locale fallback (i18n stubs)', () => {
   it('falls back to English for an untranslated stub locale', () => {
     // hi.json is a stub with _translated:false → English value is returned.
     expect(tt('article.tldr', {}, 'hi')).toBe('TL;DR');
-    expect(tt('siteName', {}, 'ta')).toBe('learncivicsense.in');
+    expect(tt('siteName', {}, 'ta')).toBe('Learn Civic Sense');
   });
 
   it('falls back to English for an unknown locale code', () => {

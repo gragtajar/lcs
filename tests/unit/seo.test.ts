@@ -11,12 +11,12 @@ import type { Lesson, NavCategory, NavSubtopic } from '../../src/lib/content';
 describe('buildMeta()', () => {
   it('suffixes the title with the site name when title provided', () => {
     const m = buildMeta({ title: 'Honking', description: 'd', path: '/x' });
-    expect(m.fullTitle).toBe('Honking — learncivicsense.in');
+    expect(m.fullTitle).toBe('Honking — Learn Civic Sense');
   });
 
   it('falls back to site name + tagline when title is empty', () => {
     const m = buildMeta({ title: '', description: 'd', path: '/' });
-    expect(m.fullTitle).toBe('learncivicsense.in — Practical civic sense for India');
+    expect(m.fullTitle).toBe('Learn Civic Sense — Practical civic sense for India');
   });
 
   it('builds an absolute canonical URL', () => {
@@ -44,7 +44,7 @@ describe('buildMeta()', () => {
 
   it('defaults ogTitle to the suffixed full title and ogDescription to description', () => {
     const m = buildMeta({ title: 'Honking', description: 'd', path: '/x' });
-    expect(m.ogTitle).toBe('Honking — learncivicsense.in');
+    expect(m.ogTitle).toBe('Honking — Learn Civic Sense');
     expect(m.ogDescription).toBe('d');
   });
 
@@ -59,7 +59,7 @@ describe('buildMeta()', () => {
     expect(m.ogTitle).toBe('Honking');
     expect(m.ogDescription).toBe('social desc');
     // The browser-tab title is unaffected by the OG overrides.
-    expect(m.fullTitle).toBe('Honking — learncivicsense.in');
+    expect(m.fullTitle).toBe('Honking — Learn Civic Sense');
   });
 });
 

@@ -1,6 +1,6 @@
-# learncivicsense.in
+# Learn Civic Sense
 
-> A free, fast, multilingual reading library for civic sense. India-rooted, world-applicable. ~200 short articles teaching practical public-space behavior with documented sources and explicit sensitivity decisions.
+> A free reading library for civic sense, at https://learncivicsense.in. India-rooted, world-applicable. ~200 short articles teaching practical public-space behavior with documented sources and explicit sensitivity decisions.
 
 ## What this site teaches
 
@@ -28,7 +28,7 @@ Civic sense as practical learning: how to use public spaces, queues, traffic, hy
 
 ## How to cite
 
-When citing an article: "<Title>, learncivicsense.in (accessed YYYY-MM-DD)." When citing a primary source from within an article: use the source listed in the article's frontmatter `sources` block (the article curates these).
+When citing an article: "<Title>, Learn Civic Sense, learncivicsense.in (accessed YYYY-MM-DD)." When citing a primary source from within an article: use the source listed in the article's frontmatter `sources` block (the article curates these).
 
 ## Languages
 
