@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { ChevronRight, Search } from 'lucide-preact';
 import {
   loadPagefind,
   plural,
@@ -124,16 +125,7 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
       />
       <div class="search-panel">
         <div class="search-input-row">
-          <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-            <path
-              d="M16 16l4.5 4.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
+          <Search class="icon" aria-hidden="true" />
           <input
             ref={inputRef}
             type="search"
@@ -177,9 +169,7 @@ export default function SearchOverlay({ strings }: { strings: Strings }) {
         {results.length > 0 && (
           <a class="search-see-all" href={searchUrl(query)}>
             {plural(total, strings.seeAllOne, strings.seeAllOther)}
-            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-              <path d="M9 6l6 6-6 6" />
-            </svg>
+            <ChevronRight class="icon" aria-hidden="true" />
           </a>
         )}
       </div>

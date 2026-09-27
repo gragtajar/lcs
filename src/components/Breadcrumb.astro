@@ -25,7 +25,7 @@ const { items } = Astro.props;
           ) : (
             <span aria-current={i === items.length - 1 ? 'page' : undefined}>{item.label}</span>
           )}
-          {i < items.length - 1 && <Icon name="chevron_right" class="bc-sep" />}
+          {i < items.length - 1 && <Icon name="chevron-right" class="bc-sep" />}
         </li>
       ))
     }

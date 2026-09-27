@@ -48,7 +48,7 @@ const where = onwardScope === 'subtopic' ? subtopicTitle : categoryTitle;
     onwardScope === 'subtopic' ? (
       <a class="cs-all" href={subtopicUrl(categoryId, subtopicId)}>
         {t('article.allLessonsIn', { subtopic: subtopicTitle })}
-        <Icon name="chevron_right" />
+        <Icon name="chevron-right" />
       </a>
     ) : (
       <div class="cs-more">
@@ -61,7 +61,7 @@ const where = onwardScope === 'subtopic' ? subtopicTitle : categoryTitle;
         {onwardScope === 'none' && (
           <a class="cs-all" href="/#topics">
             {t('homepage.topics.heading')}
-            <Icon name="chevron_right" />
+            <Icon name="chevron-right" />
           </a>
         )}
       </div>

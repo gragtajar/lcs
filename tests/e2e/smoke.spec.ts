@@ -146,6 +146,10 @@ test.describe('Article page (real)', () => {
     await expect(full.getByRole('link', { name: /share on whatsapp/i })).toBeVisible();
     await expect(full.getByRole('link', { name: /share on x/i })).toBeVisible();
     await expect(full.getByRole('button', { name: /copy link/i })).toBeVisible();
+    // The four platforms show their own marks; email and copy use Lucide icons.
+    await expect(full.locator('svg.icon-brand')).toHaveCount(4);
+    await expect(full.locator('svg.lucide-mail')).toHaveCount(1);
+    await expect(full.locator('svg.lucide-link')).toHaveCount(1);
   });
 
   test('clicking a quiz option reveals per-option feedback', async ({ page }) => {
@@ -159,6 +163,10 @@ test.describe('Article page (real)', () => {
       // Feedback text appears below the picked option
       await expect(page.locator('.quiz-feedback').first()).toBeVisible({ timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
+    // Hydration keeps the server's text: the number once, not "1.." (it did).
+    await expect(page.locator('.quiz-q-num').first()).toHaveText('1.');
+    // The verdict is a Lucide icon on the picked option's disc.
+    await expect(firstOpt.locator('.quiz-opt-marker svg.lucide')).toHaveCount(1);
   });
 });
 

@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import ThemeToggle from '../islands/ThemeToggle.tsx';
 import SearchOverlay from '../islands/SearchOverlay.tsx';
 import { t } from '../lib/i18n';
@@ -22,16 +23,7 @@ import { t } from '../lib/i18n';
       data-search-trigger
       aria-label={t('topbar.searchPlaceholder')}
     >
-      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"
-        ></circle>
-        <path
-          d="M16 16l4.5 4.5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"></path>
-      </svg>
+      <Icon name="search" />
       <span class="search-trigger-label">{t('topbar.searchPlaceholder')}</span>
       <kbd class="search-trigger-kbd">/</kbd>
     </button>
