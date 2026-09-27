@@ -40,28 +40,6 @@ for byte, redirects, headers, and a browser pass on desktop and mobile in light
 and dark. See [`docs/runbooks/deploy.md`](./docs/runbooks/deploy.md);
 `/build-info.json` shows what is live.
 
-## Cloudflare setup (Item 1)
-
-The site is parameterised on Cloudflare env vars (see `.env.example`). The build
-succeeds with none of them set — images fall back to a bundled placeholder.
-
-**What you do in the Cloudflare dashboard:**
-
-1. Create a Cloudflare account and add the `learncivicsense.in` zone.
-2. Migrate nameservers at your registrar; wait for zone activation (5 min–24 h).
-3. Subscribe to Cloudflare Images (~$5/mo, 100K transformations).
-4. Create R2 bucket `learncivicsense-images` (public access **via Cloudflare Images only**).
-5. In Images → Variants create: `thumbnail` (200×200, cover, q80), `card`
-   (600×338 16:9, cover, q80), `hero` (1200×675 16:9, cover, q85), `og`
-   (1200×630, cover, q85).
-6. Create scoped API tokens: `CLOUDFLARE_API_TOKEN` (Account:Read + Zone:Read),
-   `CLOUDFLARE_IMAGES_API_TOKEN` (Images:Edit).
-7. Copy the account hash + tokens into `.env.local` (and into CI secrets). The
-   browser-facing var is `PUBLIC_CLOUDFLARE_IMAGES_ACCOUNT_HASH`.
-
-`src/lib/cloudflare.ts` reads these and builds delivery URLs; it never calls the
-API at build time and never throws on missing env.
-
 ## Amplitude setup (Item 2)
 
 Product analytics is env-gated and privacy-first (`src/lib/analytics.ts`):
@@ -74,20 +52,27 @@ Product analytics is env-gated and privacy-first (`src/lib/analytics.ts`):
   `related-link-click`, `search-query`, `language-switch`). No PII is ever sent.
 - Do **not** enable session replay / Experiment without owner sign-off.
 
-## Image pipeline (Item 5)
+## Images (ImageKit)
 
-Originals live in Cloudflare R2 at `articles/<lesson-id>/hero.png`; Cloudflare
-Images serves named variants. The website renders `<img>`/`srcset` pointing at
-delivery URLs (`src/components/ArticleHero.astro`, `src/lib/images.ts`). With no
-Cloudflare env, every image falls back to `public/placeholders/default-article.svg`.
+Lesson illustrations are served by ImageKit (`https://ik.imagekit.io/civic`):
+one high-resolution source per lesson, named after the lesson id
+(`sacred-004.png`), and every size is a URL transformation
+(`src/lib/imagekit.ts`, `src/lib/images.ts`). To add one, upload it to the
+ImageKit Media Library, then deploy (any merge to `main`, or **Deploy
+production** from the Actions tab; uploads alone do not start one): the build
+lists the library
+(`scripts/sync-imagekit-registry.mjs`, with the `IMAGEKIT_PRIVATE_KEY` CI
+secret) and the lesson shows it. Without the key the committed
+`src/data/article-images.json` is used.
 
-**Upload workflow (per article):** generate a hero image, save as PNG/JPEG,
-upload to R2 at `articles/<lesson-id>/hero.png`. The site serves it on the next
-deploy. See `learncivicsense-content/IMAGES-README.md` for the full checklist.
+| Where                                                   | Shown at                        | Served                   |
+| ------------------------------------------------------- | ------------------------------- | ------------------------ |
+| Lesson page hero                                        | reading column                  | `srcset` 400–1600w, auto |
+| Row thumbnail: lesson lists, homepage lead, search page | up to 240px, 16:9, on the right | 320w (1x), 640w (2x)     |
+| Social card (`og:image`)                                | 1200×630                        | JPEG, q80                |
 
-> Note: this supersedes the addendum T10 local-`<Picture>`/sharp approach — the
-> 2026-06-11 brief chose Cloudflare R2 + Images (remote delivery), so there is
-> no build-time sharp/LQIP step and no local source images in this repo.
+A lesson without an illustration shows no image slot. Its social card falls
+back to `public/placeholders/default-article.svg`.
 
 ## Where to read next
 

@@ -9,7 +9,6 @@ import {
   getSubtopic,
   loadLessonForArticle,
   categoryUrl,
-  subtopicUrl,
 } from '../../../lib/content';
 import { t } from '../../../lib/i18n';
 
@@ -49,16 +48,6 @@ const facts = [
   published.length > 0 ? t('list.totalMinutes', { n: totalMinutes }) : '',
   comingSoonCount > 0 ? t('list.comingSoonCount', { count: comingSoonCount }) : '',
 ].filter(Boolean);
-
-// The page's ending: the sibling subtopics, so a one-lesson page (57 of the
-// 120) still leads somewhere.
-const siblings = cat.subtopics
-  .filter((s) => s.id !== sub.id)
-  .map((s) => ({
-    title: s.title,
-    url: subtopicUrl(cat.id, s.id),
-    count: s.articles.filter((a) => a.published).length,
-  }));
 
 const pageTitle = `${sub.title} — ${cat.title}`;
 ---
@@ -119,30 +108,6 @@ const pageTitle = `${sub.title} — ${cat.title}`;
         </ul>
 
         {published.length === 0 && <p class="none-readable">{t('list.noneReadable')}</p>}
-
-        {
-          siblings.length > 0 && (
-            <section class="siblings" aria-labelledby="siblings-h">
-              <h2 id="siblings-h" class="siblings-title">
-                {t('list.moreIn', { category: cat.title })}
-              </h2>
-              <ul class="siblings-list">
-                {siblings.map((s) => (
-                  <li>
-                    <a class="sibling" href={s.url}>
-                      <span class="sibling-title">{s.title}</span>
-                      <span class="sibling-count">
-                        {s.count > 0
-                          ? t('list.lessonCount', { count: s.count })
-                          : t('list.comingSoonBadge')}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )
-        }
       </div>
 
       <div id="sidebar-drawer" class="sidebar-wrap" data-drawer>
@@ -357,60 +322,18 @@ const pageTitle = `${sub.title} — ${cat.title}`;
     color: var(--color-border);
   }
 
+  /* Wider than the reading column, so a row with an illustration keeps a
+     comfortable text measure beside a 240px image. Rows without one are held
+     to the measure by their own text. */
   .article-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    max-width: var(--width-reading);
+    max-width: 46rem;
   }
   .none-readable {
     max-width: var(--measure);
     margin: var(--space-5) 0 0;
     color: var(--color-text-secondary);
-  }
-
-  /* The ending: sibling subtopics as a plain list, at the appendix step. */
-  .siblings {
-    max-width: var(--width-reading);
-    margin-top: var(--space-8);
-  }
-  .siblings-title {
-    font-size: var(--text-lg);
-    font-weight: var(--weight-heading);
-    letter-spacing: var(--tracking-heading);
-    line-height: var(--leading-heading);
-    margin-bottom: var(--space-2);
-  }
-  .siblings-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .siblings-list li + li {
-    border-top: 1px solid var(--color-border);
-  }
-  .sibling {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-4);
-    min-height: 44px;
-    padding: var(--space-3) 0;
-    color: var(--color-text);
-  }
-  .sibling:hover {
-    text-decoration: none;
-  }
-  .sibling:hover .sibling-title {
-    color: var(--cluster-ink, var(--color-primary));
-  }
-  .sibling-title {
-    font-weight: var(--weight-ui);
-    transition: color var(--dur-fast) var(--ease-out);
-  }
-  .sibling-count {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    white-space: nowrap;
   }
 </style>

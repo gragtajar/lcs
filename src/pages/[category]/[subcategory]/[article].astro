@@ -23,7 +23,7 @@ import {
   type RelatedLink,
 } from '../../../lib/content';
 import { renderLessonBody } from '../../../lib/markdown';
-import { getArticleImage } from '../../../lib/images';
+import { getArticleImage, getArticleThumb } from '../../../lib/images';
 import { t } from '../../../lib/i18n';
 import { articleJsonLd, howToJsonLd, breadcrumbJsonLd } from '../../../lib/seo';
 
@@ -70,8 +70,8 @@ const description = isComingSoon
   ? t('article.comingSoonDescription', { subtopic: sub.title, category: cat.title })
   : lesson?.meta_description || lesson?.tldr?.[0] || cat.description || planned.title;
 
-// A stub still leads somewhere: the subtopic's published lessons, or the
-// category's when the subtopic has none yet, in the article's own ending grammar.
+// A stub still leads somewhere: a published lesson from its subtopic, or from
+// the category when the subtopic has none yet, in the article's ending grammar.
 const toOnward = (a: PlannedArticle): RelatedLink | null => {
   const l = loadLessonForArticle(a);
   return l
@@ -85,7 +85,7 @@ const toOnward = (a: PlannedArticle): RelatedLink | null => {
       }
     : null;
 };
-const ONWARD_MAX = 4;
+const ONWARD_MAX = 1;
 let onward: RelatedLink[] = [];
 let onwardScope: 'subtopic' | 'category' | 'none' = 'none';
 if (isComingSoon) {
@@ -163,8 +163,12 @@ const tocItems = isComingSoon
       ...(hasQuiz ? [{ id: QUIZ_SECTION_ID, text: t('quiz.title'), level: 2 as const }] : []),
     ];
 
-// Pagefind only parses ONE key:value per `data-pagefind-meta` attribute, so we
-// render each meta as a separate hidden span (see the article template below).
+// The row thumbnail /search/ shows for a lesson with an illustration.
+const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
+
+// An inline `key:value` meta runs to the end of the attribute (commas included,
+// which ImageKit URLs and a srcset contain), so each meta gets its own hidden
+// span (see the article template below).
 ---
 
 <BaseLayout
@@ -203,6 +207,8 @@ const tocItems = isComingSoon
     <span data-pagefind-meta={`format:${t(`article.format.${planned.format}`)}`} hidden></span>
     {!isComingSoon && lesson && <span data-pagefind-meta={`minutes:${lesson.length_min}`} hidden />}
     {isComingSoon && <span data-pagefind-meta="status:coming-soon" hidden />}
+    {thumb && <span data-pagefind-meta={`thumb:${thumb.src}`} hidden />}
+    {thumb && <span data-pagefind-meta={`thumb_srcset:${thumb.srcset}`} hidden />}
 
     {
       /* The trail stops at the subtopic: the page's own title sits 28px below as
@@ -286,7 +292,7 @@ const tocItems = isComingSoon
 
               {/* The ending, in this order: the next lesson (the page's last real
                    content), then the references, then a quiet share line. */}
-              <RelatedLinks items={related} />
+              <RelatedLinks next={related[0]} />
               <SourcesList sources={lesson!.sources} />
 
               <ShareBar

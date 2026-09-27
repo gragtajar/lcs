@@ -2,12 +2,13 @@
 // One lesson in a subtopic list. The row gives a picker what a picker needs —
 // title, one line on what the lesson is about, what kind it is, how long — and
 // nothing it doesn't: no date stamp (that belongs on the article), no image
-// slot (4 of 211 lessons have an image; the other 207 used to show an empty
-// square). A real thumbnail, when there is one, sits at the row's end.
+// slot (few lessons have an image; the rest used to show an empty square). A
+// real illustration, when there is one, sits at the row's right, big enough to
+// read: beside the whole text on wide screens, beside the excerpt on phones.
 import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
 import { articleUrl } from '../lib/content';
-import { getArticleImage, hasArticleImage } from '../lib/images';
+import { getArticleThumb } from '../lib/images';
 import type { PlannedArticle, Lesson } from '../lib/content';
 
 interface Props {
@@ -20,38 +21,38 @@ const { article, lesson } = Astro.props;
 const url = articleUrl(article);
 const isComingSoon = !article.published || !lesson;
 const excerpt = lesson ? lesson.meta_description || lesson.tldr[0] || '' : '';
-const hasImage = !isComingSoon && hasArticleImage(article.id);
+const thumb = isComingSoon ? undefined : getArticleThumb(article.id);
 ---
 
-<article class={`li ${isComingSoon ? 'li-soon' : ''}`}>
-  <div class="li-body">
-    <h2 class="li-title">
-      <a href={url}>{article.title}</a>
-    </h2>
-    {excerpt && <p class="li-excerpt">{excerpt}</p>}
-    <p class="li-meta">
-      <span class="li-format">{t(`article.format.${article.format}`)}</span>
-      <span class="li-sep" aria-hidden="true">·</span>
-      {
-        isComingSoon ? (
-          <span class="li-soon-badge">
-            <Icon name="clock" />
-            {t('list.comingSoonBadge')}
-          </span>
-        ) : (
-          <span>{t('list.minRead', { n: lesson!.length_min })}</span>
-        )
-      }
-    </p>
-  </div>
+<article class:list={['li', { 'li-soon': isComingSoon, 'has-thumb': thumb }]}>
+  <h2 class="li-title">
+    <a href={url}>{article.title}</a>
+  </h2>
+  {excerpt && <p class="li-excerpt">{excerpt}</p>}
+  <p class="li-meta">
+    <span class="li-format">{t(`article.format.${article.format}`)}</span>
+    <span class="li-sep" aria-hidden="true">·</span>
+    {
+      isComingSoon ? (
+        <span class="li-soon-badge">
+          <Icon name="clock" />
+          {t('list.comingSoonBadge')}
+        </span>
+      ) : (
+        <span>{t('list.minRead', { n: lesson!.length_min })}</span>
+      )
+    }
+  </p>
   {
-    hasImage && (
+    thumb && (
       <img
         class="li-thumb"
-        src={getArticleImage(article.id, 'thumbnail')}
+        src={thumb.src}
+        srcset={thumb.srcset}
+        sizes="(max-width: 559px) 40vw, 240px"
         alt=""
-        width="200"
-        height="113"
+        width="320"
+        height="180"
         loading="lazy"
         decoding="async"
       />
@@ -66,12 +67,54 @@ const hasImage = !isComingSoon && hasArticleImage(article.id);
   .li {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
-    gap: var(--space-4);
+    column-gap: var(--space-5);
     padding: var(--space-4) 0;
     border-bottom: 1px solid var(--color-border);
     cursor: pointer;
+  }
+  /* With an illustration: the text on the left, the image on the right at up to
+     240px (16:9, 135px tall, about the height of the text beside it). */
+  .li.has-thumb {
+    grid-template-columns: minmax(0, 1fr) clamp(8.5rem, 34%, 15rem);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'title thumb'
+      'excerpt thumb'
+      'meta thumb';
+  }
+  .li.has-thumb .li-title {
+    grid-area: title;
+  }
+  .li.has-thumb .li-excerpt {
+    grid-area: excerpt;
+  }
+  .li.has-thumb .li-meta {
+    grid-area: meta;
+  }
+  .li.has-thumb .li-thumb {
+    grid-area: thumb;
+  }
+  /* Phones: the title takes the full width, and the image sits beside the
+     excerpt, which gets a third line to match its height. */
+  @media (max-width: 559px) {
+    .li.has-thumb {
+      grid-template-columns: minmax(0, 1fr) 40%;
+      grid-template-rows: auto auto 1fr;
+      grid-template-areas:
+        'title title'
+        'excerpt thumb'
+        'meta thumb';
+      column-gap: var(--space-4);
+    }
+    .li.has-thumb .li-excerpt {
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+    .li.has-thumb .li-thumb {
+      margin-top: var(--space-2);
+    }
   }
   /* The list's top hairline lives on the first row, which has its own inset. */
   :global(li:first-child) > .li {
@@ -91,9 +134,6 @@ const hasImage = !isComingSoon && hasArticleImage(article.id);
     inset: 0;
   }
 
-  .li-body {
-    min-width: 0;
-  }
   .li-title {
     font-size: var(--text-lg);
     font-weight: var(--weight-heading);
@@ -164,19 +204,17 @@ const hasImage = !isComingSoon && hasArticleImage(article.id);
     height: 14px;
   }
 
-  /* Real thumbnail only. 16:9 as authored (no centre-crop into a square). */
+  /* Real illustrations only, 16:9 as authored (no centre-crop into a square),
+     with a hairline so a pale drawing keeps its edge on the paper ground. */
   .li-thumb {
-    width: 96px;
-    height: 54px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
     object-fit: cover;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     background: var(--color-surface-alt);
-    margin-top: 2px;
-  }
-  @media (max-width: 520px) {
-    .li-thumb {
-      width: 80px;
-      height: 45px;
-    }
+    outline: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+    outline-offset: -1px;
+    margin-top: 4px;
   }
 </style>
