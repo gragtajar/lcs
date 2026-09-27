@@ -1,11 +1,11 @@
 name: FTP probe (temporary)
 
-# One-off check for the designed-404 PR, removed again before it merges. The
-# host replaces the body of every error Apache itself generates (ErrorDocument
-# is ignored, PR #28). This asks whether a 404 that PHP generates keeps its own
-# body: it installs a tiny .htaccess + 404.php + 404.html in a throwaway folder
-# (/lcs-404-probe/), requests missing pages there, prints what comes back
-# (status, headers, and the probe's own marker text only), then deletes it.
+# One-off preflight for the designed-404 PR, removed again before it merges. It
+# installs this branch's public/.htaccess and public/404.php in a throwaway
+# folder on the real host (/lcs-404-preflight/, root-anchored paths rewritten
+# to that folder), checks every not-found case plus the cache and header rules
+# around them, and deletes the folder whatever happens (EXIT trap). The first
+# probe on this PR showed the host keeps a PHP-generated 404 body.
 
 on:
   pull_request:
@@ -16,31 +16,52 @@ permissions:
   contents: read
 
 jobs:
-  probe:
-    name: PHP 404 probe
+  preflight:
+    name: 404 preflight
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Upload, request missing pages, clean up
+      - uses: actions/checkout@v4
+
+      - name: Stage a miniature site with the real .htaccess and 404.php
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/lcs-404-preflight"
+          mkdir -p "$d/_astro" "$d/sub"
+          sed -e 's#RewriteRule \(.*\) /404\.php \[L\]#RewriteRule \1 /lcs-404-preflight/404.php [L]#' \
+              -e 's#m\#\^/(_astro|fonts|images)/\##m\#^/lcs-404-preflight/(_astro|fonts|images)/\##' \
+              -e "s#%{REQUEST_URI} == '/404.php'#%{REQUEST_URI} == '/lcs-404-preflight/404.php'#" \
+              public/.htaccess > "$d/.htaccess"
+          grep -n "lcs-404-preflight" "$d/.htaccess"
+          test "$(grep -c 'lcs-404-preflight' "$d/.htaccess")" -ge 5
+          cp public/404.php "$d/404.php"
+          printf '<!doctype html><html><head><title>Page not found</title></head><body><p>lcs-preflight-404-page</p></body></html>\n' > "$d/404.html"
+          printf '<!doctype html><title>preflight</title><p>index</p>\n' > "$d/index.html"
+          printf 'body{color:red}\n' > "$d/_astro/probe.abc123.css"
+          printf 'x\n' > "$d/sub/file.txt"
+          printf 'hidden\n' > "$d/.hidden"
+
+      - name: Upload, check on the live host, clean up
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
-          # Not -e: a check that finds nothing must not skip the clean-up, which
-          # the EXIT trap runs whatever happens (the first run of this probe
-          # stopped early and left the folder behind).
+          # Not -e: a failed check must not skip the clean-up, which the EXIT
+          # trap runs whatever happens.
           set +e
           set -u
           umask 077
           printf 'machine %s\nlogin %s\npassword %s\n' "$FTP_SERVER" "$FTP_USERNAME" "$FTP_PASSWORD" > "$HOME/.netrc"
           ftp() { curl -sS --netrc --ssl-reqd --insecure --connect-timeout 20 --max-time 90 "$@"; }
-          D=lcs-404-probe
+          D=lcs-404-preflight
+          d="$RUNNER_TEMP/$D"
+          files=(.htaccess 404.php 404.html index.html _astro/probe.abc123.css sub/file.txt .hidden)
           cleanup() {
-            for f in .htaccess 404.php 404.html .hidden sub/file.txt; do
+            for f in "${files[@]}"; do
               ftp --list-only -Q "DELE $D/$f" "ftp://$FTP_SERVER/" -o /dev/null 2>/dev/null
             done
-            for dir in "$D/sub" "$D"; do
+            for dir in "$D/_astro" "$D/sub" "$D"; do
               ftp --list-only -Q "RMD $dir" "ftp://$FTP_SERVER/" -o /dev/null 2>/dev/null
             done
             if ftp --list-only "ftp://$FTP_SERVER/" | tr -d '\r' | grep -qx "$D"; then
@@ -48,60 +69,49 @@ jobs:
             else
               echo "$D removed from the web root"
             fi
-            echo "after cleanup, https://learncivicsense.in/$D/404.html answers $(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://learncivicsense.in/$D/404.html")"
             rm -f "$HOME/.netrc"
           }
           trap cleanup EXIT
-          t="$RUNNER_TEMP/p"; mkdir -p "$t"
-          # Missing files and folders, folders without an index page, and
-          # dotfiles all go to 404.php, which answers 404 with the page.
-          printf '%s\n' \
-            'RewriteEngine On' \
-            'RewriteRule "(^|/)\.(?!well-known(/|$))" /lcs-404-probe/404.php [L]' \
-            'RewriteCond %{REQUEST_FILENAME} !-f' \
-            'RewriteCond %{REQUEST_FILENAME} !-d' \
-            'RewriteRule ^ /lcs-404-probe/404.php [L]' \
-            'RewriteCond %{REQUEST_FILENAME} -d' \
-            'RewriteCond %{REQUEST_FILENAME}/index.html !-f' \
-            'RewriteRule ^ /lcs-404-probe/404.php [L]' > "$t/htaccess"
-          printf '%s\n' \
-            '<?php' \
-            'http_response_code(404);' \
-            "header('Content-Type: text/html; charset=utf-8');" \
-            "header('X-Lcs-Probe: php');" \
-            "header_remove('X-Powered-By');" \
-            "readfile(__DIR__ . '/404.html');" > "$t/404.php"
-          printf '<!doctype html><html><head><title>Page not found</title></head><body><p>lcs-probe-404-marker</p></body></html>\n' > "$t/404.html"
-          printf 'hidden\n' > "$t/hidden"
-          printf 'x\n' > "$t/file.txt"
-          ftp --ftp-create-dirs -T "$t/htaccess" "ftp://$FTP_SERVER/$D/.htaccess" -o /dev/null || echo "::error::upload .htaccess failed"
-          ftp -T "$t/404.php" "ftp://$FTP_SERVER/$D/404.php" -o /dev/null || echo "::error::upload 404.php failed"
-          ftp -T "$t/404.html" "ftp://$FTP_SERVER/$D/404.html" -o /dev/null || echo "::error::upload 404.html failed"
-          ftp -T "$t/hidden" "ftp://$FTP_SERVER/$D/.hidden" -o /dev/null || echo "::error::upload .hidden failed"
-          ftp --ftp-create-dirs -T "$t/file.txt" "ftp://$FTP_SERVER/$D/sub/file.txt" -o /dev/null || echo "::error::upload sub/file.txt failed"
+          for f in "${files[@]}"; do
+            ftp --ftp-create-dirs -T "$d/$f" "ftp://$FTP_SERVER/$D/$f" -o /dev/null || echo "::error::upload failed: $f"
+          done
           sleep 3
 
+          fails=0
           B="https://learncivicsense.in/$D"
-          show() { # label url [curl args]
-            local label="$1" url="$2"; shift 2
-            local h="$RUNNER_TEMP/h" b="$RUNNER_TEMP/b"
-            curl -s -D "$h" -o "$b" --max-time 20 "$@" "$url" || true
-            local status; status=$(head -1 "$h" | tr -d '\r')
-            local ct; ct=$(grep -i '^content-type:' "$h" | head -1 | tr -d '\r' | cut -d' ' -f2-)
-            local probe; probe=$(grep -i '^x-lcs-probe:' "$h" | head -1 | tr -d '\r' | cut -d' ' -f2-)
-            local powered; powered=$(grep -ci '^x-powered-by:' "$h" || true)
-            local size; size=$(wc -c < "$b" | tr -d ' ')
-            local marker=no; grep -q 'lcs-probe-404-marker' "$b" && marker=yes
-            local php_src=no; grep -q '<?php' "$b" && php_src=yes
-            local injected=no; grep -q 'traffic-assets/js/tccl.min.js' "$b" && injected=yes
-            echo "$label: $status | type=$ct | x-lcs-probe=${probe:-none} | x-powered-by lines=$powered | ${size}B | our body=$marker | php source shown=$php_src | host script injected=$injected"
+          h="$RUNNER_TEMP/h"; b="$RUNNER_TEMP/b"
+          get() { curl -s -D "$h" -o "$b" --max-time 20 "$@" || true; }
+          header() { grep -i "^$1:" "$h" | head -1 | tr -d '\r' | cut -d' ' -f2- || true; }
+          expect() { # name actual pattern
+            if printf '%s' "$2" | grep -Eq -- "$3"; then echo "ok    $1: $2"; else echo "FAIL  $1: got '$2', want /$3/"; fails=$((fails+1)); fi
           }
-          show "missing folder     " "$B/missing-$GITHUB_RUN_ID/"
-          show "missing .html      " "$B/missing-$GITHUB_RUN_ID.html"
-          show "missing, no slash  " "$B/missing-$GITHUB_RUN_ID"
-          show "folder w/o index   " "$B/sub/"
-          show "dotfile            " "$B/.hidden"
-          show "404.php directly   " "$B/404.php"
-          show "HEAD missing       " "$B/missing-$GITHUB_RUN_ID/" -I
-          show "404.html (control) " "$B/404.html"
-          show "file.txt (control) " "$B/sub/file.txt"
+          not_found() { # name url
+            get "$2"
+            expect "$1 status" "$(head -1 "$h" | tr -d '\r')" ' 404'
+            expect "$1 body is the 404 page" "$(grep -c 'lcs-preflight-404-page' "$b" || true)" '^1$'
+            expect "$1 cache-control" "$(header cache-control)" 'no-store'
+            expect "$1 no x-powered-by" "$(header x-powered-by)" '^$'
+            expect "$1 nosniff" "$(header x-content-type-options)" '^nosniff$'
+            expect "$1 type" "$(header content-type)" '^text/html; charset=utf-8$'
+          }
+          not_found "missing folder" "$B/missing-$GITHUB_RUN_ID/"
+          not_found "missing file" "$B/missing-$GITHUB_RUN_ID.html"
+          not_found "missing asset" "$B/_astro/missing-$GITHUB_RUN_ID.js"
+          not_found "folder without index" "$B/_astro/"
+          not_found "folder, no slash" "$B/sub"
+          not_found "dotfile" "$B/.hidden"
+          not_found "404.php itself" "$B/404.php"
+          get "$B/"
+          expect "index still 200" "$(head -1 "$h" | tr -d '\r')" ' 200'
+          get "$B/_astro/probe.abc123.css"
+          expect "asset still 200" "$(head -1 "$h" | tr -d '\r')" ' 200'
+          expect "asset still immutable" "$(header cache-control)" 'immutable'
+          get "$B/sub/file.txt"
+          expect "file still 200" "$(head -1 "$h" | tr -d '\r')" ' 200'
+          get "http://learncivicsense.in/$D/missing-x/"
+          expect "http still redirects first" "$(head -1 "$h" | tr -d '\r')" ' 301'
+          expect "to https" "$(header location)" "^https://learncivicsense\\.in/$D/missing-x/$"
+          get "$B/.htaccess"
+          expect ".htaccess not served" "$(head -1 "$h" | tr -d '\r')" ' (403|404)'
+          echo "failures: $fails"
+          [ "$fails" = 0 ]

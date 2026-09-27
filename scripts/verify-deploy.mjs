@@ -7,8 +7,9 @@
 //    the build CI tested: no partial upload, no stale file, nothing rewritten
 //    (apart from the host's own script, recognised narrowly below).
 // 2. The Apache policy from public/.htaccess holds: one HTTPS origin (http and
-//    www redirect), 404 for missing pages, hidden dotfiles, security headers,
-//    cache lifetimes and compression.
+//    www redirect), the site's own 404 page with status 404 for every address
+//    it has no page for (404.php), hidden dotfiles, security headers, cache
+//    lifetimes and compression.
 //
 // Usage:
 //   node scripts/verify-deploy.mjs [--dist dist] [--origin https://learncivicsense.in]
@@ -77,11 +78,14 @@ async function request(url, init = {}, tries = 3) {
   }
 }
 
-/** Every file under dir, relative, skipping dotfiles (Apache never serves them). */
+/**
+ * Every file under dir, relative, skipping dotfiles (Apache never serves them)
+ * and PHP (the host runs it; 404.php is checked by what it answers, below).
+ */
 async function walk(dir, base = dir) {
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith('.')) continue;
+    if (entry.name.startsWith('.') || entry.name.endsWith('.php')) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...(await walk(full, base)));
     else out.push(path.relative(base, full).split(path.sep).join('/'));
@@ -95,6 +99,19 @@ function urlPathFor(rel) {
   return `/${rel}`;
 }
 
+/**
+ * Whether served HTML is the built file byte for byte, allowing only the host's
+ * recognised script injection. Returns 'same', 'injected' or 'different'.
+ */
+function compareHtml(body, local) {
+  if (sha256(body) === sha256(local)) return 'same';
+  const withoutHost = Buffer.from(body.toString('utf8').replace(HOST_INJECTION, ''), 'utf8');
+  if (withoutHost.length !== body.length && sha256(withoutHost) === sha256(local)) {
+    return 'injected';
+  }
+  return 'different';
+}
+
 async function checkFile(rel) {
   const local = await readFile(path.join(DIST, rel));
   const urlPath = urlPathFor(rel);
@@ -102,10 +119,8 @@ async function checkFile(rel) {
   if (res.status !== 200) return fail(`${urlPath}: HTTP ${res.status}`);
   const body = Buffer.from(await res.arrayBuffer());
   if (sha256(body) !== sha256(local)) {
-    const withoutHost = rel.endsWith('.html')
-      ? Buffer.from(body.toString('utf8').replace(HOST_INJECTION, ''), 'utf8')
-      : body;
-    if (withoutHost.length === body.length || sha256(withoutHost) !== sha256(local)) {
+    const verdict = rel.endsWith('.html') ? compareHtml(body, local) : 'different';
+    if (verdict === 'different') {
       return fail(
         `${urlPath}: served bytes differ from the build (${body.length} vs ${local.length} bytes)`,
       );
@@ -161,23 +176,39 @@ async function checkPolicy(files) {
   await expectRedirect(`${ORIGIN.replace('://', '://www.')}/search/`, `${ORIGIN}/search/`);
   await expectRedirect(`${ORIGIN}/traffic`, `${ORIGIN}/traffic/`);
 
-  // The status must be 404. The body is informational: GoDaddy currently
-  // replaces every error body with its own 13-byte text, whatever ErrorDocument
-  // says (tested 2026-09-26, PR #28), so the site's 404 page cannot show yet.
-  const missing = await request(`${ORIGIN}/no-such-page-${BUST.replace('=', '-')}/`);
-  const missingBody = await missing.text();
-  if (missing.status !== 404) fail(`unknown path: HTTP ${missing.status}, expected 404`);
-  console.log(
-    missingBody.includes('Page not found')
-      ? 'Missing pages show the site 404 page.'
-      : `Missing pages show the host's own error body (${missingBody.trim().slice(0, 40)}); status 404 is correct.`,
-  );
+  // Every address the site has no page for answers 404 with the site's own
+  // page, sent by 404.php (the host replaces any error body Apache generates;
+  // ADR 010): a missing page, a folder with no page of its own, a dotfile, and
+  // 404.php itself. The page is dist/404.html byte for byte, never cached, and
+  // does not advertise the PHP version.
+  const page404 = await readFile(path.join(DIST, '404.html'));
+  const notFound = [
+    `/no-such-page-${BUST.replace('=', '-')}/`,
+    `/no-such-lesson-${BUST.replace('=', '-')}.html`,
+    '/_astro/',
+    '/.ftp-deploy-sync-state.json',
+    '/404.php',
+  ];
+  for (const urlPath of notFound) {
+    const res = await request(`${ORIGIN}${urlPath}`);
+    const body = Buffer.from(await res.arrayBuffer());
+    if (res.status !== 404) fail(`${urlPath}: HTTP ${res.status}, expected 404`);
+    if (compareHtml(body, page404) === 'different') {
+      fail(
+        `${urlPath}: not the site's 404 page (${body.length} bytes: ${body.toString('utf8').trim().slice(0, 40)})`,
+      );
+    }
+    if (res.headers.get('x-powered-by')) fail(`${urlPath}: sends X-Powered-By`);
+    if (!/no-store/.test(res.headers.get('cache-control') ?? '')) {
+      fail(`${urlPath}: cache-control '${res.headers.get('cache-control')}', expected no-store`);
+    }
+  }
   const designed = await request(`${ORIGIN}/404.html?${BUST}`);
   if (designed.status !== 200 || !(await designed.text()).includes('Page not found')) {
     fail('/404.html: the designed 404 page is not served');
   }
 
-  for (const hidden of ['/.ftp-deploy-sync-state.json', '/.ftpquota', '/.htaccess']) {
+  for (const hidden of ['/.ftpquota', '/.htaccess']) {
     const res = await request(`${ORIGIN}${hidden}`);
     if (res.status === 200) fail(`${hidden}: served (HTTP 200), should be hidden`);
   }
@@ -218,5 +249,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  `\n✓ ${count} files served byte-for-byte${POLICY ? ', redirects, 404, hidden files, headers, caching and compression as configured' : ''} (${secs}s)`,
+  `\n✓ ${count} files served byte-for-byte${POLICY ? ', redirects, the 404 page for missing addresses, hidden files, headers, caching and compression as configured' : ''} (${secs}s)`,
 );

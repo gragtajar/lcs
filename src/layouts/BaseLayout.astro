@@ -23,6 +23,11 @@ interface Props {
   ogTitle?: string;
   /** Optional OG/Twitter description override (defaults to `description`). */
   ogDescription?: string;
+  /**
+   * Keep the page out of search engines: a robots noindex, and no canonical or
+   * og:url (the 404 page is served at whatever address was missing).
+   */
+  noindex?: boolean;
 }
 
 const {
@@ -34,6 +39,7 @@ const {
   image,
   ogTitle,
   ogDescription,
+  noindex = false,
 } = Astro.props;
 
 const meta = buildMeta({
@@ -61,13 +67,19 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
     <meta name="theme-color" content="#171613" media="(prefers-color-scheme: dark)" />
     <title>{meta.fullTitle}</title>
     <meta name="description" content={meta.description} />
-    <link rel="canonical" href={meta.canonicalUrl} />
+    {
+      noindex ? (
+        <meta name="robots" content="noindex" />
+      ) : (
+        <link rel="canonical" href={meta.canonicalUrl} />
+      )
+    }
 
     {/* Open Graph */}
     <meta property="og:type" content={meta.ogType} />
     <meta property="og:title" content={meta.ogTitle} />
     <meta property="og:description" content={meta.ogDescription} />
-    <meta property="og:url" content={meta.canonicalUrl} />
+    {!noindex && <meta property="og:url" content={meta.canonicalUrl} />}
     <meta property="og:site_name" content={t('siteName')} />
     <meta property="og:locale" content="en_IN" />
     {meta.ogImage && <meta property="og:image" content={meta.ogImage} />}

@@ -430,12 +430,37 @@ test.describe('Top bar', () => {
 });
 
 test.describe('404', () => {
-  test('renders the custom not-found page', async ({ page }) => {
-    const res = await page.goto('/this-route-does-not-exist/');
+  // Locally `astro preview` answers unknown routes with 404.html; on the host
+  // public/404.php does (ADR 010). Either way: status 404, the site's own page.
+  test('a mistyped lesson address answers 404 and offers that lesson', async ({ page }) => {
+    const typo = '/traffic/honking-disciplin/the-case-against-honkng/';
+    const res = await page.goto(typo);
     expect(res?.status()).toBe(404);
-    // On production only the status is the site's: GoDaddy replaces every error
-    // body with its own text whatever ErrorDocument says (tested 2026-09-26,
-    // PR #28). tests/prod/ checks that the designed /404.html is deployed.
-    if (!process.env.PROD_URL) await expect(page.getByText(/page not found/i)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/page not found/i);
+    // The address that was followed, the search ready to correct it...
+    await expect(page.locator('[data-nf-path]')).toHaveText(typo);
+    await expect(page.locator('[data-nf-query]')).toHaveValue('case against honkng');
+    // ...and the lesson it most likely meant, found by the address's words.
+    await expect(page.locator('[data-nf-heading]')).toHaveText(/closest matches/i, {
+      timeout: 15_000,
+    });
+    await expect(page.locator('[data-nf-list] .start-link').first()).toHaveAttribute(
+      'href',
+      '/traffic/honking-discipline/the-case-against-honking/',
+    );
+  });
+
+  test('an address that matches nothing keeps the curated lessons and the topics', async ({
+    page,
+  }) => {
+    const res = await page.goto('/zzqq-xxyy/');
+    expect(res?.status()).toBe(404);
+    await expect(page.locator('[data-nf-path]')).toHaveText('/zzqq-xxyy/');
+    // Pagefind "matches" nonsense to something; nothing sharing a word is shown.
+    await page.waitForTimeout(2_000);
+    await expect(page.locator('[data-nf-heading]')).toHaveText(/start with one lesson/i);
+    await expect(page.locator('#browse-h ~ .topics-group .topics-link')).toHaveCount(14);
+    // The search works without JavaScript too: a plain GET to /search/.
+    await expect(page.locator('form.nf-search')).toHaveAttribute('action', '/search/');
   });
 });

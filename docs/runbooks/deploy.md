@@ -23,8 +23,9 @@ the pull request runs **CI**; merge it only when every check is green.
    light and dark, Lighthouse desktop and mobile, size-limit.
 2. **Upload to GoDaddy (FTPS)** — the build from step 1, unchanged. Only
    changed files are uploaded.
-3. **Verify production** — every file served byte for byte, redirects, 404
-   status, hidden files, headers, caching, gzip; then a browser pass on the live
+3. **Verify production** — every file served byte for byte, redirects, the
+   site's 404 page (status 404) for missing addresses, hidden files, headers,
+   caching, gzip; then a browser pass on the live
    site on desktop and mobile in light and dark, with a screenshot of each key
    page (artifact `production-report`).
 
@@ -69,8 +70,10 @@ cause and re-run the deploy by hand; the next sync check continues from there.
 
 ## Known host behaviour
 
-- Missing pages answer **404** with GoDaddy's own 13-byte text, not the site's
-  404 page; `ErrorDocument` is ignored by the host (ADR 008).
+- The host replaces the body of every error **Apache** generates with its own
+  13-byte text and ignores `ErrorDocument` (ADR 008). So every address the site
+  has no page for is rewritten to `404.php`, which sends the site's 404 page
+  with status 404 (ADR 010); verification checks this on every deploy.
 - GoDaddy **injects a monitoring script into every HTML page** (before
   `</html>`: an inline `_trfd` queue plus
   `img1.wsimg.com/traffic-assets/js/tccl.min.js`), which sets `_tccl_visitor`,
