@@ -57,6 +57,17 @@
     "soonShort": "soon",
     "noCategoriesMatch": "No categories match."
   },
+  "topics": {
+    "title": "Topics and subtopics",
+    "lede": "Every subtopic in the library, grouped by topic, with how many lessons you can read today.",
+    "topicCount_one": "{count} topic",
+    "topicCount_other": "{count} topics",
+    "jumpLabel": "Jump to a topic",
+    "visitorsNote": "A guide to everyday civic life in India for visitors from abroad. It is being written; there is nothing to read yet.",
+    "visitorsLink": "What the guide will cover",
+    "endNote": "Looking for something in particular?",
+    "endSearch": "Search all lessons"
+  },
   "category": {
     "subtopicCount_one": "{count} subtopic",
     "subtopicCount_other": "{count} subtopics",

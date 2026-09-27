@@ -34,8 +34,9 @@ every address the site has no page for to `/404.php`:
 It runs after the HTTPS and host redirects, so an `http://` or `www.` address
 is canonicalised first.
 
-`public/404.php` sends status 404, `text/html; charset=utf-8`,
-`Cache-Control: no-store`, no `X-Powered-By`, and the bytes of `404.html`,
+`public/404.php` sends status 404, `text/html; charset=utf-8`, no
+`X-Powered-By`, and the bytes of `404.html` (`Cache-Control: no-store` comes
+from the `.htaccess` rule for `/404.php`),
 which Astro builds from `src/pages/404.astro`. It reads nothing from the
 request. The page itself is `noindex` with no canonical URL, and enhances in
 the browser: it shows the address that was followed, fills the search field
