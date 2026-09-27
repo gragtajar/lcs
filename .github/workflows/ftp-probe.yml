@@ -1,0 +1,101 @@
+name: FTP probe (temporary)
+
+# One-off check for the designed-404 PR, removed again before it merges. The
+# host replaces the body of every error Apache itself generates (ErrorDocument
+# is ignored, PR #28). This asks whether a 404 that PHP generates keeps its own
+# body: it installs a tiny .htaccess + 404.php + 404.html in a throwaway folder
+# (/lcs-404-probe/), requests missing pages there, prints what comes back
+# (status, headers, and the probe's own marker text only), then deletes it.
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ftp-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: PHP 404 probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Upload, request missing pages, clean up
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -u
+          umask 077
+          printf 'machine %s\nlogin %s\npassword %s\n' "$FTP_SERVER" "$FTP_USERNAME" "$FTP_PASSWORD" > "$HOME/.netrc"
+          ftp() { curl -sS --netrc --ssl-reqd --insecure --connect-timeout 20 --max-time 90 "$@"; }
+          D=lcs-404-probe
+          t="$RUNNER_TEMP/p"; mkdir -p "$t"
+          # Missing files and folders, folders without an index page, and
+          # dotfiles all go to 404.php, which answers 404 with the page.
+          printf '%s\n' \
+            'RewriteEngine On' \
+            'RewriteRule "(^|/)\.(?!well-known(/|$))" /lcs-404-probe/404.php [L]' \
+            'RewriteCond %{REQUEST_FILENAME} !-f' \
+            'RewriteCond %{REQUEST_FILENAME} !-d' \
+            'RewriteRule ^ /lcs-404-probe/404.php [L]' \
+            'RewriteCond %{REQUEST_FILENAME} -d' \
+            'RewriteCond %{REQUEST_FILENAME}/index.html !-f' \
+            'RewriteRule ^ /lcs-404-probe/404.php [L]' > "$t/htaccess"
+          printf '%s\n' \
+            '<?php' \
+            'http_response_code(404);' \
+            "header('Content-Type: text/html; charset=utf-8');" \
+            "header('X-Lcs-Probe: php');" \
+            "readfile(__DIR__ . '/404.html');" > "$t/404.php"
+          printf '<!doctype html><html><head><title>Page not found</title></head><body><p>lcs-probe-404-marker</p></body></html>\n' > "$t/404.html"
+          printf 'hidden\n' > "$t/hidden"
+          printf 'x\n' > "$t/file.txt"
+          ftp --ftp-create-dirs -T "$t/htaccess" "ftp://$FTP_SERVER/$D/.htaccess" -o /dev/null || echo "::error::upload .htaccess failed"
+          ftp -T "$t/404.php" "ftp://$FTP_SERVER/$D/404.php" -o /dev/null || echo "::error::upload 404.php failed"
+          ftp -T "$t/404.html" "ftp://$FTP_SERVER/$D/404.html" -o /dev/null || echo "::error::upload 404.html failed"
+          ftp -T "$t/hidden" "ftp://$FTP_SERVER/$D/.hidden" -o /dev/null || echo "::error::upload .hidden failed"
+          ftp --ftp-create-dirs -T "$t/file.txt" "ftp://$FTP_SERVER/$D/sub/file.txt" -o /dev/null || echo "::error::upload sub/file.txt failed"
+          sleep 3
+
+          B="https://learncivicsense.in/$D"
+          show() { # label url [curl args]
+            local label="$1" url="$2"; shift 2
+            local h="$RUNNER_TEMP/h" b="$RUNNER_TEMP/b"
+            curl -s -D "$h" -o "$b" --max-time 20 "$@" "$url" || true
+            local status; status=$(head -1 "$h" | tr -d '\r')
+            local ct; ct=$(grep -i '^content-type:' "$h" | head -1 | tr -d '\r' | cut -d' ' -f2-)
+            local probe; probe=$(grep -i '^x-lcs-probe:' "$h" | head -1 | tr -d '\r' | cut -d' ' -f2-)
+            local powered; powered=$(grep -ci '^x-powered-by:' "$h")
+            local size; size=$(wc -c < "$b" | tr -d ' ')
+            local marker=no; grep -q 'lcs-probe-404-marker' "$b" && marker=yes
+            local php_src=no; grep -q '<?php' "$b" && php_src=yes
+            local injected=no; grep -q 'traffic-assets/js/tccl.min.js' "$b" && injected=yes
+            echo "$label: $status | type=$ct | x-lcs-probe=${probe:-none} | x-powered-by lines=$powered | ${size}B | our body=$marker | php source shown=$php_src | host script injected=$injected"
+          }
+          show "missing folder     " "$B/missing-$GITHUB_RUN_ID/"
+          show "missing .html      " "$B/missing-$GITHUB_RUN_ID.html"
+          show "missing, no slash  " "$B/missing-$GITHUB_RUN_ID"
+          show "folder w/o index   " "$B/sub/"
+          show "dotfile            " "$B/.hidden"
+          show "404.php directly   " "$B/404.php"
+          show "HEAD missing       " "$B/missing-$GITHUB_RUN_ID/" -I
+          show "404.html (control) " "$B/404.html"
+          show "file.txt (control) " "$B/sub/file.txt"
+
+          # Clean up: files first, then the folders.
+          for f in .htaccess 404.php 404.html .hidden sub/file.txt; do
+            ftp --list-only -Q "DELE $D/$f" "ftp://$FTP_SERVER/" -o /dev/null 2>/dev/null || echo "::warning::could not delete $D/$f"
+          done
+          for dir in "$D/sub" "$D"; do
+            ftp --list-only -Q "RMD $dir" "ftp://$FTP_SERVER/" -o /dev/null 2>/dev/null || echo "::warning::could not remove $dir"
+          done
+          echo "after cleanup, $B/404.html answers $(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$B/404.html")"
+          if ftp --list-only "ftp://$FTP_SERVER/" | tr -d '\r' | grep -qx "$D"; then
+            echo "::error::$D is still in the web root"
+          else
+            echo "$D removed from the web root"
+          fi
+          rm -f "$HOME/.netrc"
