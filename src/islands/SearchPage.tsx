@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { Search } from 'lucide-preact';
+import { LoaderCircle, Search } from 'lucide-preact';
 import {
   loadPagefind,
   plural,
@@ -10,6 +10,7 @@ import {
   type PagefindAPI,
   type ResultRow,
 } from '../lib/search';
+import { useDelayedFlag } from './useDelayedFlag';
 
 // The /search/ page's own search: the same Pagefind index and the same result row
 // as the top-bar overlay, laid out as a page — a field that keeps the URL shareable
@@ -39,6 +40,8 @@ interface Strings {
   tryLabel: string;
   examples: string[];
   unavailable: string;
+  /** "Searching…": the loading state, when a search is slow. */
+  searching: string;
 }
 
 interface Props {
@@ -52,6 +55,8 @@ const FIRST_PAGE = 10;
 /** Result records fetched per search; the count line is exact up to this many. */
 const MAX_RESULTS = 60;
 const DEBOUNCE_MS = 150;
+/** A search slower than this shows the loading state; a faster one shows nothing. */
+const BUSY_AFTER_MS = 150;
 
 type Status = 'idle' | 'loading' | 'done' | 'unavailable';
 
@@ -61,6 +66,10 @@ export default function SearchPage({ strings, browseId }: Props) {
   const [total, setTotal] = useState(0);
   const [shown, setShown] = useState(FIRST_PAGE);
   const [status, setStatus] = useState<Status>('idle');
+  // True while the index loads or answers (after the debounce); only a slow
+  // search (`busy`) shows the spinner and "Searching…".
+  const [searching, setSearching] = useState(false);
+  const busy = useDelayedFlag(searching, BUSY_AFTER_MS);
   const inputRef = useRef<HTMLInputElement>(null);
   const apiRef = useRef<PagefindAPI | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,16 +110,19 @@ export default function SearchPage({ strings, browseId }: Props) {
       setTotal(0);
       setShown(FIRST_PAGE);
       setStatus('idle');
+      setSearching(false);
       return;
     }
     setStatus('loading');
     debounceRef.current = setTimeout(async () => {
       const id = ++seqRef.current;
+      setSearching(true);
       const api = apiRef.current ?? (await loadPagefind());
       apiRef.current = api;
       if (id !== seqRef.current) return;
       if (!api) {
         setStatus('unavailable');
+        setSearching(false);
         return;
       }
       const r = await api.search(q);
@@ -120,6 +132,7 @@ export default function SearchPage({ strings, browseId }: Props) {
       setTotal(r.results.length);
       setShown(FIRST_PAGE);
       setStatus('done');
+      setSearching(false);
     }, DEBOUNCE_MS);
   }, [query]);
 
@@ -135,7 +148,8 @@ export default function SearchPage({ strings, browseId }: Props) {
   const stubs = rows.filter((r) => r.comingSoon).length;
 
   let statusText = '';
-  if (status === 'unavailable') statusText = strings.unavailable;
+  if (busy) statusText = strings.searching;
+  else if (status === 'unavailable') statusText = strings.unavailable;
   else if (status === 'done' && rows.length > 0) {
     statusText = plural(total, strings.countOne, strings.countOther).replace('{query}', q);
     if (stubs > 0) {
@@ -149,7 +163,11 @@ export default function SearchPage({ strings, browseId }: Props) {
     <div class="sp">
       <form class="sp-form" role="search" onSubmit={(e) => e.preventDefault()}>
         <label class="sp-field">
-          <Search class="icon" aria-hidden="true" />
+          {busy ? (
+            <LoaderCircle class="icon search-loading" aria-hidden="true" />
+          ) : (
+            <Search class="icon" aria-hidden="true" />
+          )}
           <input
             ref={inputRef}
             type="search"

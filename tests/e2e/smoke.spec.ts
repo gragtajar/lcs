@@ -218,6 +218,59 @@ test.describe('Global search', () => {
     await expect(page.locator('.search-see-all')).toHaveAttribute('href', '/search/?q=honking');
   });
 
+  test('closes on a click outside the panel, with a query typed', async ({ page }, info) => {
+    test.skip(!!info.project.use.isMobile, 'on phones the panel fills the screen');
+    await page.goto('/');
+    const input = await openSearchOverlay(page);
+    await input.fill('honking');
+    await expect(page.locator('.search-result').first()).toBeVisible({ timeout: 5_000 });
+    // The backdrop covers the whole page, not just the top bar.
+    const panel = (await page.locator('.search-panel').boundingBox())!;
+    const viewport = page.viewportSize()!;
+    const outside = { x: 16, y: Math.min(panel.y + panel.height + 24, viewport.height - 16) };
+    await page.mouse.click(outside.x, outside.y);
+    await expect(page.locator('.search-overlay')).toHaveCount(0);
+  });
+
+  test('shows a loading state while a slow search runs', async ({ page }) => {
+    // Slow the index down, as a first search on a slow connection would be.
+    await page.route('**/pagefind/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 800));
+      await route.continue();
+    });
+    await page.goto('/');
+    const input = await openSearchOverlay(page);
+    await input.fill('queue');
+    await expect(page.locator('.search-input-row .search-loading')).toBeVisible();
+    await expect(page.locator('.search-results')).toContainText(/searching/i);
+    await expect(page.locator('.search-result').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.search-input-row .search-loading')).toHaveCount(0);
+  });
+
+  test('arrow keys keep the highlighted result in view', async ({ page }) => {
+    await page.goto('/');
+    const input = await openSearchOverlay(page);
+    await input.fill('queue');
+    const rows = page.locator('.search-result');
+    await expect(rows.nth(10)).toBeAttached({ timeout: 5_000 });
+    const count = await rows.count();
+    const highlightedInView = () =>
+      page.evaluate(() => {
+        const field = document.querySelector('.search-input')!;
+        const row = document.getElementById(field.getAttribute('aria-activedescendant') ?? '');
+        const list = document.querySelector('.search-results')!.getBoundingClientRect();
+        const r = row?.getBoundingClientRect();
+        return !!r && r.top >= list.top - 1 && r.bottom <= list.bottom + 1;
+      });
+    // Down to the last row, as a held key would, then back up to the first.
+    for (let i = 1; i < count; i++) await input.press('ArrowDown');
+    await expect(rows.last()).toHaveAttribute('aria-selected', 'true');
+    expect(await highlightedInView()).toBe(true);
+    for (let i = 1; i < count; i++) await input.press('ArrowUp');
+    await expect(rows.first()).toHaveAttribute('aria-selected', 'true');
+    expect(await highlightedInView()).toBe(true);
+  });
+
   test('flags coming-soon results with a chip', async ({ page }) => {
     // Search the unwritten lesson by its own title so it ranks into the results,
     // rather than pinning a query whose lesson later gets published.
@@ -250,6 +303,18 @@ test.describe('Search page', () => {
       .fill('chlorine');
     await expect(page).toHaveURL(/\/search\/\?q=chlorine$/);
     await expect(page.locator('.sp-status')).toContainText(/chlorine/i);
+  });
+
+  test('the field shows a loading state while a slow search runs', async ({ page }) => {
+    await page.route('**/pagefind/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 800));
+      await route.continue();
+    });
+    await page.goto('/search/?q=honking');
+    await expect(page.locator('.sp-field .search-loading')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.sp-status')).toHaveText(/searching/i);
+    await expect(page.locator('.sp-list .search-result').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.sp-field .search-loading')).toHaveCount(0);
   });
 
   test('the empty state focuses the field and offers the topic index and examples', async ({
