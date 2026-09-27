@@ -159,6 +159,13 @@ describe('queryWordsFromPath()', () => {
     expect(queryWordsFromPath('/bad%E0%A4escape/')).toEqual(['bad', 'a4escape']);
   });
 
+  it('keeps words in Indian scripts whole, vowel signs included', () => {
+    expect(queryWordsFromPath('/%E0%A4%B9%E0%A5%89%E0%A4%B0%E0%A5%8D%E0%A4%A8-bajana/')).toEqual([
+      'हॉर्न',
+      'bajana',
+    ]);
+  });
+
   it('finds nothing to search in the 404 page’s own address or the root', () => {
     expect(queryWordsFromPath('/404.html')).toEqual([]);
     expect(queryWordsFromPath('/')).toEqual([]);

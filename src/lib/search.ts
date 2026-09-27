@@ -159,7 +159,9 @@ export function queryWordsFromPath(pathname: string, max = 6): string[] {
     } catch {
       // A malformed escape: use the raw segment.
     }
-    for (const word of text.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
+    // Letters, combining marks (the vowel signs of Devanagari and other Indian
+    // scripts) and digits make a word; anything else separates words.
+    for (const word of text.toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u)) {
       if (word.length < 3 || /^\p{N}+$/u.test(word) || PATH_NOISE.has(word)) continue;
       if (!words.includes(word)) words.push(word);
       if (words.length === max) return words;
