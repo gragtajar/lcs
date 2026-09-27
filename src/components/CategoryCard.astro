@@ -32,7 +32,7 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
       </span>
       <span class="cat-count">{meta}</span>
     </span>
-    <Icon name="expand_more" class="cat-chevron" />
+    <Icon name="chevron-down" class="cat-chevron" />
   </summary>
 
   <ul class="sub-list">
@@ -42,7 +42,7 @@ const meta = t('home.categoryMeta', { subs: subsLabel, arts: artsLabel });
           <a class="sub-row" href={subtopicUrl(category.id, s.id)}>
             <span class="sub-title">{s.title}</span>
             <span class="sub-count">{t('home.articleCount', { count: s.articles.length })}</span>
-            <Icon name="chevron_right" class="sub-arrow" />
+            <Icon name="chevron-right" class="sub-arrow" />
           </a>
         </li>
       ))

@@ -15,7 +15,8 @@ first paint), it belongs in `src/islands/` instead.
 | `CategoryCard.astro`    | topics catalog (`/topics/`)          | accordion card per India cluster / abroad pack           |
 | `ComingSoonBody.astro`  | article page (placeholder variant)   | status line + "Meanwhile, in …" lessons + a way onward   |
 | `Footer.astro`          | every page                           | minimal footer with About/Search/Privacy/Terms links     |
-| `Icon.astro`            | everywhere                           | inline SVG sprite (Material-Symbols-style outline icons) |
+| `BrandIcon.astro`       | ShareBar                             | share platforms' own marks (Simple Icons, Bootstrap)     |
+| `Icon.astro`            | everywhere                           | one Lucide icon as inline SVG, by name (ADR 009)         |
 | `RelatedLinks.astro`    | article page                         | "Related lessons" list (resolved by ID via taxonomy)     |
 | `SidebarNav.astro`      | subcategory pages                    | left-rail accordion + name-only filter                   |
 | `SubtopicIndex.astro`   | category page, coming-soon article   | hairline rows of subtopics with readable counts + times  |

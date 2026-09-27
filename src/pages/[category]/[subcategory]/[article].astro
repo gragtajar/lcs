@@ -254,7 +254,7 @@ const tocItems = isComingSoon
                 <details class="toc-mobile" name="toc-mobile" data-pagefind-ignore>
                   <summary>
                     <span>{t('article.contents')}</span>
-                    <Icon name="expand_more" class="toc-mobile-chevron" />
+                    <Icon name="chevron-down" class="toc-mobile-chevron" />
                   </summary>
                   <ol>
                     {tocItems.map((it) => (
@@ -702,6 +702,14 @@ const tocItems = isComingSoon
   :global(.quiz-opt.wrong .quiz-opt-marker) {
     background: var(--color-warning);
     color: #fff;
+  }
+  /* The verdict (Lucide check / x) at the letter's size, stroked heavier so it
+     holds up small on the coloured disc. */
+  :global(.quiz-opt-marker .icon) {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.5;
+    vertical-align: 0;
   }
   :global(.quiz-opt-text) {
     padding-top: 4px;

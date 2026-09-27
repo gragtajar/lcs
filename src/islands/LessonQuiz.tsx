@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { Check, X } from 'lucide-preact';
 import { trackQuizAttempt } from '../lib/analytics';
 
 interface QuizOption {
@@ -134,8 +135,11 @@ function QuestionBlock({
 
   return (
     <div class="quiz-q">
+      {/* One text node per element: the server renders `{index + 1}.` as a single
+          node "1.", and hydrating two expressions into it printed "1..". */}
       <p class="quiz-question">
-        <span class="quiz-q-num">{index + 1}.</span> {q.question}
+        <span class="quiz-q-num">{`${index + 1}.`}</span>
+        {` ${q.question}`}
       </p>
       <p class="quiz-hint">{hint}</p>
       <ul class="quiz-opts">
@@ -150,9 +154,17 @@ function QuestionBlock({
                 onClick={() => onPick(opt.id)}
                 aria-pressed={isPicked}
               >
-                {/* Letter before the pick; verdict glyph after. */}
+                {/* Letter before the pick; verdict icon after. */}
                 <span class="quiz-opt-marker" aria-hidden="true" data-pagefind-ignore>
-                  {isPicked ? (opt.correct ? '✓' : '×') : (LETTERS[oi] ?? '')}
+                  {isPicked ? (
+                    opt.correct ? (
+                      <Check class="icon" aria-hidden="true" />
+                    ) : (
+                      <X class="icon" aria-hidden="true" />
+                    )
+                  ) : (
+                    (LETTERS[oi] ?? '')
+                  )}
                 </span>
                 <span class="quiz-opt-text">{opt.text}</span>
               </button>
@@ -165,7 +177,8 @@ function QuestionBlock({
       </ul>
       {anyPicked && q.explanation && (
         <div class="quiz-explanation">
-          <strong>{strings.explanationLabel}.</strong> {q.explanation}
+          <strong>{`${strings.explanationLabel}.`}</strong>
+          {` ${q.explanation}`}
         </div>
       )}
       <span class="quiz-sr" role="status" aria-live="polite">

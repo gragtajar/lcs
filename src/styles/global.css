@@ -195,17 +195,29 @@ button:active {
   }
 }
 
-/* Material Symbols inline SVG sprite icon helper. */
+/* Lucide icons (src/components/Icon.astro; lucide-preact in the islands): an
+   outline set drawn on a 24px grid with a 2px round stroke, sized to the text
+   around them. */
 .icon {
   width: 1.25em;
   height: 1.25em;
   flex-shrink: 0;
   fill: none;
   stroke: currentcolor;
-  stroke-width: 1.6;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
   vertical-align: -0.225em;
+}
+
+/* Share-platform marks (src/components/BrandIcon.astro) are solid glyphs. They
+   fill their whole box where Lucide leaves a 2px margin, so they sit a size
+   smaller to read at the same weight. */
+.icon.icon-brand {
+  fill: currentcolor;
+  stroke: none;
+  width: 1.05em;
+  height: 1.05em;
 }
 
 /* Inline 'kbd' chips */

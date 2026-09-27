@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { Search } from 'lucide-preact';
 import {
   loadPagefind,
   plural,
@@ -148,16 +149,7 @@ export default function SearchPage({ strings, browseId }: Props) {
     <div class="sp">
       <form class="sp-form" role="search" onSubmit={(e) => e.preventDefault()}>
         <label class="sp-field">
-          <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-            <path
-              d="M16 16l4.5 4.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
+          <Search class="icon" aria-hidden="true" />
           <input
             ref={inputRef}
             type="search"

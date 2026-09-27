@@ -7,6 +7,7 @@
 // The per-platform <a> links are real intents (no JS needed). The native-share +
 // copy buttons are progressively enhanced by the deferred module script below.
 import Icon from './Icon.astro';
+import BrandIcon from './BrandIcon.astro';
 import { t } from '../lib/i18n';
 import { buildShareLinks } from '../lib/share';
 
@@ -26,32 +27,32 @@ const platforms = [
   {
     platform: 'whatsapp',
     href: links.whatsapp,
-    icon: 'whatsapp',
+    brand: 'whatsapp',
     labelKey: 'share.onWhatsapp',
     newTab: true,
   },
   {
     platform: 'twitter',
     href: links.twitter,
-    icon: 'twitter',
+    brand: 'x',
     labelKey: 'share.onTwitter',
     newTab: true,
   },
   {
     platform: 'linkedin',
     href: links.linkedin,
-    icon: 'linkedin',
+    brand: 'linkedin',
     labelKey: 'share.onLinkedin',
     newTab: true,
   },
   {
     platform: 'telegram',
     href: links.telegram,
-    icon: 'telegram',
+    brand: 'telegram',
     labelKey: 'share.onTelegram',
     newTab: true,
   },
-  { platform: 'email', href: links.email, icon: 'mail', labelKey: 'share.viaEmail', newTab: false },
+  { platform: 'email', href: links.email, labelKey: 'share.viaEmail', newTab: false },
 ] as const;
 ---
 
@@ -74,7 +75,7 @@ const platforms = [
           aria-expanded="false"
           aria-label={t('share.shareThis')}
         >
-          <Icon name="share" />
+          <Icon name="share-2" />
           <span>{t('share.share')}</span>
         </button>
         <div class="sb-fallback" data-share-fallback hidden>
@@ -87,7 +88,7 @@ const platforms = [
               aria-label={t(p.labelKey)}
               {...(p.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >
-              <Icon name={p.icon} />
+              {'brand' in p ? <BrandIcon brand={p.brand} /> : <Icon name="mail" />}
             </a>
           ))}
           <button
@@ -116,7 +117,7 @@ const platforms = [
             aria-label={t('share.shareThis')}
             hidden
           >
-            <Icon name="share" />
+            <Icon name="share-2" />
           </button>
           {platforms.map((p) => (
             <a
@@ -127,7 +128,7 @@ const platforms = [
               aria-label={t(p.labelKey)}
               {...(p.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >
-              <Icon name={p.icon} />
+              {'brand' in p ? <BrandIcon brand={p.brand} /> : <Icon name="mail" />}
             </a>
           ))}
           <button

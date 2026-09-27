@@ -15,7 +15,7 @@ threshold is 80% statements / 75% branches; new files here need new tests.
 | `i18n.ts`     | Tiny `t()` with dotted-path lookup, plural variants by `count`, and `{var}` interpolation. Reads `src/i18n/{locale}.json`.                           |
 | `seo.ts`      | `buildMeta()` for OG/Twitter/canonical; `articleJsonLd()`, `collectionJsonLd()`, `breadcrumbJsonLd()` for schema.org.                                |
 | `search.ts`   | Shared by both search islands: `loadPagefind()` on demand, Pagefind record → result row (`toRow`), stubs-last sort, `?q=` helpers.                   |
-| `icons.ts`    | Maps taxonomy `icon` strings (e.g. `traffic-cone`) to the IconName enum used by the inline SVG sprite.                                               |
+| `icons.ts`    | The Lucide icon catalogue (`ICON_NAMES`) and the taxonomy `icon` → Lucide name map (`categoryIconName`), ADR 009.                                    |
 
 ## Conventions
 
