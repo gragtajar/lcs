@@ -210,6 +210,14 @@ button:active {
   vertical-align: -0.225em;
 }
 
+/* A turning icon for loading states (the search fields' spinner). Global so
+   component styles can name it; reduced motion stops it where it is used. */
+@keyframes lcs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Share-platform marks (src/components/BrandIcon.astro) are solid glyphs. They
    fill their whole box where Lucide leaves a 2px margin, so they sit a size
    smaller to read at the same weight. */

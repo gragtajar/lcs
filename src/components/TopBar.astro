@@ -35,22 +35,31 @@ import { t } from '../lib/i18n';
       />
     </div>
   </div>
-
-  <SearchOverlay
-    client:idle
-    strings={{
-      open: t('topbar.openSearch'),
-      close: t('topbar.closeSearch'),
-      title: t('search.title'),
-      placeholder: t('search.placeholder'),
-      prompt: t('search.prompt'),
-      noResults: t('search.noResults'),
-      comingSoonChip: t('search.comingSoonChip'),
-      seeAllOne: t('search.seeAll_one'),
-      seeAllOther: t('search.seeAll_other'),
-    }}
-  />
 </header>
+
+{
+  /* Outside the header on purpose: the header's backdrop-filter makes it the
+     containing block for position: fixed descendants, which shrank the
+     overlay's full-screen backdrop to the 60px bar. Clicks outside the panel
+     then landed on the page instead of closing the search. */
+}
+<SearchOverlay
+  client:idle
+  strings={{
+    open: t('topbar.openSearch'),
+    close: t('topbar.closeSearch'),
+    title: t('search.title'),
+    placeholder: t('search.placeholder'),
+    prompt: t('search.prompt'),
+    noResults: t('search.noResults'),
+    comingSoonChip: t('search.comingSoonChip'),
+    seeAllOne: t('search.seeAll_one'),
+    seeAllOther: t('search.seeAll_other'),
+    searching: t('search.searching'),
+    resultsOne: t('search.results_one'),
+    resultsOther: t('search.results_other'),
+  }}
+/>
 
 <script>
   // Wire the (server-rendered) search trigger button to the (client-side) overlay.
@@ -272,6 +281,18 @@ import { t } from '../lib/i18n';
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--color-border);
   }
+  /* The loading state: the magnifier turns into a spinner while a search is
+     slow (SearchOverlay.tsx / SearchPage.tsx), in the same spot, so the eye
+     that is on the query sees it. Without motion it stays a still ring. */
+  :global(.search-loading) {
+    color: var(--color-primary);
+    animation: lcs-spin 0.8s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.search-loading) {
+      animation: none;
+    }
+  }
   :global(.search-input) {
     flex: 1;
     border: 0;
@@ -292,6 +313,8 @@ import { t } from '../lib/i18n';
     max-height: 60vh;
     overflow-y: auto;
     padding: var(--space-2) 0;
+    /* Rows the arrow keys scroll into view keep this much room at the edge. */
+    scroll-padding-block: var(--space-2);
   }
   @media (max-width: 640px) {
     :global(.search-results) {

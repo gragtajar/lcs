@@ -118,7 +118,10 @@
     "unavailable": "Search isn’t available right now. Browse by topic below.",
     "browseHeading": "Browse by topic",
     "seeAll_one": "See all {count} results",
-    "seeAll_other": "See all {count} results"
+    "seeAll_other": "See all {count} results",
+    "searching": "Searching…",
+    "results_one": "{count} result",
+    "results_other": "{count} results"
   },
   "errors": {
     "notFoundTitle": "Page not found",
