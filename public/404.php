@@ -7,8 +7,9 @@
 // ErrorDocument says, but it keeps a body PHP sends (ADR 010, tested on the
 // host in PR #35). Nothing from the request is read or echoed.
 
+// Not cached: public/.htaccess sets Cache-Control: no-store for /404.php (a
+// header here as well was sent twice).
 http_response_code(404);
 header('Content-Type: text/html; charset=utf-8');
-header('Cache-Control: no-store');
 header_remove('X-Powered-By');
 readfile(__DIR__ . '/404.html');

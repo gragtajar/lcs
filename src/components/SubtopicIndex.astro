@@ -30,9 +30,17 @@ interface Props {
   label?: string;
   /** Two columns from 768px (the default), or one inside a narrow column. */
   columns?: 1 | 2;
+  /**
+   * A directory of many topics (/topics/): no hairline per row, each column
+   * flowing on its own, and one line per row with the count at its end (a row
+   * that also counts lessons coming soon keeps its meta on a second line, so
+   * the title keeps the width). The default stacks the meta under every title,
+   * which has room for format and reading time.
+   */
+  compact?: boolean;
 }
 
-const { rows, heading, id = 'subtopics', label, columns = 2 } = Astro.props;
+const { rows, heading, id = 'subtopics', label, columns = 2, compact = false } = Astro.props;
 const headingId = heading ? `${id}-h` : undefined;
 
 function metaOf(r: SubtopicRow): string {
@@ -52,11 +60,17 @@ function metaOf(r: SubtopicRow): string {
       </h2>
     )
   }
-  <ul class:list={['si-list', { 'si-list-single': columns === 1 }]}>
+  <ul class:list={['si-list', { 'si-list-single': columns === 1, 'si-compact': compact }]}>
     {
       rows.map((r) => (
         <li class="si-item">
-          <a class:list={['si-link', { 'si-soon': r.readable === 0 }]} href={r.url}>
+          <a
+            class:list={[
+              'si-link',
+              { 'si-soon': r.readable === 0, 'si-stack': r.readable > 0 && r.comingSoon > 0 },
+            ]}
+            href={r.url}
+          >
             <span class="si-title">{r.title}</span>
             <span class="si-meta">{metaOf(r)}</span>
           </a>
@@ -118,6 +132,45 @@ function metaOf(r: SubtopicRow): string {
   .si-meta {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
+  }
+  /* Compact: no hairline per row (the topic above has one), each column flows
+     on its own so a two-line row never stretches its neighbour, and title and
+     count share a line; a long title wraps, the count stays on its first line
+     and the counts line up down the column. */
+  .si-list.si-compact {
+    display: block;
+    column-gap: var(--space-7);
+  }
+  @media (min-width: 768px) {
+    .si-list.si-compact:not(.si-list-single) {
+      columns: 2;
+    }
+  }
+  .si-compact::after {
+    display: none;
+  }
+  .si-compact .si-item {
+    border-top: 0;
+    break-inside: avoid;
+  }
+  .si-compact .si-link {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+  }
+  .si-compact .si-title {
+    min-width: 0;
+  }
+  .si-compact .si-meta {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  /* "2 lessons · 4 coming soon" is too long to sit beside a title: stack it. */
+  .si-compact .si-link.si-stack {
+    flex-direction: column;
+    gap: 2px;
   }
   /* Nothing to read yet: the row stays a link (the subtopic page exists) but
      says so in the same words the lesson list and search use. */

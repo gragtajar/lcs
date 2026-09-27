@@ -77,17 +77,35 @@ test.describe('Homepage', () => {
 });
 
 test.describe('Topics catalog page', () => {
-  test('lists the India / abroad sections and expands a category', async ({ page }) => {
+  test('lists every topic with every subtopic, open, with readable counts', async ({
+    page,
+  }, info) => {
     await page.goto('/topics/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/topics and subtopics/i);
     await expect(page.getByRole('heading', { name: /in and around india/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /for your trip abroad/i })).toBeVisible();
-    // Traffic is the first card (open by default) so its subtopics are visible.
-    const traffic = page.locator('details[data-cat-id="traffic"]');
-    await expect(traffic.getByRole('link', { name: /honking discipline/i })).toBeVisible();
-    // A closed category expands on click.
-    const queues = page.locator('details[data-cat-id="queues-and-waiting"]');
-    await queues.locator('summary').first().click();
-    await expect(queues.getByRole('link').first()).toBeVisible();
+    // No accordions for the content: every topic's subtopics are on the page.
+    await expect(page.locator('.tp-topic')).toHaveCount(15); // 14 topics + visitors
+    const traffic = page.locator('#traffic');
+    await expect(traffic.getByRole('link', { name: /honking discipline/i })).toHaveAttribute(
+      'href',
+      '/traffic/honking-discipline/',
+    );
+    // Counts are lessons a reader can open today, not planned articles.
+    await expect(traffic.locator('.si-meta').first()).toHaveText(/^\d+ lessons?|coming soon/i);
+    await expect(traffic.locator('.tp-browse')).toHaveAttribute('href', '/traffic/');
+    // The page's own index jumps to a topic's block; on phones it is folded
+    // behind one line first.
+    const jump = page.locator('[data-tp-jump]');
+    if (info.project.use.isMobile) {
+      await expect(jump).not.toHaveAttribute('open', '');
+      await page.locator('.tp-jump-summary').click();
+    } else {
+      await expect(jump).toHaveAttribute('open', '');
+    }
+    await page.locator('.tp-jump-row', { hasText: 'Queues, lines, and waiting' }).click();
+    await expect(page).toHaveURL(/#queues-and-waiting$/);
+    await expect(page.locator('#queues-and-waiting h3')).toBeInViewport();
   });
 });
 
