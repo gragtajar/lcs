@@ -2,27 +2,21 @@
 # cPanel hosting (ADR 008). It travels with the build (public/ -> dist/) and is
 # uploaded by the Deploy production workflow. It carries the policy the
 # Cloudflare `_headers` file used to describe: one canonical HTTPS origin,
-# security headers, cache lifetimes, compression and the custom 404 page.
+# security headers, cache lifetimes, compression, and the site's own 404 page
+# for every URL it has no page for.
 #
 # Every directive that needs a module sits inside <IfModule>, so a host without
 # that module loses that one behaviour instead of answering 500 for the whole
 # site. Directory listings are already off on this host, so `Options` (which
 # not every host lets .htaccess change) is deliberately not used.
 
-# The site's own 404 page. NOTE: this host currently replaces every error body
-# with its own 13-byte "404 Not Found" / "403 Forbidden", whatever ErrorDocument
-# says (tested in every form on 2026-09-26, PR #28). The status codes are still
-# right; the designed page shows again as soon as the host honours this.
-ErrorDocument 404 /404.html
-ErrorDocument 403 /404.html
+# No ErrorDocument: this host replaces the body of every error Apache generates
+# with its own 13-byte "404 Not Found", whatever ErrorDocument says (tested in
+# every form, PR #28). The 404 page is sent by 404.php instead (see below and
+# ADR 010), which the host leaves alone.
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-
-  # Nothing whose name starts with a dot is served: the deploy's
-  # .ftp-deploy-sync-state.json, the host's .ftpquota. The one exception is
-  # .well-known, which certificate renewal reads.
-  RewriteRule "(^|/)\.(?!well-known(/|$))" - [R=404,L]
 
   # One origin, https://learncivicsense.in, with path and query kept.
   # Plain HTTP goes to HTTPS (X-Forwarded-Proto guards against a loop if a
@@ -36,6 +30,22 @@ ErrorDocument 403 /404.html
   RewriteCond %{REQUEST_URI} !^/\.well-known/
   RewriteCond %{HTTP_HOST} !^learncivicsense\.in$ [NC]
   RewriteRule ^ https://learncivicsense.in%{REQUEST_URI} [R=301,L]
+
+  # Every URL the site has no page for gets the site's 404 page, with status
+  # 404, from 404.php (an internal rewrite: the address bar keeps the URL).
+  # Nothing whose name starts with a dot is served (the deploy's
+  # .ftp-deploy-sync-state.json, the host's .ftpquota), except .well-known,
+  # which certificate renewal reads...
+  RewriteRule "(^|/)\.(?!well-known(/|$))" /404.php [L]
+  # ...nor anything missing...
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ /404.php [L]
+  # ...nor a folder without a page of its own (/_astro/, /fonts/), which the
+  # host would otherwise answer with its bare 403.
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteCond %{REQUEST_FILENAME}/index.html !-f
+  RewriteRule ^ /404.php [L]
 </IfModule>
 
 <IfModule mod_mime.c>
@@ -64,7 +74,9 @@ ErrorDocument 403 /404.html
 
   # Cache lifetimes. Build assets and fonts carry content hashes or never
   # change in place; the search index changes with content; the deploy marker
-  # must never be cached; HTML is short-lived so a deploy shows within minutes.
+  # and a not-found answer must never be cached (a missing page may be
+  # published a minute later); HTML is short-lived so a deploy shows within
+  # minutes.
   <If "%{REQUEST_URI} =~ m#^/(_astro|fonts|images)/#">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </If>
@@ -74,7 +86,7 @@ ErrorDocument 403 /404.html
   <ElseIf "%{REQUEST_URI} =~ m#^/placeholders/#">
     Header set Cache-Control "public, max-age=604800"
   </ElseIf>
-  <ElseIf "%{REQUEST_URI} == '/build-info.json'">
+  <ElseIf "%{REQUEST_URI} == '/build-info.json' || %{REQUEST_URI} == '/404.php'">
     Header set Cache-Control "no-store"
   </ElseIf>
   <ElseIf "%{REQUEST_URI} =~ m#^/sitemap[^/]*\.xml$#">

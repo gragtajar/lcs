@@ -184,12 +184,28 @@ test.describe('Production', () => {
     expect(problems).toEqual([]);
   });
 
-  test('the designed 404 page is deployed', async ({ page }, info) => {
-    // Missing URLs answer 404 (asserted in the smoke suite); this host shows its
-    // own text for them, so check the site's page itself is in place.
-    const res = await page.goto('/404.html');
-    expect(res?.status()).toBe(200);
-    await expect(page.getByText(/page not found/i).first()).toBeVisible();
+  test('a missing address answers 404 with the site’s own page', async ({ page }, info) => {
+    // Sent by 404.php (ADR 010); the host would replace any error body Apache
+    // generated itself with its 13-byte "404 Not Found".
+    const missing = `/no-such-lesson-${Date.now()}/`;
+    const problems = watch(page);
+    const res = await page.goto(missing);
+    expect(res?.status()).toBe(404);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/page not found/i);
+    await expect(page.locator('[data-nf-path]')).toHaveText(missing);
+    await expect(page.locator('#browse-h')).toBeVisible();
     await shoot(page, info, '404');
+    // The page's own 404 is the point of the test; nothing else may fail. (The
+    // console line for it carries no URL; any other failed request still shows
+    // up below by its URL.)
+    expect(
+      problems.filter(
+        (p) =>
+          !p.endsWith(missing) &&
+          p !== 'console: Failed to load resource: the server responded with a status of 404 ()' &&
+          p !==
+            'console: Failed to load resource: the server responded with a status of 404 (Not Found)',
+      ),
+    ).toEqual([]);
   });
 });

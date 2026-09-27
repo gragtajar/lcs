@@ -1,43 +1,477 @@
 ---
+// The site's not-found page. Astro builds it as 404.html; on the host,
+// public/404.php sends it with status 404 for every address the site has no
+// page for (ADR 010), so it must work at any depth and for any URL.
+//
+// Set on the page grid like the homepage hero: on the left what happened, the
+// address that was followed, and the answer to "which lesson did this address
+// mean?"; a search; on the right the homepage's curated "Start with one
+// lesson", which never changes under the reader; every topic below.
+//
+// The answer is the page's point, so it is its most prominent line after the
+// heading: the address's words are searched in the index (Pagefind forgives
+// typos), and a lesson that shares a word with the address is offered by name,
+// with where it lives and how long it takes. Its slot is on the page from the
+// first paint, saying it is looking, so nothing moves when it arrives, and it
+// is a polite live region. Without JavaScript the slot is hidden and the page
+// is still whole: the form submits to /search/.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
+import TopicIndex from '../components/TopicIndex.astro';
+import { resolveHeroChips, getTopicIndex } from '../lib/homepage-data';
+import { DEFAULT_LOCALE } from '../config.ts';
 import { t } from '../lib/i18n';
+
+const start = resolveHeroChips(DEFAULT_LOCALE);
+const topics = getTopicIndex(DEFAULT_LOCALE);
 ---
 
-<BaseLayout title={t('errors.notFoundTitle')} width="narrow">
-  <section class="nf">
-    <p class="nf-tag">404</p>
-    <h1>{t('errors.notFoundTitle')}</h1>
-    <p class="nf-body">{t('errors.notFoundBody')}</p>
-    <p><a class="nf-cta" href="/"><Icon name="arrow-left" />Back to home</a></p>
+<BaseLayout
+  title={t('errors.notFoundTitle')}
+  description={t('errors.notFoundBody')}
+  width="flush"
+  noindex
+>
+  <Fragment slot="head">
+    {/* The answer needs the search index: start fetching it with the page. */}
+    <link rel="modulepreload" href="/pagefind/pagefind.js" />
+    {/* No script, no answer: its slot would only ever say it is looking. */}
+    <noscript
+      ><style>
+        [data-nf-answer] {
+          display: none;
+        }
+      </style></noscript
+    >
+  </Fragment>
+
+  <section
+    class="nf"
+    data-nf
+    data-meant={t('errors.notFoundMeant')}
+    data-more={t('errors.notFoundMore')}
+    data-none={t('errors.notFoundNone')}
+    data-min-read={t('list.minRead')}
+  >
+    <div class="nf-claim">
+      <h1 class="nf-h1">{t('errors.notFoundTitle')}</h1>
+      <p class="nf-lede">{t('errors.notFoundBody')}</p>
+      <p class="nf-address" data-nf-address hidden>
+        {t('errors.notFoundAddress')}
+        <span class="nf-path" data-nf-path></span>
+      </p>
+
+      <div class="nf-answer" data-nf-answer aria-live="polite">
+        <p class="nf-answer-note">{t('errors.notFoundLooking')}</p>
+      </div>
+
+      <form class="nf-search" action="/search/" method="get" role="search">
+        <div class="nf-field">
+          <label class="nf-label">
+            <Icon name="search" />
+            <span class="sr-only">{t('errors.notFoundSearch')}</span>
+            <input
+              class="nf-input"
+              type="search"
+              name="q"
+              placeholder={t('search.placeholder')}
+              autocomplete="off"
+              enterkeyhint="search"
+              data-nf-query
+            />
+          </label>
+          <button class="nf-submit" type="submit">{t('errors.notFoundSearchButton')}</button>
+        </div>
+      </form>
+
+      <a class="nf-home" href="/">{t('errors.notFoundHome')}</a>
+    </div>
+
+    {
+      start.length > 0 && (
+        <section class="nf-lessons" aria-labelledby="nf-lessons-h">
+          <h2 class="nf-lessons-h" id="nf-lessons-h">
+            {t('homepage.hero.startHere')}
+          </h2>
+          <ul class="nf-list">
+            {start.map((chip) => (
+              <li class="nf-item" data-cluster={chip.category}>
+                <a class="nf-link" href={chip.href}>
+                  <span class="nf-link-label">{chip.label}</span>
+                  {chip.minutes ? (
+                    <span class="nf-link-meta">{t('list.minRead', { n: chip.minutes })}</span>
+                  ) : null}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </section>
+
+  <section class="nf-topics" aria-labelledby="browse-h">
+    <div class="nf-topics-inner">
+      <TopicIndex groups={topics} heading={t('search.browseHeading')} id="browse" />
+    </div>
   </section>
 </BaseLayout>
 
+<script>
+  import {
+    loadPagefind,
+    queryWordsFromPath,
+    searchUrl,
+    sharesAddressWord,
+    toRow,
+    type ResultRow,
+  } from '../lib/search';
+
+  const root = document.querySelector<HTMLElement>('[data-nf]');
+  const answer = root?.querySelector<HTMLElement>('[data-nf-answer]');
+  const path = window.location.pathname;
+  // Opened as itself (/404.html, /404.php) there is no missing address to read.
+  const direct = /^\/404(\.html|\.php)?\/?$/.test(path);
+  const words = direct ? [] : queryWordsFromPath(path);
+
+  if (root && answer) {
+    if (words.length === 0) {
+      answer.hidden = true;
+    } else {
+      showAddress(root);
+      void findLesson(root, answer, words);
+    }
+  }
+
+  function showAddress(root: HTMLElement) {
+    const address = root.querySelector<HTMLElement>('[data-nf-address]');
+    const pathEl = root.querySelector<HTMLElement>('[data-nf-path]');
+    if (!address || !pathEl) return;
+    let shown = path;
+    try {
+      shown = decodeURI(path);
+    } catch {
+      // A malformed escape: show the address as it was sent.
+    }
+    pathEl.textContent = shown;
+    address.hidden = false;
+  }
+
+  /**
+   * Search the address's words, then fewer of them (the most specific first),
+   * until a published lesson that shares a word with the address turns up.
+   * Pagefind narrows a many-word query and forgives typos, so a mistyped or
+   * cut-off lesson address usually finds that lesson; the shared-word check
+   * keeps a nonsense address from "finding" anything.
+   */
+  async function findLesson(root: HTMLElement, answer: HTMLElement, words: string[]) {
+    const api = await loadPagefind();
+    if (!api) {
+      // No index to ask (it failed to load): say nothing rather than "no match".
+      answer.hidden = true;
+      return;
+    }
+    const tries = [words, words.slice(0, 3), words.slice(0, 1)].filter(
+      (w, i, all) => all.findIndex((x) => x.join(' ') === w.join(' ')) === i,
+    );
+    for (const attempt of tries) {
+      const found = await api.search(attempt.join(' '));
+      if (found.results.length === 0) continue;
+      const data = await Promise.all(found.results.slice(0, 8).map((r) => r.data()));
+      const rows = data.map(toRow).filter((r) => !r.comingSoon && sharesAddressWord(r, words));
+      const best = rows[0];
+      if (!best) continue;
+      showLesson(root, answer, best, rows.length > 1 ? attempt.join(' ') : '');
+      return;
+    }
+    const note = document.createElement('p');
+    note.className = 'nf-answer-note';
+    note.textContent = root.dataset.none ?? '';
+    answer.replaceChildren(note);
+  }
+
+  function showLesson(
+    root: HTMLElement,
+    answer: HTMLElement,
+    lesson: ResultRow,
+    moreQuery: string,
+  ) {
+    const minRead = (root.dataset.minRead ?? '{n} min read').replace(
+      '{n}',
+      String(lesson.minutes ?? ''),
+    );
+    const question = document.createElement('p');
+    question.className = 'nf-answer-q';
+    question.textContent = root.dataset.meant ?? '';
+    const title = document.createElement('a');
+    title.className = 'nf-answer-title';
+    title.href = lesson.url;
+    title.textContent = lesson.title;
+    const meta = document.createElement('p');
+    meta.className = 'nf-answer-meta';
+    meta.textContent = [lesson.where, lesson.minutes ? minRead : ''].filter(Boolean).join(' · ');
+    const parts: HTMLElement[] = [question, title, meta];
+    if (moreQuery) {
+      const more = document.createElement('a');
+      more.className = 'nf-answer-more';
+      more.href = searchUrl(moreQuery);
+      more.textContent = root.dataset.more ?? '';
+      parts.push(more);
+    }
+    if (lesson.clusterId) answer.dataset.cluster = lesson.clusterId;
+    answer.replaceChildren(...parts);
+    root.dataset.state = 'found';
+
+    // The search stays a way to correct the address: filled with its last
+    // part, selected on first focus so typing replaces it.
+    const input = root.querySelector<HTMLInputElement>('[data-nf-query]');
+    const lastPart = path.split('/').filter(Boolean).pop() ?? '';
+    const prefill = queryWordsFromPath(`/${lastPart}`).join(' ');
+    if (input && prefill && !input.value) {
+      input.value = prefill;
+      input.addEventListener('focus', () => input.select(), { once: true });
+    }
+  }
+</script>
+
 <style>
+  /* The homepage hero's grid: claim 7, lessons 5, the h1 on the brand mark's line. */
   .nf {
-    padding: var(--space-8) 0;
-    text-align: center;
+    max-width: var(--width-content);
+    margin-inline: auto;
+    padding: clamp(2rem, 6vw, 4.5rem) var(--space-4) var(--space-7);
+    display: grid;
+    gap: var(--space-7);
   }
-  .nf-tag {
-    color: var(--color-primary);
-    font-size: var(--text-sm);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-label);
-    margin-bottom: var(--space-2);
+  @media (min-width: 768px) {
+    .nf {
+      padding-inline: var(--space-6);
+    }
   }
-  .nf h1 {
-    font-size: var(--text-3xl);
-    margin-bottom: var(--space-3);
+  @media (min-width: 960px) {
+    .nf {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      column-gap: var(--space-8);
+      align-items: start;
+    }
   }
-  .nf-body {
+
+  /* A page title, not a banner: the answer below is what should draw the eye. */
+  .nf-h1 {
+    font-size: clamp(2rem, 1.2rem + 3vw, var(--text-3xl));
+    margin: 0 0 var(--space-3);
+  }
+  .nf-lede {
+    font-size: var(--text-lg);
+    line-height: 1.5;
     color: var(--color-text-secondary);
-    max-width: 480px;
-    margin: 0 auto var(--space-5);
+    max-width: var(--measure);
+    margin: 0;
   }
-  .nf-cta {
+  /* The address itself, so a typo or a cut-off link can be seen at a glance. */
+  .nf-address {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    max-width: var(--measure);
+  }
+  .nf-path {
+    color: var(--color-text);
+    font-weight: var(--weight-ui);
+    overflow-wrap: anywhere;
+  }
+
+  /* The answer. Its slot keeps its room from the first paint (the "looking"
+     line), so the found lesson or the "no match" line replaces it in place. */
+  /* 9rem holds the found state (question, a two-line title, meta), so
+     nothing below moves when it arrives; only the rare "more" link adds a line. */
+  .nf-answer {
+    min-height: 9rem;
+    margin: var(--space-5) 0 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    max-width: var(--measure);
+  }
+  .nf-answer :global(.nf-answer-note) {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+  .nf-answer :global(.nf-answer-q) {
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-1);
+  }
+  .nf-answer :global(.nf-answer-title) {
+    display: inline-block;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-tight);
+    color: var(--cluster-ink, var(--color-primary));
+    text-wrap: balance;
+  }
+  .nf-answer :global(.nf-answer-title:hover) {
+    color: var(--cluster-ink, var(--color-primary));
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+  .nf-answer :global(.nf-answer-meta) {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .nf-answer :global(.nf-answer-more) {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
+    min-height: 44px;
+    font-size: var(--text-sm);
     font-weight: var(--weight-ui);
+  }
+
+  /* The site's field idiom (as on /search/): hairline, field radius, resting
+     elevation, the focus ring on the whole field. */
+  .nf-search {
+    margin: var(--space-5) 0 0;
+    max-width: 34rem;
+  }
+  .nf-field {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--elevation-1);
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .nf-field:focus-within {
+    border-color: var(--color-primary);
+    box-shadow:
+      0 0 0 3px var(--color-primary-soft),
+      var(--elevation-1);
+  }
+  .nf-label {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+    cursor: text;
+  }
+  .nf-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    padding: var(--space-2) 0;
+  }
+  .nf-input:focus {
+    outline: none;
+  }
+  /* One clear control, ours (as on /search/); the browser's own is hidden. */
+  .nf-input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .nf-submit {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+  }
+  .nf-submit:hover {
+    background: var(--color-primary-hover);
+  }
+  /* Once the page has an answer, searching is the second way out, not the first. */
+  .nf[data-state='found'] .nf-submit {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-primary);
+  }
+  .nf[data-state='found'] .nf-submit:hover {
+    background: var(--color-surface-alt);
+  }
+
+  .nf-home {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+  }
+
+  /* Lessons to start with: the hero's "Start with one lesson" rows. */
+  .nf-lessons-h {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-heading);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    margin: 0 0 var(--space-2);
+  }
+  .nf-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nf-item {
+    border-top: 1px solid var(--color-border);
+  }
+  .nf-item:last-child {
+    border-bottom: 1px solid var(--color-border);
+  }
+  .nf-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-2) 0;
+    color: var(--color-text);
+  }
+  .nf-link:hover {
+    text-decoration: none;
+  }
+  .nf-link-label {
+    min-width: 0;
+    font-weight: var(--weight-ui);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .nf-link:hover .nf-link-label,
+  .nf-link:focus-visible .nf-link-label {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .nf-link-meta {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  /* Every topic. The rule sits on the inner box so it spans the text column,
+     not the page gutters. */
+  .nf-topics {
+    max-width: var(--width-content);
+    margin-inline: auto;
+    padding: 0 var(--space-4) var(--space-8);
+  }
+  @media (min-width: 768px) {
+    .nf-topics {
+      padding-inline: var(--space-6);
+    }
+  }
+  .nf-topics-inner {
+    padding-top: var(--space-7);
+    border-top: 1px solid var(--color-border);
   }
 </style>

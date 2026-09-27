@@ -115,6 +115,72 @@ export function queryFromSearch(search: string): string {
   return new URLSearchParams(search).get('q')?.trim() ?? '';
 }
 
+/** Words in an address that say nothing about what the reader was after. */
+const PATH_NOISE = new Set([
+  'the',
+  'and',
+  'for',
+  'with',
+  'you',
+  'your',
+  'are',
+  'not',
+  'how',
+  'why',
+  'what',
+  'when',
+  'where',
+  'who',
+  'its',
+  'can',
+  'from',
+  'into',
+  'html',
+  'htm',
+  'php',
+  'index',
+  'www',
+]);
+
+/**
+ * The words of a missing page's address, most specific first (the last path
+ * segment leads), for the 404 page's "closest matches": at most `max`, each
+ * three letters or more, no numbers or filler words, no repeats.
+ * `/traffic/honking-disciplin/the-case-against-honkng/` gives
+ * `case against honkng honking disciplin traffic`.
+ */
+export function queryWordsFromPath(pathname: string, max = 6): string[] {
+  const segments = pathname.split('/').filter(Boolean).reverse();
+  const words: string[] = [];
+  for (const segment of segments) {
+    let text = segment;
+    try {
+      text = decodeURIComponent(segment);
+    } catch {
+      // A malformed escape: use the raw segment.
+    }
+    // Letters, combining marks (the vowel signs of Devanagari and other Indian
+    // scripts) and digits make a word; anything else separates words.
+    for (const word of text.toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u)) {
+      if (word.length < 3 || /^\p{N}+$/u.test(word) || PATH_NOISE.has(word)) continue;
+      if (!words.includes(word)) words.push(word);
+      if (words.length === max) return words;
+    }
+  }
+  return words;
+}
+
+/**
+ * Whether a search result plausibly answers a missing page's address: its title
+ * or URL shares a word stem (the first four letters) with the address. Pagefind
+ * forgives typos generously enough to "match" a nonsense address to some lesson,
+ * and a suggestion that shares nothing with the address would only mislead.
+ */
+export function sharesAddressWord(row: Pick<ResultRow, 'title' | 'url'>, words: string[]): boolean {
+  const text = `${row.title} ${row.url}`.toLowerCase();
+  return words.some((word) => text.includes(word.slice(0, 4)));
+}
+
 /** The shareable URL of a search; the bare page when the query is empty. */
 export function searchUrl(q: string): string {
   const query = q.trim();

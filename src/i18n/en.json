@@ -124,7 +124,15 @@
   },
   "errors": {
     "notFoundTitle": "Page not found",
-    "notFoundBody": "The lesson you’re looking for moved or doesn’t exist yet."
+    "notFoundBody": "There’s no page at this address. It may have been mistyped, or cut short when it was shared.",
+    "notFoundAddress": "The address was",
+    "notFoundSearch": "Search the lessons",
+    "notFoundSearchButton": "Search",
+    "notFoundHome": "Go to the homepage",
+    "notFoundLooking": "Looking for the lesson this address meant…",
+    "notFoundMeant": "Were you looking for this lesson?",
+    "notFoundMore": "More lessons that match this address",
+    "notFoundNone": "No lesson matches this address. Try a search, or start with one of the lessons on this page."
   },
   "footer": {
     "tagline": "A free reading library for civic sense in India.",

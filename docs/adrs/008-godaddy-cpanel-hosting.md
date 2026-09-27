@@ -83,8 +83,8 @@ Host on the GoDaddy account and deploy from GitHub Actions:
   and still fails on any other difference.
 - **The host replaces error bodies.** Missing pages answer 404 with the host's
   own 13-byte text; `ErrorDocument` is ignored in every form (quoted text, local
-  path, with or without rewrites; PR #28). The designed `/404.html` is deployed
-  and will show once the host honours `ErrorDocument`.
+  path, with or without rewrites; PR #28). The site's 404 page is therefore sent
+  by PHP, which the host leaves alone (see ADR 010).
 - **Distance.** The certificate's host name indicates GoDaddy's Phoenix data
   centre. From India, connecting took 0.33–0.55 s and the first byte arrived
   after 1.2–1.6 s (measured 2026-09-26), the round trip ADR 003 wanted to avoid.

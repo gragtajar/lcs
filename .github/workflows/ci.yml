@@ -63,7 +63,7 @@ jobs:
           IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
       - name: Check the build is complete
         run: |
-          for f in index.html 404.html .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
+          for f in index.html 404.html 404.php .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
             test -s "dist/$f" || { echo "::error::dist/$f is missing"; exit 1; }
           done
           node -e '

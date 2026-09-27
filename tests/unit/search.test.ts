@@ -7,6 +7,8 @@ import {
   isComingSoon,
   sortStubsLast,
   queryFromSearch,
+  queryWordsFromPath,
+  sharesAddressWord,
   searchUrl,
   type PagefindResultData,
   type PagefindAPI,
@@ -128,5 +130,61 @@ describe('loadPagefind()', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(await loadPagefind()).toBeNull();
     expect(warn).toHaveBeenCalledOnce();
+  });
+});
+
+describe('queryWordsFromPath()', () => {
+  it('reads a broken lesson address most-specific first, without filler', () => {
+    expect(queryWordsFromPath('/traffic/honking-disciplin/the-case-against-honkng/')).toEqual([
+      'case',
+      'against',
+      'honkng',
+      'honking',
+      'disciplin',
+      'traffic',
+    ]);
+  });
+
+  it('drops numbers, short words, file endings and repeats, and caps the count', () => {
+    expect(queryWordsFromPath('/2024/03/queue-queue-at-an-atm.html')).toEqual(['queue', 'atm']);
+    expect(queryWordsFromPath('/a/b/c/d-e-f-g-h-i-jjj-kkk-lll-mmm-nnn-ooo-ppp/', 3)).toEqual([
+      'jjj',
+      'kkk',
+      'lll',
+    ]);
+  });
+
+  it('decodes escapes, and keeps a malformed one as written', () => {
+    expect(queryWordsFromPath('/search%20terms/')).toEqual(['search', 'terms']);
+    expect(queryWordsFromPath('/bad%E0%A4escape/')).toEqual(['bad', 'a4escape']);
+  });
+
+  it('keeps words in Indian scripts whole, vowel signs included', () => {
+    expect(queryWordsFromPath('/%E0%A4%B9%E0%A5%89%E0%A4%B0%E0%A5%8D%E0%A4%A8-bajana/')).toEqual([
+      'हॉर्न',
+      'bajana',
+    ]);
+  });
+
+  it('finds nothing to search in the 404 page’s own address or the root', () => {
+    expect(queryWordsFromPath('/404.html')).toEqual([]);
+    expect(queryWordsFromPath('/')).toEqual([]);
+  });
+});
+
+describe('sharesAddressWord()', () => {
+  const lesson = {
+    title: 'The case against honking, yes, even in Bengaluru',
+    url: '/traffic/honking-discipline/the-case-against-honking/',
+  };
+
+  it('accepts a result that shares a word stem with the address, typos included', () => {
+    expect(sharesAddressWord(lesson, ['honkng'])).toBe(true);
+    expect(sharesAddressWord(lesson, ['trafic'])).toBe(true);
+  });
+
+  it('rejects a result that shares nothing with the address', () => {
+    expect(sharesAddressWord(lesson, ['zzqq', 'xxyy'])).toBe(false);
+    expect(sharesAddressWord(lesson, [])).toBe(false);
   });
 });
