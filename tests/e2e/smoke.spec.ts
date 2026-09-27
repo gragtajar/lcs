@@ -120,6 +120,24 @@ test.describe('Category and subcategory pages', () => {
     await expect(page.getByText(/3 min read/i).first()).toBeVisible();
   });
 
+  test('lesson rows show a lesson’s illustration large, on the right; no "More in"', async ({
+    page,
+  }, info) => {
+    await page.goto('/spitting-and-hygiene/paan-and-gutka/');
+    const thumb = page.locator('.li.has-thumb .li-thumb').first();
+    await thumb.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => thumb.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+    const box = (await thumb.boundingBox())!;
+    const row = (await page.locator('.li.has-thumb').first().boundingBox())!;
+    // Beside the text, at the row's right edge, and big enough to read.
+    expect(Math.round(box.x + box.width)).toBe(Math.round(row.x + row.width));
+    expect(box.width).toBeGreaterThanOrEqual(info.project.use.isMobile ? 120 : 220);
+    // The page ends with its lessons: the sibling list ("More in …") is gone.
+    await expect(page.getByRole('heading', { name: /^more in /i })).toHaveCount(0);
+  });
+
   test('subcategory page mixes published and coming-soon articles', async ({ page }) => {
     const found = await findComingSoon(page);
     test.skip(!found, 'every candidate subtopic is fully published');
@@ -141,6 +159,10 @@ test.describe('Article page (real)', () => {
     await expect(page.getByText(/TL;DR/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /sources/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /quick check/i })).toBeVisible();
+    // The ending is one "Up next" card; the "More lessons" list is gone.
+    await expect(page.getByRole('heading', { name: /^up next$/i })).toBeVisible();
+    await expect(page.locator('.related .next')).toHaveCount(1);
+    await expect(page.getByText(/^more lessons$/i)).toHaveCount(0);
   });
 
   test('renders the ShareBar at the top and bottom with per-platform links', async ({ page }) => {
@@ -303,6 +325,15 @@ test.describe('Search page', () => {
       .fill('chlorine');
     await expect(page).toHaveURL(/\/search\/\?q=chlorine$/);
     await expect(page.locator('.sp-status')).toContainText(/chlorine/i);
+  });
+
+  test('a result for a lesson with an illustration shows it on the right', async ({ page }) => {
+    await page.goto('/search/?q=paan');
+    const thumb = page.locator('.sp-list .search-result.has-thumb .search-result-thumb').first();
+    await expect(thumb).toBeVisible({ timeout: 10_000 });
+    await expect
+      .poll(() => thumb.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
   });
 
   test('the field shows a loading state while a slow search runs', async ({ page }) => {

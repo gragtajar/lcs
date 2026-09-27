@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { imagekitEndpoint, imagekitUrl, serialiseTransform } from '../../src/lib/imagekit';
-import { getArticleImage, getArticleImageSrcset, hasArticleImage } from '../../src/lib/images';
+import {
+  getArticleImage,
+  getArticleImageSrcset,
+  getArticleThumb,
+  hasArticleImage,
+} from '../../src/lib/images';
 import { LcsError, TaxonomyError, NetworkTimeoutError } from '../../src/lib/errors';
 import { TaxonomySchema, LessonFrontmatterSchema } from '../../src/lib/schemas';
 
@@ -25,7 +30,7 @@ describe('imagekit URL builder', () => {
 describe('article images (ImageKit)', () => {
   it('knows which articles have an uploaded image', () => {
     expect(hasArticleImage('sacred-001')).toBe(true);
-    expect(hasArticleImage('sacred-014')).toBe(false);
+    expect(hasArticleImage('traffic-001')).toBe(false);
   });
 
   it('builds an ImageKit hero URL for an article with an image', () => {
@@ -48,12 +53,20 @@ describe('article images (ImageKit)', () => {
     expect(srcset!.split(', ')).toHaveLength(6);
   });
 
+  it('gives a lesson row a 320w / 640w thumbnail, and none without an image', () => {
+    const thumb = getArticleThumb('sacred-001');
+    expect(thumb?.src).toContain('tr:w-320,f-auto/sacred-001.png');
+    expect(thumb?.srcset).toContain('tr:w-320,f-auto/sacred-001.png 320w');
+    expect(thumb?.srcset).toContain('tr:w-640,f-auto/sacred-001.png 640w');
+    expect(getArticleThumb('traffic-001')).toBeUndefined();
+  });
+
   it('falls back to the local placeholder for an article without an image', () => {
-    expect(getArticleImage('sacred-014', 'hero')).toBe('/placeholders/default-article.svg');
-    expect(getArticleImage('sacred-014', 'og', true)).toBe(
+    expect(getArticleImage('traffic-001', 'hero')).toBe('/placeholders/default-article.svg');
+    expect(getArticleImage('traffic-001', 'og', true)).toBe(
       'https://learncivicsense.in/placeholders/default-article.svg',
     );
-    expect(getArticleImageSrcset('sacred-014')).toBeUndefined();
+    expect(getArticleImageSrcset('traffic-001')).toBeUndefined();
   });
 });
 

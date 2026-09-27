@@ -229,7 +229,10 @@ export default function SearchPage({ strings, browseId }: Props) {
         <ul class="sp-list">
           {visible.map((r) => (
             <li key={r.url} data-cluster={r.clusterId}>
-              <a class={`search-result ${r.comingSoon ? 'soon' : ''}`} href={r.url}>
+              <a
+                class={`search-result ${r.comingSoon ? 'soon' : ''} ${r.thumb ? 'has-thumb' : ''}`}
+                href={r.url}
+              >
                 <span class="search-result-title-row">
                   <span class="search-result-title">{r.title}</span>
                   {r.comingSoon && <span class="search-result-chip">{strings.comingSoonChip}</span>}
@@ -249,6 +252,19 @@ export default function SearchPage({ strings, browseId }: Props) {
                   {(r.format || r.minutes) && r.where ? ' · ' : ''}
                   {r.where}
                 </span>
+                {r.thumb && (
+                  <img
+                    class="search-result-thumb"
+                    src={r.thumb.src}
+                    srcset={r.thumb.srcset}
+                    sizes="(max-width: 559px) 40vw, 240px"
+                    alt=""
+                    width={320}
+                    height={180}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
               </a>
             </li>
           ))}

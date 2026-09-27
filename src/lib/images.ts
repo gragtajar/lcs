@@ -9,7 +9,7 @@
 import { imagekitUrl } from './imagekit';
 import articleImagesData from '../data/article-images.json' with { type: 'json' };
 
-export type ImageVariant = 'thumbnail' | 'card' | 'hero' | 'og';
+export type ImageVariant = 'hero' | 'og';
 
 const SITE_ORIGIN = 'https://learncivicsense.in';
 
@@ -21,8 +21,6 @@ const registry: Record<string, string> = articleImagesData.images;
 
 /** Single-URL width per variant (the CDN resizes the one source to this width). */
 const VARIANT_WIDTH: Record<ImageVariant, number> = {
-  thumbnail: 200,
-  card: 600,
   hero: 1200,
   og: 1200,
 };
@@ -78,4 +76,28 @@ export function getArticleImageSrcset(articleId: string): string | undefined {
 /** The `sizes` attribute that pairs with `getArticleImageSrcset`. */
 export function getArticleImageSizes(): string {
   return '(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px';
+}
+
+/**
+ * Widths of the lesson thumbnail beside a row's text (lesson lists, the
+ * homepage's lead lessons, search results): its largest slot is 272px, so 320w
+ * serves it at 1x and 640w at 2x; the browser picks by slot × DPR.
+ */
+const THUMB_1X = 320;
+const THUMB_2X = 640;
+
+export interface ArticleThumb {
+  src: string;
+  srcset: string;
+}
+
+/** A lesson row's thumbnail, or undefined when the article has no uploaded image. */
+export function getArticleThumb(articleId: string): ArticleThumb | undefined {
+  const path = registry[articleId];
+  if (!path) return undefined;
+  const at = (width: number) => imagekitUrl(path, { width, format: 'auto' });
+  return {
+    src: at(THUMB_1X),
+    srcset: `${at(THUMB_1X)} ${THUMB_1X}w, ${at(THUMB_2X)} ${THUMB_2X}w`,
+  };
 }

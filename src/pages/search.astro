@@ -177,6 +177,57 @@ const examples = t('search.examples')
     letter-spacing: var(--tracking-heading);
     line-height: var(--leading-tight);
   }
+  /* A lesson with an illustration shows it on the right, as in the lesson
+     lists: up to 240px beside the text, beside the excerpt on phones. */
+  :global(.sp-list .search-result.has-thumb) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(8.5rem, 34%, 15rem);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'title thumb'
+      'excerpt thumb'
+      'meta thumb';
+    column-gap: var(--space-5);
+    align-items: start;
+  }
+  :global(.sp-list .has-thumb .search-result-title-row) {
+    grid-area: title;
+  }
+  :global(.sp-list .has-thumb .search-result-excerpt) {
+    grid-area: excerpt;
+  }
+  :global(.sp-list .has-thumb .search-result-breadcrumb) {
+    grid-area: meta;
+  }
+  :global(.search-result-thumb) {
+    grid-area: thumb;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    margin-top: 4px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+    outline: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+    outline-offset: -1px;
+  }
+  @media (max-width: 559px) {
+    :global(.sp-list .search-result.has-thumb) {
+      grid-template-columns: minmax(0, 1fr) 40%;
+      grid-template-areas:
+        'title title'
+        'excerpt thumb'
+        'meta thumb';
+      column-gap: var(--space-4);
+    }
+    :global(.sp-list .has-thumb .search-result-excerpt) {
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+    :global(.sp-list .has-thumb .search-result-thumb) {
+      margin-top: var(--space-2);
+    }
+  }
 
   :global(.sp-more) {
     display: inline-flex;

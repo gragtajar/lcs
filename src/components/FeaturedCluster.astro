@@ -9,7 +9,7 @@ import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
 import { categoryIconName } from '../lib/icons';
 import { categoryUrl } from '../lib/content';
-import { getArticleImage, hasArticleImage } from '../lib/images';
+import { getArticleThumb } from '../lib/images';
 import type { FeaturedCluster } from '../lib/homepage-data';
 
 interface Props {
@@ -24,7 +24,7 @@ const publishedCount = category.subtopics
   .flatMap((s) => s.articles)
   .filter((a) => a.published).length;
 const headingId = `cluster-${category.id}`;
-const leadHasImage = lead ? hasArticleImage(lead.lesson.id) : false;
+const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
 ---
 
 <section class="cluster" data-cluster={category.id} aria-labelledby={headingId}>
@@ -45,36 +45,36 @@ const leadHasImage = lead ? hasArticleImage(lead.lesson.id) : false;
   {
     lead && (
       <div class="cluster-lessons">
-        <article class:list={['lead', { 'has-img': leadHasImage }]}>
-          {leadHasImage && (
+        <article class:list={['lead', { 'has-img': leadThumb }]}>
+          <h4 class="lead-title">
+            <a href={lead.url}>{lead.lesson.title}</a>
+          </h4>
+          <p class="lead-excerpt">{lead.lesson.meta_description || lead.lesson.tldr[0] || ''}</p>
+          <p class="row-meta">
+            <span class="row-format">{t(`article.format.${lead.lesson.format}`)}</span>
+            <span class="row-sep" aria-hidden="true">
+              ·
+            </span>
+            <span>{t('list.minRead', { n: lead.lesson.length_min })}</span>
+            {lead.englishOnly && (
+              <span class="row-note" role="note">
+                {t('homepage.clusterCards.englishOnlyBadge')}
+              </span>
+            )}
+          </p>
+          {leadThumb && (
             <img
               class="lead-img"
-              src={getArticleImage(lead.lesson.id, 'card')}
+              src={leadThumb.src}
+              srcset={leadThumb.srcset}
+              sizes="(max-width: 559px) 40vw, 240px"
               alt=""
-              width="600"
-              height="338"
+              width="320"
+              height="180"
               loading="lazy"
               decoding="async"
             />
           )}
-          <div class="lead-text">
-            <h4 class="lead-title">
-              <a href={lead.url}>{lead.lesson.title}</a>
-            </h4>
-            <p class="lead-excerpt">{lead.lesson.meta_description || lead.lesson.tldr[0] || ''}</p>
-            <p class="row-meta">
-              <span class="row-format">{t(`article.format.${lead.lesson.format}`)}</span>
-              <span class="row-sep" aria-hidden="true">
-                ·
-              </span>
-              <span>{t('list.minRead', { n: lead.lesson.length_min })}</span>
-              {lead.englishOnly && (
-                <span class="row-note" role="note">
-                  {t('homepage.clusterCards.englishOnlyBadge')}
-                </span>
-              )}
-            </p>
-          </div>
         </article>
 
         {rest.length > 0 && (
@@ -209,29 +209,54 @@ const leadHasImage = lead ? hasArticleImage(lead.lesson.id) : false;
 
   .lead {
     display: grid;
-    gap: var(--space-4);
+    align-items: start;
   }
-  /* A real thumbnail (4 of 198 lessons) sits beside the lead text; never a slot. */
-  @media (min-width: 640px) {
+  /* A real illustration (never an empty slot) sits on the right, as in the
+     lesson lists: up to 240px beside the text, beside the excerpt on phones. */
+  .lead.has-img {
+    grid-template-columns: minmax(0, 1fr) clamp(8.5rem, 34%, 15rem);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'title img'
+      'excerpt img'
+      'meta img';
+    column-gap: var(--space-5);
+  }
+  .lead.has-img .lead-title {
+    grid-area: title;
+  }
+  .lead.has-img .lead-excerpt {
+    grid-area: excerpt;
+  }
+  .lead.has-img .row-meta {
+    grid-area: meta;
+  }
+  .lead.has-img .lead-img {
+    grid-area: img;
+  }
+  @media (max-width: 559px) {
     .lead.has-img {
-      grid-template-columns: minmax(0, 1fr) 200px;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) 40%;
+      grid-template-areas:
+        'title title'
+        'excerpt img'
+        'meta img';
+      column-gap: var(--space-4);
     }
     .lead.has-img .lead-img {
-      grid-column: 2;
-      grid-row: 1;
-    }
-    .lead.has-img .lead-text {
-      grid-column: 1;
-      grid-row: 1;
+      margin-top: var(--space-2);
     }
   }
   .lead-img {
     width: 100%;
+    height: auto;
     aspect-ratio: 16 / 9;
     object-fit: cover;
-    border-radius: var(--radius-sm);
+    margin-top: 4px;
+    border-radius: var(--radius-md);
     background: var(--color-surface-alt);
+    outline: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+    outline-offset: -1px;
   }
   .lead-title {
     font-size: var(--text-lg);

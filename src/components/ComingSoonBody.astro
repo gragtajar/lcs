@@ -1,8 +1,8 @@
 ---
 // The body of a planned lesson that has no file yet. It says so once, in the
-// site's own words, then gives the reader something to read: the subtopic's
-// published lessons in the article's own ending grammar ("Up next" card + rows),
-// or the category's when the subtopic has none yet. No card, no clock, no
+// site's own words, then gives the reader something to read: a published lesson
+// from the subtopic in the article's own ending grammar (one card), or from the
+// category when the subtopic has none yet. No card, no clock, no
 // roadmap phase. Per ADR-006 the URL stays live; per the search work it stays
 // out of the index body (`data-pagefind-ignore`).
 import Icon from './Icon.astro';
@@ -17,7 +17,7 @@ interface Props {
   categoryTitle: string;
   subtopicId: string;
   subtopicTitle: string;
-  /** Published lessons to read instead, nearest first (the caller caps them). */
+  /** Published lessons to read instead, nearest first; the first is offered. */
   onward: RelatedLink[];
   /** Where `onward` comes from: this subtopic, or the category when it has none yet. */
   onwardScope: 'subtopic' | 'category' | 'none';
@@ -40,7 +40,7 @@ const where = onwardScope === 'subtopic' ? subtopicTitle : categoryTitle;
 
   {
     onward.length > 0 && (
-      <RelatedLinks items={onward} heading={t('article.meanwhileIn', { where })} />
+      <RelatedLinks next={onward[0]} heading={t('article.meanwhileIn', { where })} />
     )
   }
 

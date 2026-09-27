@@ -1,19 +1,19 @@
 ---
-// The lesson's ending. The first related lesson is promoted to a single "Up
-// next" card so the page closes on the second lesson, not on a share toolbar;
-// the rest are a plain list. Related items say where they lead and how long
-// they take, so the choice is informed rather than three equal boxes.
+// The lesson's ending: one "Up next" card, so the page closes on the next
+// lesson rather than on a share toolbar. It says where it leads and how long it
+// takes. Only the one: a list of further lessons under it pulled the eye away
+// from the step that matters (removed 2026-09-27).
 import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
 import type { RelatedLink } from '../lib/content';
 
 interface Props {
-  items: RelatedLink[];
+  /** The lesson to read next; nothing renders without one. */
+  next: RelatedLink | undefined;
   /** The section's heading; "Up next" unless the caller has a better word. */
   heading?: string;
 }
-const { items, heading = t('article.upNext') } = Astro.props;
-const [next, ...rest] = items;
+const { next, heading = t('article.upNext') } = Astro.props;
 ---
 
 {
@@ -34,25 +34,6 @@ const [next, ...rest] = items;
           <Icon name="chevron-right" />
         </span>
       </a>
-
-      {rest.length > 0 && (
-        <>
-          <p class="more-label">{t('article.moreLessons')}</p>
-          <ul class="more-list">
-            {rest.map((r) => (
-              <li>
-                <a class="more-link" href={r.url}>
-                  <span class="more-title">{r.title}</span>
-                  <span class="more-where">
-                    {r.subtopic}
-                    {r.minutes && ` · ${t('list.minRead', { n: r.minutes })}`}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
     </section>
   )
 }
@@ -128,44 +109,5 @@ const [next, ...rest] = items;
   .next-cta :global(.icon) {
     width: 20px;
     height: 20px;
-  }
-
-  .more-label {
-    margin: var(--space-6) 0 var(--space-2);
-    font-size: var(--text-xs);
-    letter-spacing: var(--tracking-label);
-    color: var(--color-text-muted);
-    font-weight: var(--weight-ui);
-  }
-  .more-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .more-list li + li {
-    border-top: 1px solid var(--color-border);
-  }
-  .more-link {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-1) var(--space-4);
-    padding: var(--space-3) 0;
-    color: var(--color-text);
-  }
-  .more-link:hover {
-    text-decoration: none;
-  }
-  .more-link:hover .more-title {
-    color: var(--cluster-ink, var(--color-primary));
-  }
-  .more-title {
-    font-weight: var(--weight-ui);
-    transition: color var(--dur-fast) var(--ease-out);
-  }
-  .more-where {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
   }
 </style>

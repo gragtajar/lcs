@@ -62,6 +62,19 @@ describe('toRow()', () => {
     expect(row.format).toBeUndefined();
   });
 
+  it('carries the illustration of a lesson that has one, never of a stub', () => {
+    const src = 'https://ik.imagekit.io/civic/tr:w-320,f-auto/sacred-004.png';
+    const srcset = `${src} 320w, https://ik.imagekit.io/civic/tr:w-640,f-auto/sacred-004.png 640w`;
+    expect(toRow(record({ title: 'Gurdwara', thumb: src, thumb_srcset: srcset })).thumb).toEqual({
+      src,
+      srcset,
+    });
+    expect(toRow(record({ title: 'Gurdwara' })).thumb).toBeUndefined();
+    expect(
+      toRow(record({ title: 'Soon', status: 'coming-soon', thumb: src })).thumb,
+    ).toBeUndefined();
+  });
+
   it('falls back to the url when the page has no title', () => {
     expect(toRow(record({})).title).toBe('/traffic/honking-discipline/x/');
   });

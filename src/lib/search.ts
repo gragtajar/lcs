@@ -59,6 +59,8 @@ export interface ResultRow {
   minutes?: number;
   /** Category id, so a row can carry its cluster's colour (`data-cluster`). */
   clusterId?: string;
+  /** The lesson's illustration at row size, when it has one (`thumb` meta). */
+  thumb?: { src: string; srcset?: string };
   comingSoon: boolean;
 }
 
@@ -86,6 +88,10 @@ export function toRow(d: PagefindResultData): ResultRow {
     format: d.meta.format || undefined,
     minutes: Number.isFinite(minutes) && minutes > 0 ? minutes : undefined,
     clusterId: d.meta.clusterId || undefined,
+    thumb:
+      !comingSoon && d.meta.thumb
+        ? { src: d.meta.thumb, srcset: d.meta.thumb_srcset || undefined }
+        : undefined,
     comingSoon,
   };
 }
