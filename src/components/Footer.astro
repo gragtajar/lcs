@@ -15,7 +15,8 @@ const year = new Date().getFullYear();
       <a href="/terms/">Terms</a>
     </nav>
     <p class="footer-copy">
-      © {year} learncivicsense.in · {t('footer.copy')}
+      © {year}
+      {t('siteName')} · {t('footer.copy')}
     </p>
   </div>
 </footer>
@@ -27,6 +28,13 @@ const year = new Date().getFullYear();
     color: var(--color-text-secondary);
     padding: var(--space-6) var(--space-4);
     margin-top: var(--space-8);
+  }
+  /* A page that closes on a full-width sheet (the homepage's "Who this is
+     for") hands straight over to the footer. The usual gap showed there as an
+     empty band of page ground between two surfaces, like a leftover
+     sub-footer. */
+  :global(main:has(> [data-meets-footer]:last-child)) + .footer {
+    margin-top: 0;
   }
   .footer-inner {
     max-width: var(--width-content);

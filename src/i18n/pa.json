@@ -2,7 +2,7 @@
   "_translated": false,
   "_locale": "pa",
   "_note": "Stub for Punjabi. Copied from en.json; strings fall back to English until translated. Set _translated true when complete.",
-  "siteName": "learncivicsense.in",
+  "siteName": "Learn Civic Sense",
   "siteTagline": "Practical civic sense for India. Short lessons, real situations, no lectures.",
   "nav": {
     "home": "Home",
@@ -14,6 +14,8 @@
     "openSearch": "Open search",
     "closeSearch": "Close search",
     "toggleTheme": "Toggle theme",
+    "switchToDark": "Switch to dark theme",
+    "switchToLight": "Switch to light theme",
     "menu": "Menu"
   },
   "home": {
@@ -96,7 +98,7 @@
   "homepage": {
     "hero": {
       "h1": "Civic sense, learnable.",
-      "subhead": "Free. Fast. Multilingual. India-rooted. World-applicable.",
+      "subhead": "India-rooted. World-applicable.",
       "body": "A lifelong learning library for being a better neighbour, at home, on the road, online, anywhere people share space.",
       "searchPlaceholder": "Search 200+ lessons…",
       "searchSubmitLabel": "Search",
