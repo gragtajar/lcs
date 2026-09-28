@@ -13,9 +13,11 @@
     "searchPlaceholder": "Search lessons",
     "openSearch": "Open search",
     "closeSearch": "Close search",
-    "toggleTheme": "Toggle theme",
-    "switchToDark": "Switch to dark theme",
-    "switchToLight": "Switch to light theme",
+    "theme": "Theme",
+    "themeLabel": "Theme: {mode}",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
     "menu": "Menu"
   },
   "home": {

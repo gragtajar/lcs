@@ -102,19 +102,41 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
 
     {
       /*
-      Theme init: pre-paint script that picks the saved or system theme and writes it
-      to <html data-theme>. Inlined so it runs before first paint (no flash of wrong theme).
+      Theme init: pre-paint script. A saved Light or Dark wins; otherwise (System,
+      the default) the device or browser setting decides. It writes the theme to
+      <html data-theme> and the mode to data-theme-mode (the top bar's icon), and a
+      saved choice also sets the phone's browser-bar colour, which would otherwise
+      follow the device; the built values stay in data-auto for System. Inlined so
+      it runs before first paint (no flash of the wrong theme). ThemeMenu.tsx
+      applies the same rules later, including live changes of the device setting.
     */
     }
     <script is:inline>
       (function () {
+        const root = document.documentElement;
+        let saved = null;
         try {
-          const saved = localStorage.getItem('lcs-theme');
-          const sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          const theme = saved === 'light' || saved === 'dark' ? saved : sys;
-          document.documentElement.setAttribute('data-theme', theme);
+          saved = localStorage.getItem('lcs-theme');
         } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'light');
+          // Storage blocked: the device setting decides, as in System mode.
+        }
+        const mode = saved === 'light' || saved === 'dark' ? saved : 'system';
+        const dark =
+          !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = mode === 'system' ? (dark ? 'dark' : 'light') : mode;
+        root.setAttribute('data-theme', theme);
+        root.setAttribute('data-theme-mode', mode);
+        const metas = document.querySelectorAll('meta[name="theme-color"]');
+        let colour = '';
+        metas.forEach(function (m) {
+          m.setAttribute('data-auto', m.content);
+          const forDark = (m.getAttribute('media') || '').indexOf('dark') > -1;
+          if (forDark === (theme === 'dark')) colour = m.content;
+        });
+        if (mode !== 'system' && colour) {
+          metas.forEach(function (m) {
+            m.setAttribute('content', colour);
+          });
         }
       })();
     </script>
