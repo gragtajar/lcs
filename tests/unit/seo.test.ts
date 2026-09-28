@@ -6,7 +6,7 @@ import {
   collectionJsonLd,
   breadcrumbJsonLd,
 } from '../../src/lib/seo';
-import type { Lesson, NavCategory, NavSubtopic } from '../../src/lib/content';
+import type { Lesson, NavCategory } from '../../src/lib/content';
 
 describe('buildMeta()', () => {
   it('suffixes the title with the site name when title provided', () => {
@@ -71,18 +71,9 @@ const mockCategory = {
   lessonIdPrefix: 'traffic',
   contentDir: '',
   group: 'india',
-  subtopics: [],
-  lessonCount: 24,
-  subtopicCount: 10,
-} satisfies NavCategory;
-
-const mockSubtopic = {
-  id: 'honking-discipline',
-  title: 'Honking discipline',
-  defaultFormat: 'scenario',
-  estimatedLessons: 4,
   articles: [],
-} satisfies NavSubtopic;
+  lessonCount: 24,
+} satisfies NavCategory;
 
 const mockLesson = {
   id: 'traffic-001',
@@ -110,9 +101,8 @@ describe('articleJsonLd()', () => {
   it('emits a schema.org Article with the lesson title, date, section, and word count', () => {
     const ld = articleJsonLd({
       category: mockCategory,
-      subtopic: mockSubtopic,
       lesson: mockLesson,
-      url: 'https://learncivicsense.in/traffic/honking-discipline/the-case-against-honking/',
+      url: 'https://learncivicsense.in/traffic/the-case-against-honking/',
     });
     expect(ld['@type']).toBe('Article');
     expect(ld.headline).toBe(mockLesson.title);
@@ -125,7 +115,6 @@ describe('articleJsonLd()', () => {
   it('falls back to category description when TLDR is empty', () => {
     const ld = articleJsonLd({
       category: { ...mockCategory, description: 'fallback' },
-      subtopic: mockSubtopic,
       lesson: { ...mockLesson, tldr: [] },
       url: 'https://learncivicsense.in/x',
     });
@@ -135,7 +124,6 @@ describe('articleJsonLd()', () => {
   it('prefers meta_description over tldr[0] for the description', () => {
     const ld = articleJsonLd({
       category: mockCategory,
-      subtopic: mockSubtopic,
       lesson: { ...mockLesson, meta_description: 'A keyword-rich snippet.' },
       url: 'https://learncivicsense.in/x',
     });
@@ -145,7 +133,6 @@ describe('articleJsonLd()', () => {
   it('emits comma-joined keywords from tags, and omits the property when there are none', () => {
     const withTags = articleJsonLd({
       category: mockCategory,
-      subtopic: mockSubtopic,
       lesson: { ...mockLesson, tags: ['honking', 'urban', 'traffic'] },
       url: 'https://learncivicsense.in/x',
     });
@@ -153,7 +140,6 @@ describe('articleJsonLd()', () => {
 
     const noTags = articleJsonLd({
       category: mockCategory,
-      subtopic: mockSubtopic,
       lesson: mockLesson,
       url: 'https://learncivicsense.in/x',
     });
@@ -164,7 +150,6 @@ describe('articleJsonLd()', () => {
     const body = ['## The moment', '', 'You **stop** at the [signal](https://x).'].join('\n');
     const ld = articleJsonLd({
       category: mockCategory,
-      subtopic: mockSubtopic,
       lesson: { ...mockLesson, body },
       url: 'https://learncivicsense.in/x',
     });
@@ -174,7 +159,6 @@ describe('articleJsonLd()', () => {
 
     const long = articleJsonLd({
       category: mockCategory,
-      subtopic: mockSubtopic,
       lesson: { ...mockLesson, body: 'word '.repeat(400) },
       url: 'https://learncivicsense.in/x',
     });
@@ -217,9 +201,9 @@ describe('howToJsonLd()', () => {
 describe('collectionJsonLd()', () => {
   it('builds a CollectionPage with linked items', () => {
     const ld = collectionJsonLd({
-      name: 'Honking discipline',
+      name: 'Traffic and roads',
       description: 'd',
-      url: 'https://learncivicsense.in/traffic/honking-discipline/',
+      url: 'https://learncivicsense.in/traffic/',
       items: [{ name: 'The case', url: '/x' }],
     });
     expect(ld['@type']).toBe('CollectionPage');

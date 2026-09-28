@@ -6,7 +6,7 @@ import {
   copyToClipboard,
 } from '../../src/lib/share';
 
-const URL = 'https://learncivicsense.in/traffic/honking-discipline/the-case-against-honking/';
+const URL = 'https://learncivicsense.in/traffic/the-case-against-honking/';
 const TITLE = 'The case against honking, yes, even in Bengaluru';
 
 describe('buildShareLinks()', () => {

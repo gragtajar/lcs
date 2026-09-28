@@ -20,9 +20,7 @@ const { featured } = Astro.props;
 const { category, articles } = featured;
 const [lead, ...rest] = articles;
 
-const publishedCount = category.subtopics
-  .flatMap((s) => s.articles)
-  .filter((a) => a.published).length;
+const publishedCount = category.articles.filter((a) => a.published).length;
 const headingId = `cluster-${category.id}`;
 const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
 ---

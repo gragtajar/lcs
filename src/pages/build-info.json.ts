@@ -26,7 +26,7 @@ function headOf(dir: string): string | null {
 }
 
 export const GET: APIRoute = () => {
-  const articles = getNavCategories().flatMap((c) => c.subtopics.flatMap((s) => s.articles));
+  const articles = getNavCategories().flatMap((c) => c.articles);
   const { GITHUB_SERVER_URL, GITHUB_REPOSITORY, GITHUB_RUN_ID } = process.env;
   const info = {
     site: headOf(ROOT),

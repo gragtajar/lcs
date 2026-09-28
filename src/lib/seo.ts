@@ -4,7 +4,7 @@
 // Article-typed JSON-LD). Keeping it pure-functional makes it trivially testable
 // and keeps SEO concerns out of the layout's render tree.
 
-import type { Lesson, NavCategory, NavSubtopic, RuleSection } from './content';
+import type { Lesson, NavCategory, RuleSection } from './content';
 import { stripMarkdownToText } from './markdown';
 
 export interface MetaInput {
@@ -64,7 +64,6 @@ export function buildMeta(input: MetaInput): RenderedMeta {
 
 export interface ArticleJsonLdInput {
   category: NavCategory;
-  subtopic: NavSubtopic;
   lesson: Lesson;
   url: string;
 }
@@ -139,7 +138,7 @@ export interface CollectionJsonLdInput {
   items: Array<{ name: string; url: string }>;
 }
 
-/** Build a schema.org CollectionPage JSON-LD blob for category + subcategory pages. */
+/** Build a schema.org CollectionPage JSON-LD blob for a listing page (a topic's lessons). */
 export function collectionJsonLd(input: CollectionJsonLdInput): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',

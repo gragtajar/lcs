@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-06-02
 **Authors:** Rajat Garg
+**Amended by:** [ADR 011](./011-two-level-library.md) (lessons are `/{topic}/{lesson}/`; a stub leads back to its topic, not a subtopic)
 
 ## Context
 
@@ -28,7 +29,7 @@ whether each planned article in the taxonomy has a backing file with
 `status: published` (or appears in `LAUNCH_LESSON_IDS` for the 6 draft
 launch lessons).
 
-The article template (`src/pages/[category]/[subcategory]/[article].astro`)
+The article template (`src/pages/[category]/[article].astro`)
 takes one of two render paths based on this flag. The header layout is
 identical between variants; the body differs:
 
@@ -84,4 +85,4 @@ published results.
 - `learncivicsense-workflow/PUBLISH-MANIFEST.json` (the publish queue)
 - `src/lib/content.ts::isArticlePublished` (the detection)
 - `src/components/ComingSoonBody.astro` (the placeholder card)
-- `src/pages/[category]/[subcategory]/[article].astro` (the two-path template)
+- `src/pages/[category]/[article].astro` (the two-path template)

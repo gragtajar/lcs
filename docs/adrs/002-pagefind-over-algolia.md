@@ -54,5 +54,5 @@ search), and queries are answered entirely in the browser.
 
 - `WEBSITE-BUILD-SPEC.md` §13 (search spec)
 - `src/islands/SearchOverlay.tsx` (overlay UI + ranking)
-- `src/pages/[category]/[subcategory]/[article].astro` (`data-pagefind-meta`)
+- `src/pages/[category]/[article].astro` (`data-pagefind-meta`)
 - [Pagefind docs](https://pagefind.app/)

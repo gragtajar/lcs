@@ -49,7 +49,7 @@ export async function loadPagefind(): Promise<PagefindAPI | null> {
 export interface ResultRow {
   url: string;
   title: string;
-  /** "Cluster · Subtopic": where the lesson lives. Empty when the page carries no meta. */
+  /** The topic the lesson lives in. Empty when the page carries no meta. */
   where: string;
   /** Pagefind's keyword window (HTML with `<mark>`); empty for coming-soon stubs. */
   excerpt: string;
@@ -64,12 +64,9 @@ export interface ResultRow {
   comingSoon: boolean;
 }
 
-/** "Traffic and roads · Honking discipline" from the article template's meta spans. */
+/** "Traffic and roads": the topic, from the article template's `cluster` meta. */
 export function whereOf(d: PagefindResultData): string {
-  const cluster = d.meta.cluster ?? '';
-  const subtopic = d.meta.subtopic ?? '';
-  if (cluster && subtopic) return `${cluster} · ${subtopic}`;
-  return cluster || subtopic || '';
+  return d.meta.cluster ?? '';
 }
 
 export function isComingSoon(d: PagefindResultData): boolean {

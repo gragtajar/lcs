@@ -1,20 +1,17 @@
 ---
-// A category's front page: what the topic is about (the description as a real
-// lede), the facts a picker needs, its subtopics as an index of what can be read
-// today, and the rest of the library as the way onward. No card and no accordion:
-// the h1 is the category, once, in its own colour.
+// A topic's page: every lesson in the topic, in one list (ADR 011: the site has
+// two levels, topics and lessons). The layout is the one lesson lists have used
+// since the subcategory redesign: the library's topics in a sidebar (a drawer
+// below 960px), the topic's name in its own colour with what it covers, one
+// line of facts, then the lessons, each with its illustration when it has one.
+// The order is the taxonomy's, so related lessons sit together; lessons still
+// being written keep their place and say so.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import SidebarNav from '../../components/SidebarNav.astro';
+import ArticleListItem from '../../components/ArticleListItem.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
 import Icon from '../../components/Icon.astro';
-import SubtopicIndex from '../../components/SubtopicIndex.astro';
-import TopicIndex from '../../components/TopicIndex.astro';
-import {
-  getNavCategories,
-  getCategory,
-  subtopicUrl,
-  loadLessonForArticle,
-} from '../../lib/content';
-import { getTopicIndex } from '../../lib/homepage-data';
+import { getNavCategories, getCategory, loadLessonForArticle } from '../../lib/content';
 import { categoryIconName } from '../../lib/icons';
 import { t } from '../../lib/i18n';
 
@@ -26,96 +23,333 @@ export function getStaticPaths() {
 const { category } = Astro.params;
 const cat = getCategory(category!);
 if (!cat) return Astro.redirect('/');
+const categories = getNavCategories();
 
-// One row per subtopic, counting what a reader can open today (not what is
-// planned), with the kind of lesson and how long the readable ones take together.
-const rows = cat.subtopics.map((s) => {
-  const readable = s.articles.filter((a) => a.published);
-  const minutes = readable.reduce((n, a) => n + (loadLessonForArticle(a)?.length_min ?? 0), 0);
-  return {
-    title: s.title,
-    url: subtopicUrl(cat.id, s.id),
-    readable: readable.length,
-    comingSoon: s.articles.length - readable.length,
-    format: t(`article.format.${s.defaultFormat}`),
-    minutes,
-  };
-});
-const readableTotal = rows.reduce((n, r) => n + r.readable, 0);
-const comingSoonTotal = rows.reduce((n, r) => n + r.comingSoon, 0);
+const articles = cat.articles;
+const lessonsByArticleId = new Map<string, ReturnType<typeof loadLessonForArticle>>();
+for (const a of articles) {
+  if (a.published) lessonsByArticleId.set(a.id, loadLessonForArticle(a));
+}
+
+// One line of facts a picker needs: how many lessons are readable, how long
+// they take together, how many are still being written.
+const published = articles.filter((a) => lessonsByArticleId.get(a.id));
+const comingSoonCount = articles.length - published.length;
+const totalMinutes = published.reduce(
+  (n, a) => n + (lessonsByArticleId.get(a.id)?.length_min ?? 0),
+  0,
+);
 const facts = [
-  t('category.subtopicCount', { count: rows.length }),
-  t('list.lessonCount', { count: readableTotal }),
-  comingSoonTotal > 0 ? t('list.comingSoonCount', { count: comingSoonTotal }) : '',
+  t('list.lessonCount', { count: published.length }),
+  published.length > 0 ? t('list.totalMinutes', { n: totalMinutes }) : '',
+  comingSoonCount > 0 ? t('list.comingSoonCount', { count: comingSoonCount }) : '',
 ].filter(Boolean);
-
-const topics = getTopicIndex();
 ---
 
-<BaseLayout title={cat.title} description={cat.description} width="wide">
-  <div class="cat-page" data-cluster={cat.id}>
-    <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cat.title }]} />
+<BaseLayout title={cat.title} description={cat.description} width="flush">
+  <div class="page" data-cluster={cat.id}>
+    <button
+      class="sidebar-toggle"
+      type="button"
+      data-drawer-toggle
+      aria-expanded="false"
+      aria-controls="sidebar-drawer"
+    >
+      <Icon name="menu" />
+      {t('list.browseCategories')}
+    </button>
 
-    <header class="cat-head">
-      <h1 class="cat-title">
-        <span class="cat-icon">
-          <Icon name={categoryIconName(cat.icon)} />
-        </span>
-        {cat.title}
-      </h1>
-      <p class="cat-lede">{cat.description}</p>
-      <p class="cat-facts">{facts.join(' · ')}</p>
-    </header>
+    {
+      /* Content first in the DOM, navigation second: the visual order (sidebar
+         on the left) is done with grid placement. Keyboard and screen-reader
+         users reach the lessons without tabbing through the sidebar first. */
+    }
+    <div class="layout">
+      <div class="main-col">
+        <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: cat.title }]} />
 
-    <SubtopicIndex rows={rows} label={t('category.subtopicsIn', { category: cat.title })} />
+        <header class="head">
+          <h1 class="head-title">
+            <span class="head-icon">
+              <Icon name={categoryIconName(cat.icon)} />
+            </span>
+            {cat.title}
+          </h1>
+          <p class="head-lede">{cat.description}</p>
+          <p class="head-facts">
+            {
+              facts.map((f, i) => (
+                <>
+                  {i > 0 && (
+                    <span class="head-sep" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  <span>{f}</span>
+                </>
+              ))
+            }
+          </p>
+        </header>
 
-    <section class="cat-more" aria-labelledby="other-h">
-      <TopicIndex groups={topics} heading={t('category.otherTopics')} id="other" exclude={cat.id} />
-    </section>
+        <ul class="article-list" aria-label={t('list.lessonsIn', { topic: cat.title })}>
+          {
+            articles.map((a) => (
+              <li>
+                <ArticleListItem article={a} lesson={lessonsByArticleId.get(a.id)} />
+              </li>
+            ))
+          }
+        </ul>
+
+        {published.length === 0 && <p class="none-readable">{t('list.noneReadable')}</p>}
+      </div>
+
+      <div id="sidebar-drawer" class="sidebar-wrap" data-drawer>
+        <div class="drawer-head">
+          <span class="drawer-title">{t('list.browseCategories')}</span>
+          <button
+            class="sidebar-close"
+            type="button"
+            data-drawer-close
+            aria-label={t('list.closeCategories')}
+          >
+            <Icon name="x" />
+          </button>
+        </div>
+        <SidebarNav categories={categories} activeCategory={cat.id} />
+      </div>
+    </div>
   </div>
 </BaseLayout>
 
-<style>
-  .cat-head {
-    padding: var(--space-5) 0 var(--space-6);
+<script>
+  // The sidebar is a static column from 960px up and a modal drawer below it.
+  // As a drawer it behaves like a dialog: it takes focus, the page behind it is
+  // inert, Escape and the close button dismiss it, and focus returns to the
+  // button that opened it.
+  const toggle = document.querySelector<HTMLButtonElement>('[data-drawer-toggle]');
+  const drawer = document.querySelector<HTMLElement>('[data-drawer]');
+  const close = document.querySelector<HTMLButtonElement>('[data-drawer-close]');
+  const behind = [
+    document.querySelector<HTMLElement>('.main-col'),
+    document.querySelector<HTMLElement>('.topbar'),
+  ].filter((el): el is HTMLElement => !!el);
+  const wide = window.matchMedia('(min-width: 960px)');
+
+  function setOpen(open: boolean) {
+    if (!drawer || !toggle) return;
+    const wasOpen = drawer.classList.contains('open');
+    drawer.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    document.body.style.overflow = open ? 'hidden' : '';
+    if (open) {
+      drawer.setAttribute('role', 'dialog');
+      drawer.setAttribute('aria-modal', 'true');
+      drawer.setAttribute('aria-label', toggle.textContent?.trim() || '');
+      behind.forEach((el) => el.setAttribute('inert', ''));
+      (close ?? drawer.querySelector<HTMLElement>('input, a, button'))?.focus();
+    } else {
+      drawer.removeAttribute('role');
+      drawer.removeAttribute('aria-modal');
+      drawer.removeAttribute('aria-label');
+      behind.forEach((el) => el.removeAttribute('inert'));
+      if (wasOpen) toggle.focus();
+    }
   }
-  /* The category, once: its icon in its ink, on the first line of the title. */
-  .cat-title {
+  toggle?.addEventListener('click', () => setOpen(!drawer?.classList.contains('open')));
+  close?.addEventListener('click', () => setOpen(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer?.classList.contains('open')) setOpen(false);
+  });
+  // Rotating or resizing past the breakpoint turns the drawer back into a
+  // column; make sure the page is not left locked and inert behind it.
+  wide.addEventListener('change', () => {
+    if (wide.matches && drawer?.classList.contains('open')) setOpen(false);
+  });
+</script>
+
+<style>
+  .page {
+    max-width: var(--width-content);
+    margin-inline: auto;
+  }
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    margin: var(--space-4) var(--space-4) 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+  }
+  @media (min-width: 960px) {
+    .sidebar-toggle {
+      display: none;
+    }
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 60vh;
+  }
+  @media (min-width: 960px) {
+    .layout {
+      grid-template-columns: var(--width-sidebar) minmax(0, 1fr);
+    }
+    .sidebar-wrap {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .main-col {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  /* Column (≥960px): sticky, its own scroll, a hairline to its right. */
+  @media (min-width: 960px) {
+    .sidebar-wrap {
+      position: sticky;
+      top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+      border-right: 1px solid var(--color-border);
+    }
+    .drawer-head {
+      display: none;
+    }
+  }
+
+  /* Drawer (<960px): a full-height sheet that slides in. At rest it is
+     display: none — closed navigation is not page content — and the slide
+     plays through @starting-style + a discrete display transition in browsers
+     that support them; older ones simply show it. The global reduced-motion
+     rule zeroes the duration. */
+  @media (max-width: 959.98px) {
+    .sidebar-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-drawer);
+      display: none;
+      flex-direction: column;
+      background: var(--color-bg);
+      box-shadow: var(--elevation-3);
+      transform: translateX(-100%);
+      transition:
+        transform var(--dur-base) var(--ease-out),
+        display var(--dur-base) allow-discrete;
+    }
+    .sidebar-wrap.open {
+      display: flex;
+      transform: none;
+    }
+    @starting-style {
+      .sidebar-wrap.open {
+        transform: translateX(-100%);
+      }
+    }
+    .sidebar-wrap :global(.sidebar) {
+      flex: 1;
+      min-height: 0;
+    }
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      flex-shrink: 0;
+      min-height: 56px;
+      padding: 0 var(--space-2) 0 var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .drawer-title {
+      font-weight: var(--weight-ui);
+      color: var(--color-text);
+    }
+    .sidebar-close {
+      width: 44px;
+      height: 44px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: var(--radius-full);
+      color: var(--color-text-secondary);
+    }
+    .sidebar-close:hover {
+      background: var(--color-surface-alt);
+      color: var(--color-text);
+    }
+  }
+
+  .main-col {
+    padding: var(--space-4) var(--space-4) var(--space-7);
+    min-width: 0;
+  }
+  @media (min-width: 768px) {
+    .main-col {
+      padding: var(--space-5) var(--space-6) var(--space-8);
+    }
+  }
+
+  /* Header: the topic, once, with its icon in its ink; what it covers as a
+     lede on the measure; one line of facts. */
+  .head {
+    margin: var(--space-5) 0 var(--space-5);
+    max-width: var(--width-reading);
+  }
+  .head-title {
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
     font-size: clamp(2rem, 1.2rem + 3vw, var(--text-3xl));
-    margin: 0 0 var(--space-4);
+    margin: 0 0 var(--space-3);
   }
-  .cat-icon {
+  .head-icon {
     display: inline-flex;
     flex-shrink: 0;
     margin-top: 0.12em;
     color: var(--cluster-ink, var(--color-primary));
   }
-  .cat-icon :global(.icon) {
+  .head-icon :global(.icon) {
     width: 0.85em;
     height: 0.85em;
   }
-  /* The description is the page's authored voice: a lede, not a caption. */
-  .cat-lede {
+  .head-lede {
     font-size: var(--text-lg);
     line-height: 1.5;
     color: var(--color-text);
     max-width: var(--measure);
-    margin: 0 0 var(--space-3);
-  }
-  .cat-facts {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-ui);
-    color: var(--color-text-muted);
     margin: 0;
   }
+  .head-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .head-sep {
+    color: var(--color-text-muted);
+  }
 
-  /* The ending: the rest of the library. */
-  .cat-more {
-    margin-top: var(--space-8);
-    padding-top: var(--space-6);
-    border-top: 1px solid var(--color-border);
+  /* Wider than the reading column, so a row with an illustration keeps a
+     comfortable text measure beside a 240px image. Rows without one are held
+     to the measure by their own text. */
+  .article-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 46rem;
+  }
+  .none-readable {
+    max-width: var(--measure);
+    margin: var(--space-5) 0 0;
+    color: var(--color-text-secondary);
   }
 </style>

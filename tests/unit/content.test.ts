@@ -3,19 +3,21 @@ import {
   loadTaxonomy,
   getNavCategories,
   getCategory,
-  getSubtopic,
   findPlannedArticle,
   loadLessonForArticle,
   loadVisitorsModule,
   resolveRelated,
+  relatedLinkOf,
+  nearestPublished,
   articleUrl,
-  subtopicUrl,
   categoryUrl,
   visitorsUrl,
   trimmedString,
   optionalTrimmedString,
   normaliseDate,
   extractRuleSections,
+  type NavCategory,
+  type PlannedArticle,
 } from '../../src/lib/content';
 
 /** First planned lesson that still has no loadable .md on disk. Coming-soon
@@ -25,9 +27,22 @@ import {
  *  unpublished yet still loads, and would otherwise satisfy the flag alone. */
 function anyComingSoonArticle() {
   return getNavCategories()
-    .flatMap((c) => c.subtopics)
-    .flatMap((s) => s.articles)
+    .flatMap((c) => c.articles)
     .find((a) => !a.published && loadLessonForArticle(a) === null);
+}
+
+/** A made-up topic whose lessons are readable or not as `pattern` says ('r'/'-'). */
+function fakeTopic(pattern: string): PlannedArticle[] {
+  const cat = { id: 'fake', title: 'Fake', articles: [] as PlannedArticle[] } as NavCategory;
+  cat.articles = [...pattern].map((ch, i) => ({
+    id: `fake-${i}`,
+    slug: `lesson-${i}`,
+    title: `Lesson ${i}`,
+    format: 'scenario' as const,
+    published: ch === 'r',
+    category: cat,
+  }));
+  return cat.articles;
 }
 
 describe('extractRuleSections()', () => {
@@ -129,29 +144,39 @@ describe('getNavCategories()', () => {
     expect(nav.filter((c) => c.group === 'abroad')).toHaveLength(3);
   });
 
-  it('each category has a positive lessonCount and subtopicCount', () => {
+  it('each category has a positive lessonCount and its lessons', () => {
     for (const c of getNavCategories()) {
       expect(c.lessonCount).toBeGreaterThan(0);
-      expect(c.subtopicCount).toBeGreaterThan(0);
-      expect(c.subtopics).toHaveLength(c.subtopicCount);
+      expect(c.articles.length).toBeGreaterThan(0);
     }
   });
 
-  it('exposes planned articles with category + subtopic back-references', () => {
-    const traffic = getCategory('traffic');
-    const a = traffic?.subtopics[0]?.articles[0];
+  it("lists a topic's lessons in taxonomy order: its subtopics one after another", () => {
+    const tax = loadTaxonomy();
+    for (const raw of [...tax.clusters, ...tax.abroad_packs]) {
+      const planned = raw.subtopics.flatMap((s) => s.planned_lessons.map((p) => p.id));
+      expect(getCategory(raw.id)?.articles.map((a) => a.id)).toEqual(planned);
+    }
+  });
+
+  it('gives every lesson in a topic its own slug, so /{topic}/{slug}/ never collides', () => {
+    for (const c of getNavCategories()) {
+      const slugs = c.articles.map((a) => a.slug);
+      expect(new Set(slugs).size, c.id).toBe(slugs.length);
+    }
+  });
+
+  it('exposes planned articles with a category back-reference', () => {
+    const a = getCategory('traffic')?.articles[0];
     expect(a?.category.id).toBe('traffic');
-    expect(a?.subtopic.id).toBe(traffic?.subtopics[0]?.id);
   });
 });
 
-describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
-  it('finds Traffic > Honking discipline > traffic-001', () => {
-    const ctx = getSubtopic('traffic', 'honking-discipline');
-    expect(ctx?.category.title).toBe('Traffic and roads');
-    expect(ctx?.subtopic.articles).toContainEqual(
-      expect.objectContaining({ id: 'traffic-001', published: true }),
-    );
+describe('getCategory() / findPlannedArticle()', () => {
+  it('finds Traffic > traffic-001 by its slug', () => {
+    const a = findPlannedArticle('traffic', 'the-case-against-honking');
+    expect(a?.category.title).toBe('Traffic and roads');
+    expect(a).toEqual(expect.objectContaining({ id: 'traffic-001', published: true }));
   });
 
   it('flags the 6 launch lessons as published via allowlist', () => {
@@ -165,8 +190,7 @@ describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
     ];
     for (const id of launchIds) {
       const a = getNavCategories()
-        .flatMap((c) => c.subtopics)
-        .flatMap((s) => s.articles)
+        .flatMap((c) => c.articles)
         .find((a) => a.id === id);
       expect(a?.published, `${id} should be published`).toBe(true);
     }
@@ -182,14 +206,16 @@ describe('getCategory() / getSubtopic() / findPlannedArticle()', () => {
 
   it('returns undefined for unknown slugs / categories', () => {
     expect(getCategory('nonexistent')).toBeUndefined();
-    expect(getSubtopic('traffic', 'nonexistent')).toBeUndefined();
-    expect(findPlannedArticle('traffic', 'honking-discipline', 'nonexistent')).toBeUndefined();
+    expect(findPlannedArticle('traffic', 'nonexistent')).toBeUndefined();
+    expect(findPlannedArticle('nonexistent', 'the-case-against-honking')).toBeUndefined();
+    // A lesson is found under its own topic only.
+    expect(findPlannedArticle('air-travel', 'the-case-against-honking')).toBeUndefined();
   });
 });
 
 describe('loadLessonForArticle()', () => {
   it('parses a published launch lesson: body, TL;DR, and quiz', () => {
-    const a = findPlannedArticle('traffic', 'honking-discipline', 'the-case-against-honking');
+    const a = findPlannedArticle('traffic', 'the-case-against-honking');
     expect(a?.published).toBe(true);
     const lesson = loadLessonForArticle(a!);
     expect(lesson).not.toBeNull();
@@ -215,14 +241,13 @@ describe('loadLessonForArticle()', () => {
   });
 
   it('memoises repeat loads of the same article', () => {
-    const a = findPlannedArticle('traffic', 'honking-discipline', 'the-case-against-honking');
+    const a = findPlannedArticle('traffic', 'the-case-against-honking');
     expect(loadLessonForArticle(a!)).toBe(loadLessonForArticle(a!));
   });
 
   it('parses a published abroad-pack lesson (exercises the 03-abroad path)', () => {
     const a = findPlannedArticle(
       'universal-core',
-      'queues-and-waiting-globally',
       'queueing-in-international-contexts-the-global-default',
     );
     expect(a?.published).toBe(true);
@@ -244,10 +269,12 @@ describe('loadVisitorsModule()', () => {
 });
 
 describe('resolveRelated()', () => {
-  it('resolves known IDs to articleUrl-linked entries', () => {
+  it('resolves known IDs to articleUrl-linked entries naming their topic', () => {
     const links = resolveRelated(['traffic-001', 'traffic-005']);
     expect(links).toHaveLength(2);
-    expect(links[0]?.url).toBe('/traffic/honking-discipline/the-case-against-honking/');
+    expect(links[0]?.url).toBe('/traffic/the-case-against-honking/');
+    expect(links[0]?.category).toBe('Traffic and roads');
+    expect(links[0]?.minutes).toBeGreaterThan(0);
   });
 
   it('drops unknown IDs silently', () => {
@@ -257,18 +284,50 @@ describe('resolveRelated()', () => {
   it('handles empty input', () => {
     expect(resolveRelated([])).toEqual([]);
   });
+
+  it('gives an unwritten lesson no reading time', () => {
+    const a = anyComingSoonArticle();
+    expect(a).toBeDefined();
+    expect(relatedLinkOf(a!).minutes).toBeUndefined();
+  });
+});
+
+describe('nearestPublished()', () => {
+  it('takes the closest readable lesson, looking after it, then before it, at each distance', () => {
+    const list = fakeTopic('r----r');
+    // From index 3: one step after is unreadable, one before too; two after is
+    // index 5 (readable) and wins over index 0, three before.
+    expect(nearestPublished(list[3]!)?.id).toBe('fake-5');
+    // A tie at the same distance goes to the later lesson.
+    expect(nearestPublished(fakeTopic('r-r')[1]!)?.id).toBe('fake-2');
+    // Never itself, even when it is readable.
+    expect(nearestPublished(fakeTopic('rr')[0]!)?.id).toBe('fake-1');
+  });
+
+  it('returns undefined when nothing else in the topic is readable', () => {
+    expect(nearestPublished(fakeTopic('---')[1]!)).toBeUndefined();
+    expect(nearestPublished(fakeTopic('r')[0]!)).toBeUndefined();
+  });
+
+  it('finds a readable lesson in the same topic for a real coming-soon lesson', () => {
+    const a = anyComingSoonArticle();
+    expect(a).toBeDefined();
+    const next = nearestPublished(a!);
+    if (next) {
+      expect(next.published).toBe(true);
+      expect(next.category.id).toBe(a!.category.id);
+    }
+  });
 });
 
 describe('URL helpers', () => {
-  it('articleUrl uses category id + subtopic id + slug with trailing slash', () => {
+  it('articleUrl uses category id + slug with trailing slash (two levels, ADR 011)', () => {
     const c = getCategory('traffic')!;
-    const s = c.subtopics[0]!;
-    const a = s.articles[0]!;
-    expect(articleUrl(a)).toBe(`/${c.id}/${s.id}/${a.slug}/`);
+    const a = c.articles[0]!;
+    expect(articleUrl(a)).toBe(`/${c.id}/${a.slug}/`);
   });
 
-  it('subtopicUrl and categoryUrl format consistently', () => {
-    expect(subtopicUrl('traffic', 'honking-discipline')).toBe('/traffic/honking-discipline/');
+  it('categoryUrl and visitorsUrl format consistently', () => {
     expect(categoryUrl('traffic')).toBe('/traffic/');
     expect(visitorsUrl()).toBe('/visitors/');
   });

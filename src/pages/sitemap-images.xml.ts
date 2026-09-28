@@ -39,16 +39,14 @@ export const GET: APIRoute = () => {
   const entries: string[] = [];
 
   for (const cat of getNavCategories()) {
-    for (const sub of cat.subtopics) {
-      for (const article of sub.articles) {
-        if (!article.published || !hasArticleImage(article.id)) continue;
-        const lesson = loadLessonForArticle(article);
-        if (!lesson) continue;
-        const loc = new URL(articleUrl(article), SITE_ORIGIN).toString();
-        const imgLoc = getArticleImage(lesson.id, 'hero', true);
-        const caption = lesson.meta_description || lesson.tldr[0] || lesson.title;
-        entries.push(imageEntry(loc, imgLoc, lesson.title, caption));
-      }
+    for (const article of cat.articles) {
+      if (!article.published || !hasArticleImage(article.id)) continue;
+      const lesson = loadLessonForArticle(article);
+      if (!lesson) continue;
+      const loc = new URL(articleUrl(article), SITE_ORIGIN).toString();
+      const imgLoc = getArticleImage(lesson.id, 'hero', true);
+      const caption = lesson.meta_description || lesson.tldr[0] || lesson.title;
+      entries.push(imageEntry(loc, imgLoc, lesson.title, caption));
     }
   }
 
