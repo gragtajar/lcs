@@ -1,6 +1,6 @@
 ---
 import Icon from './Icon.astro';
-import ThemeToggle from '../islands/ThemeToggle.tsx';
+import ThemeMenu from '../islands/ThemeMenu.tsx';
 import SearchOverlay from '../islands/SearchOverlay.tsx';
 import { t } from '../lib/i18n';
 ---
@@ -29,9 +29,15 @@ import { t } from '../lib/i18n';
     </button>
 
     <div class="topbar-actions">
-      <ThemeToggle
+      <ThemeMenu
         client:idle
-        labels={{ toDark: t('topbar.switchToDark'), toLight: t('topbar.switchToLight') }}
+        strings={{
+          label: t('topbar.themeLabel'),
+          menu: t('topbar.theme'),
+          light: t('topbar.themeLight'),
+          dark: t('topbar.themeDark'),
+          system: t('topbar.themeSystem'),
+        }}
       />
     </div>
   </div>
@@ -170,16 +176,30 @@ import { t } from '../lib/i18n';
     border-radius: var(--radius-full);
     color: var(--color-text-secondary);
   }
-  :global(.theme-toggle:hover) {
+  :global(.theme-toggle:hover),
+  :global(.theme-menu-wrap[data-open] .theme-toggle) {
     color: var(--color-text);
     background: var(--color-surface-alt);
   }
+  /* The button shows the current mode: the pre-paint script (BaseLayout) sets
+     data-theme-mode before first paint, so the icon is right from the start.
+     Without script there is no mode and the System icon stands in. */
+  :global(.theme-icon) {
+    display: none;
+  }
+  :global(html[data-theme-mode='light'] .theme-icon-light),
+  :global(html[data-theme-mode='dark'] .theme-icon-dark),
+  :global(html[data-theme-mode='system'] .theme-icon-system),
+  :global(html:not([data-theme-mode]) .theme-icon-system) {
+    display: block;
+  }
 
-  /* The toggle's tooltip: the same inverted chip as the share buttons', below
-     the button and aligned to its right edge (the toggle sits at the page's
+  /* The button's tooltip: the same inverted chip as the share buttons', below
+     the button and aligned to its right edge (the button sits at the page's
      right edge). The 6px gap is padding on the tooltip itself, so the pointer
-     can cross onto it without it vanishing; Escape hides it (ThemeToggle.tsx). */
-  :global(.theme-toggle-wrap) {
+     can cross onto it without it vanishing; Escape hides it, and so does
+     opening the menu (ThemeMenu.tsx). */
+  :global(.theme-menu-wrap) {
     --toggle-size: 38px;
     position: relative;
     display: inline-flex;
@@ -222,7 +242,7 @@ import { t } from '../lib/i18n';
     box-shadow: var(--elevation-2);
   }
   @media (hover: hover) {
-    :global(.theme-toggle-wrap:hover .theme-tip) {
+    :global(.theme-menu-wrap:hover .theme-tip) {
       opacity: 1;
       transform: none;
       pointer-events: auto;
@@ -230,14 +250,78 @@ import { t } from '../lib/i18n';
       transition-delay: 150ms;
     }
   }
-  :global(.theme-toggle-wrap:has(:focus-visible) .theme-tip) {
+  :global(.theme-menu-wrap:has(.theme-toggle:focus-visible) .theme-tip) {
     opacity: 1;
     transform: none;
     pointer-events: auto;
   }
-  :global(.theme-toggle-wrap[data-tip-dismissed] .theme-tip) {
+  :global(.theme-menu-wrap[data-tip-dismissed] .theme-tip),
+  :global(.theme-menu-wrap[data-open] .theme-tip) {
     opacity: 0;
     pointer-events: none;
+  }
+
+  /* The menu: a small sheet under the button, right-aligned like the tooltip it
+     replaces while open. Rows are 44px touch targets; the tick marks the mode
+     in use and keeps its space when hidden, so the labels never shift. */
+  :global(.theme-menu) {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: var(--z-tooltip);
+    min-width: 10.5rem;
+    padding: var(--space-1);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--elevation-2);
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+  }
+  @starting-style {
+    :global(.theme-menu) {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  :global(.theme-menu[hidden]) {
+    display: none;
+  }
+  :global(.theme-menu-item) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    text-align: left;
+  }
+  :global(.theme-menu-item:hover),
+  :global(.theme-menu-item:focus-visible) {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+  }
+  :global(.theme-menu-item[aria-checked='true']) {
+    color: var(--color-text);
+  }
+  :global(.theme-menu-item .icon) {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  :global(.theme-menu-label) {
+    flex: 1;
+  }
+  :global(.theme-menu-check) {
+    color: var(--color-primary);
+  }
+  :global(.theme-menu-item[aria-checked='false'] .theme-menu-check) {
+    visibility: hidden;
   }
 
   /* Search overlay (rendered by the island, styled here so SSR + hydration share it). */

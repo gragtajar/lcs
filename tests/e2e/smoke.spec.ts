@@ -388,44 +388,160 @@ test.describe('Search page', () => {
   });
 });
 
-test.describe('Theme toggle persistence', () => {
-  test('toggling dark mode survives a reload', async ({ page }) => {
-    await page.goto('/');
-    const toggle = page.locator('.theme-toggle');
-    const before = await page.evaluate(() => document.documentElement.dataset.theme);
-    // The toggle is a Preact island; a click before hydration is dropped, so
-    // retry until the theme actually flips (same pattern as the search/quiz tests).
+test.describe('Theme menu', () => {
+  /** The menu is a Preact island (client:idle): a click before hydration is
+   *  dropped, so opening retries until the menu shows (as in the search tests). */
+  async function openThemeMenu(page: Page) {
+    const menu = page.getByRole('menu', { name: 'Theme' });
     await expect(async () => {
-      await toggle.click();
-      const now = await page.evaluate(() => document.documentElement.dataset.theme);
-      expect(now).not.toBe(before);
+      if (!(await menu.isVisible())) await page.locator('.theme-toggle').click();
+      await expect(menu).toBeVisible({ timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
-    const after = await page.evaluate(() => document.documentElement.dataset.theme);
+    return menu;
+  }
+  const item = (menu: ReturnType<Page['getByRole']>, name: string) =>
+    menu.getByRole('menuitemradio', { name, exact: true });
+  const themeColours = (page: Page) =>
+    page
+      .locator('meta[name="theme-color"]')
+      .evaluateAll((ms) => ms.map((m) => m.getAttribute('content')));
+
+  test('starts on System, ticks the mode in use, and a choice survives a reload', async ({
+    page,
+  }, info) => {
+    const device = info.project.use.colorScheme === 'dark' ? 'dark' : 'light';
+    const other = device === 'dark' ? 'light' : 'dark';
+    const otherName = other === 'dark' ? 'Dark' : 'Light';
+    const html = page.locator('html');
+    await page.goto('/');
+    await expect(html).toHaveAttribute('data-theme', device);
+    await expect(html).toHaveAttribute('data-theme-mode', 'system');
+    const builtColours = await themeColours(page);
+
+    let menu = await openThemeMenu(page);
+    await expect(menu.getByRole('menuitemradio')).toHaveCount(3);
+    await expect(item(menu, 'System')).toHaveAttribute('aria-checked', 'true');
+    await expect(item(menu, otherName)).toHaveAttribute('aria-checked', 'false');
+
+    // The theme the device is not using, so the page visibly changes.
+    await item(menu, otherName).click();
+    await expect(menu).toBeHidden();
+    await expect(html).toHaveAttribute('data-theme', other);
+    await expect(page.locator('.theme-toggle')).toBeFocused();
+    await expect(page.locator('.theme-toggle')).toHaveAccessibleName(`Theme: ${otherName}`);
+    expect(await page.evaluate(() => localStorage.getItem('lcs-theme'))).toBe(other);
+    // The phone's browser bar follows the fixed choice.
+    expect(new Set(await themeColours(page)).size).toBe(1);
+
     await page.reload();
-    const reloaded = await page.evaluate(() => document.documentElement.dataset.theme);
-    expect(reloaded).toBe(after);
+    await expect(html).toHaveAttribute('data-theme', other);
+    await expect(html).toHaveAttribute('data-theme-mode', other);
+    expect(new Set(await themeColours(page)).size).toBe(1);
+
+    // Back to System: nothing stored, the device decides again, the bar too.
+    menu = await openThemeMenu(page);
+    await expect(item(menu, otherName)).toHaveAttribute('aria-checked', 'true');
+    await item(menu, 'System').click();
+    await expect(html).toHaveAttribute('data-theme', device);
+    await expect(html).toHaveAttribute('data-theme-mode', 'system');
+    expect(await page.evaluate(() => localStorage.getItem('lcs-theme'))).toBeNull();
+    expect(await themeColours(page)).toEqual(builtColours);
   });
 
-  test('says what it will do in the site’s own tooltip, which Escape hides', async ({
+  test('System follows a change of the device setting live; a fixed choice holds', async ({
+    page,
+  }) => {
+    const html = page.locator('html');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto('/');
+    await expect(html).toHaveAttribute('data-theme', 'light');
+    // The listener lives in the island: open and close the menu to know it hydrated.
+    const menu = await openThemeMenu(page);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(html).toHaveAttribute('data-theme', 'light');
+
+    await item(await openThemeMenu(page), 'Light').click();
+    await page.emulateMedia({ colorScheme: 'dark' });
+    // Give a (wrong) repaint the chance to happen before asserting it did not.
+    await page.waitForTimeout(300);
+    await expect(html).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('works from the keyboard', async ({ page }, info) => {
+    test.skip(!!info.project.use.isMobile, 'keyboard use is tested on desktop');
+    await page.goto('/');
+    const button = page.locator('.theme-toggle');
+    const menu = await openThemeMenu(page);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(button).toBeFocused();
+
+    // The arrow key opens the menu on the ticked item (System, the default).
+    await page.keyboard.press('ArrowDown');
+    await expect(menu).toBeVisible();
+    await expect(item(menu, 'System')).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(item(menu, 'Light')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(item(menu, 'Dark')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(item(menu, 'System')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(item(menu, 'Light')).toBeFocused();
+
+    // Escape closes and returns to the button; Enter reopens; Enter chooses.
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(button).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(item(menu, 'System')).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(item(menu, 'Dark')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeHidden();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(button).toBeFocused();
+  });
+
+  test('closes on a click outside, choosing nothing', async ({ page }) => {
+    await page.goto('/');
+    const menu = await openThemeMenu(page);
+    await page.mouse.click(10, 400);
+    await expect(menu).toBeHidden();
+    await expect(page.locator('html')).toHaveAttribute('data-theme-mode', 'system');
+    expect(await page.evaluate(() => localStorage.getItem('lcs-theme'))).toBeNull();
+  });
+
+  test('names the current mode in the site’s own tooltip, hidden by Escape and by the menu', async ({
     page,
   }, info) => {
     test.skip(!!info.project.use.isMobile, 'hover tooltips are for pointer devices');
     await page.goto('/');
-    const toggle = page.locator('.theme-toggle');
+    const button = page.locator('.theme-toggle');
     const tip = page.locator('.theme-tip');
     // No browser-native title bubble on top of ours.
-    await expect(toggle).not.toHaveAttribute('title', /.+/);
+    await expect(button).not.toHaveAttribute('title', /.+/);
     await expect(tip).toHaveCSS('opacity', '0');
-    // Hovering before hydration shows the server's tooltip too; retry until it shows.
-    await expect(async () => {
-      await page.mouse.move(0, 400);
-      await toggle.hover();
-      await expect(tip).toHaveCSS('opacity', '1', { timeout: 1_000 });
-    }).toPass({ timeout: 15_000 });
-    await expect(tip).toHaveText(/^Switch to (dark|light) theme$/);
+    const hoverUntilShown = async () =>
+      expect(async () => {
+        await page.mouse.move(0, 400);
+        await button.hover();
+        await expect(tip).toHaveCSS('opacity', '1', { timeout: 1_000 });
+      }).toPass({ timeout: 15_000 });
+    await hoverUntilShown();
+    await expect(tip).toHaveText('Theme: System');
     // The tooltip repeats the button's name, so it is hidden from assistive tech.
-    await expect(toggle).toHaveAccessibleName((await tip.textContent())!.trim());
+    await expect(button).toHaveAccessibleName('Theme: System');
     await page.keyboard.press('Escape');
+    await expect(tip).toHaveCSS('opacity', '0');
+
+    await hoverUntilShown();
+    await openThemeMenu(page);
     await expect(tip).toHaveCSS('opacity', '0');
   });
 });

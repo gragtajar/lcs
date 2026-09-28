@@ -40,9 +40,9 @@ Drop the env var. Next build ships zero analytics JS.
 
 ## 2. Sentry (client-side JS errors in islands)
 
-**Why this one:** the four interactive islands (ThemeToggle, SearchOverlay,
-TableOfContents, LessonQuiz) are the only places where runtime errors can
-happen. Sentry catches them with the actual user's stack trace.
+**Why this one:** the interactive islands (ThemeMenu, SearchOverlay,
+SearchPage, TableOfContents, LessonQuiz) are the only places where runtime
+errors can happen. Sentry catches them with the actual user's stack trace.
 
 Free tier: 5,000 events/month, 30-day retention. Plenty for our traffic.
 
