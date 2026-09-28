@@ -1,25 +1,24 @@
 ---
-// /topics/ — the whole library on one page: every topic with every subtopic,
-// and how many lessons each has that a reader can open today. The homepage's
-// topic index links here as "Browse by subtopic"; a category page is one topic
-// of this page, at length.
+// /topics/ — the whole library on one page: every topic with every lesson, and
+// how long each takes (or that it is still being written). The homepage's
+// topic index links here as "All lessons, by topic"; a topic's own page is one
+// block of this page, at length (with the illustrations and summaries).
 //
 // No cards and no accordions for the content: each topic is a side-heading
 // block on the page grid (the homepage's featured clusters use the same 4/8
 // split), its name in its own colour on the left with what it covers and a way
-// to all its lessons, its subtopics on the right as compact rows. The page's
-// own index sits under the facts: rows like the homepage's topic index that
-// jump to each block, folded behind one line on phones so the first screen
-// still reaches the library.
+// to its page, its lessons on the right as one-line rows. The page's own index
+// sits under the facts: rows like the homepage's topic index that jump to each
+// block, folded behind one line on phones so the first screen still reaches
+// the library.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import Icon from '../components/Icon.astro';
-import SubtopicIndex from '../components/SubtopicIndex.astro';
+import LessonIndex from '../components/LessonIndex.astro';
 import {
   getNavCategories,
   loadVisitorsModule,
   categoryUrl,
-  subtopicUrl,
   visitorsUrl,
   type NavCategory,
 } from '../lib/content';
@@ -29,20 +28,8 @@ import { t } from '../lib/i18n';
 const nav = getNavCategories();
 const visitors = loadVisitorsModule();
 
-/** A topic's subtopics as rows: what can be read today, and what is coming. */
-function rowsOf(c: NavCategory) {
-  return c.subtopics.map((s) => {
-    const readable = s.articles.filter((a) => a.published).length;
-    return {
-      title: s.title,
-      url: subtopicUrl(c.id, s.id),
-      readable,
-      comingSoon: s.articles.length - readable,
-    };
-  });
-}
 function readableIn(c: NavCategory): number {
-  return c.subtopics.reduce((n, s) => n + s.articles.filter((a) => a.published).length, 0);
+  return c.articles.filter((a) => a.published).length;
 }
 
 const groups = [
@@ -53,13 +40,13 @@ const groups = [
     items: nav.filter((c) => c.group === 'abroad'),
   },
 ];
-const subtopicTotal = nav.reduce((n, c) => n + c.subtopics.length, 0);
 const readableTotal = nav.reduce((n, c) => n + readableIn(c), 0);
+const comingSoonTotal = nav.reduce((n, c) => n + c.articles.length, 0) - readableTotal;
 const facts = [
   t('topics.topicCount', { count: nav.length }),
-  t('category.subtopicCount', { count: subtopicTotal }),
   t('list.lessonCount', { count: readableTotal }),
-];
+  comingSoonTotal > 0 ? t('list.comingSoonCount', { count: comingSoonTotal }) : '',
+].filter(Boolean);
 ---
 
 <BaseLayout
@@ -159,7 +146,7 @@ const facts = [
                 <Icon name="chevron-right" />
               </a>
             </div>
-            <SubtopicIndex rows={rowsOf(c)} compact />
+            <LessonIndex articles={c.articles} label={t('list.lessonsIn', { topic: c.title })} />
           </div>
         ))}
       </section>

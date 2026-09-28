@@ -94,26 +94,24 @@ function buildClusterStats(locale: Locale): {
   for (const cat of getNavCategories(locale)) {
     if (cat.group !== 'india') continue;
     const articles: ArticleStat[] = [];
-    for (const sub of cat.subtopics) {
-      for (const a of sub.articles) {
-        if (!a.published) continue;
-        byId.set(a.id, a);
-        const entry = manifest.get(a.id);
-        let publishedAt = entry?.published_at ? new Date(entry.published_at) : undefined;
-        if (!publishedAt || Number.isNaN(publishedAt.getTime())) {
-          // Fall back to the article's last_updated when the manifest lacks a date.
-          const lesson = loadLessonForArticle(a, locale) ?? loadLessonForArticle(a, DEFAULT_LOCALE);
-          const lu = lesson?.last_updated ? new Date(lesson.last_updated) : undefined;
-          publishedAt = lu && !Number.isNaN(lu.getTime()) ? lu : new Date(0);
-        }
-        articles.push({
-          id: a.id,
-          format: entry?.format ?? a.format,
-          qualityScore:
-            typeof entry?.quality_score === 'number' ? entry.quality_score : DEFAULT_QUALITY_SCORE,
-          publishedAt,
-        });
+    for (const a of cat.articles) {
+      if (!a.published) continue;
+      byId.set(a.id, a);
+      const entry = manifest.get(a.id);
+      let publishedAt = entry?.published_at ? new Date(entry.published_at) : undefined;
+      if (!publishedAt || Number.isNaN(publishedAt.getTime())) {
+        // Fall back to the article's last_updated when the manifest lacks a date.
+        const lesson = loadLessonForArticle(a, locale) ?? loadLessonForArticle(a, DEFAULT_LOCALE);
+        const lu = lesson?.last_updated ? new Date(lesson.last_updated) : undefined;
+        publishedAt = lu && !Number.isNaN(lu.getTime()) ? lu : new Date(0);
       }
+      articles.push({
+        id: a.id,
+        format: entry?.format ?? a.format,
+        qualityScore:
+          typeof entry?.quality_score === 'number' ? entry.quality_score : DEFAULT_QUALITY_SCORE,
+        publishedAt,
+      });
     }
     if (articles.length === 0) continue;
     const avgQualityScore = articles.reduce((sum, x) => sum + x.qualityScore, 0) / articles.length;
@@ -216,7 +214,7 @@ export function resolveHeroChips(locale: Locale = DEFAULT_LOCALE): HeroChip[] {
 
 /** Published lessons a reader can open today, in one category. */
 function readableCount(cat: NavCategory): number {
-  return cat.subtopics.flatMap((s) => s.articles).filter((a) => a.published).length;
+  return cat.articles.filter((a) => a.published).length;
 }
 
 /**

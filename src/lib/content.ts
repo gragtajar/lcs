@@ -6,7 +6,13 @@
 //     (file exists + status published, or in the launch allowlist) or as a
 //     coming-soon placeholder.
 //   - 11 India clusters AND 3 abroad packs share the article routing shape
-//     /{category}/{subtopic}/{slug}. The visitors module is a separate flow.
+//     /{category}/{slug}/. The visitors module is a separate flow.
+//   - The site has two levels, topics and lessons (ADR 011). The taxonomy still
+//     groups each topic's lessons into subtopics; that grouping is editorial
+//     only: it orders a topic's lessons (so related ones stay together) and is
+//     never shown, linked, or put in a URL. The pre-2026-09-28 addresses
+//     /{category}/{subtopic}/{slug}/ and /{category}/{subtopic}/ redirect
+//     (public/.htaccess).
 //   - All counts come from taxonomy. We never recompute "published vs planned"
 //     for navigation — only for the "is this single article live?" check.
 
@@ -170,7 +176,7 @@ export function loadTaxonomy(): RawTaxonomy {
 
 // ---------- Navigable Category (cluster OR abroad pack) ----------
 //
-// Both India clusters and abroad packs share the same {category}/{subtopic}/{slug}
+// Both India clusters and abroad packs share the same /{category}/{slug}/
 // routing. We unify them as `NavCategory` for the sidebar, category page, and
 // article route. The visitors module is intentionally NOT a NavCategory.
 
@@ -186,20 +192,13 @@ export interface NavCategory {
   contentDir: string;
   /** Which homepage section / sidebar group this belongs to. */
   group: NavCategoryGroup;
-  subtopics: NavSubtopic[];
-  /** Total planned articles across all subtopics. */
-  lessonCount: number;
-  /** Total subtopics (taxonomy-derived). */
-  subtopicCount: number;
-}
-
-export interface NavSubtopic {
-  id: string;
-  title: string;
-  defaultFormat: LessonFormat;
-  estimatedLessons: number;
-  /** Planned articles, enriched with `published` (real .md) detection. */
+  /**
+   * Every planned lesson in the topic, published or not, in taxonomy order
+   * (the taxonomy's subtopics one after another, each in its own order).
+   */
   articles: PlannedArticle[];
+  /** Total planned lessons (taxonomy-derived). */
+  lessonCount: number;
 }
 
 export interface PlannedArticle {
@@ -209,9 +208,8 @@ export interface PlannedArticle {
   format: LessonFormat;
   /** True if a backing .md file exists AND it counts as published. */
   published: boolean;
-  /** Parent links — handy for ArticleListItem / search index meta. */
+  /** Parent link — handy for ArticleListItem / search index meta. */
   category: NavCategory;
-  subtopic: NavSubtopic;
 }
 
 // ---------- File-existence detection ----------
@@ -290,7 +288,7 @@ function buildNavCategory(
   locale: Locale,
 ): NavCategory {
   const contentDir = path.join(contentRoot, raw.id);
-  // Build the category shell first so subtopic→article construction can reference it.
+  // Build the category shell first so the articles can reference it.
   const cat: NavCategory = {
     id: raw.id,
     title: pickI18n(raw.title, locale),
@@ -299,35 +297,24 @@ function buildNavCategory(
     lessonIdPrefix: raw.lesson_id_prefix,
     contentDir,
     group,
-    subtopics: [],
+    articles: [],
     lessonCount: 0,
-    subtopicCount: raw.subtopic_count ?? raw.subtopics.length,
   };
 
-  let total = 0;
+  // The taxonomy's subtopics only order the lessons (ADR 011).
   for (const s of raw.subtopics) {
-    const sub: NavSubtopic = {
-      id: s.id,
-      title: pickI18n(s.title, locale),
-      defaultFormat: s.default_format,
-      estimatedLessons: s.estimated_lessons,
-      articles: [],
-    };
     for (const p of s.planned_lessons) {
-      sub.articles.push({
+      cat.articles.push({
         id: p.id,
         slug: p.slug,
         title: p.title,
         format: p.format,
         published: isArticlePublished(cat, p, locale),
         category: cat,
-        subtopic: sub,
       });
     }
-    total += sub.articles.length;
-    cat.subtopics.push(sub);
   }
-  cat.lessonCount = raw.lesson_count ?? total;
+  cat.lessonCount = raw.lesson_count ?? cat.articles.length;
   return cat;
 }
 
@@ -349,27 +336,12 @@ export function getCategory(id: string, locale: Locale = DEFAULT_LOCALE): NavCat
   return getNavCategories(locale).find((c) => c.id === id);
 }
 
-export function getSubtopic(
-  categoryId: string,
-  subtopicId: string,
-  locale: Locale = DEFAULT_LOCALE,
-): { category: NavCategory; subtopic: NavSubtopic } | undefined {
-  const cat = getCategory(categoryId, locale);
-  if (!cat) return undefined;
-  const sub = cat.subtopics.find((s) => s.id === subtopicId);
-  if (!sub) return undefined;
-  return { category: cat, subtopic: sub };
-}
-
 export function findPlannedArticle(
   categoryId: string,
-  subtopicId: string,
   slug: string,
   locale: Locale = DEFAULT_LOCALE,
 ): PlannedArticle | undefined {
-  return getSubtopic(categoryId, subtopicId, locale)?.subtopic.articles.find(
-    (a) => a.slug === slug,
-  );
+  return getCategory(categoryId, locale)?.articles.find((a) => a.slug === slug);
 }
 
 /** Find a planned article anywhere in the nav tree by its stable `id` (e.g. `spaces-001`). */
@@ -378,10 +350,8 @@ export function findArticleById(
   locale: Locale = DEFAULT_LOCALE,
 ): PlannedArticle | undefined {
   for (const cat of getNavCategories(locale)) {
-    for (const sub of cat.subtopics) {
-      const found = sub.articles.find((a) => a.id === id);
-      if (found) return found;
-    }
+    const found = cat.articles.find((a) => a.id === id);
+    if (found) return found;
   }
   return undefined;
 }
@@ -660,9 +630,8 @@ export interface RelatedLink {
   id: string;
   title: string;
   url: string;
-  /** Category and subtopic titles, so a link can say where it leads. */
+  /** The topic's title, so a link can say where it leads. */
   category: string;
-  subtopic: string;
   /** Reading time in minutes when the target is published; undefined otherwise. */
   minutes?: number;
 }
@@ -675,38 +644,54 @@ export function resolveRelated(related: string[], locale: Locale = DEFAULT_LOCAL
   if (!related?.length) return [];
   const nav = getNavCategories(locale);
   const byId = new Map<string, PlannedArticle>();
-  for (const cat of nav)
-    for (const s of cat.subtopics) for (const a of s.articles) byId.set(a.id, a);
+  for (const cat of nav) for (const a of cat.articles) byId.set(a.id, a);
 
   const out: RelatedLink[] = [];
   for (const id of related) {
     const a = byId.get(id);
     if (!a) continue;
-    const target = a.published ? loadLessonForArticle(a) : null;
-    out.push({
-      id: a.id,
-      title: a.title,
-      url: articleUrl(a),
-      category: a.category.title,
-      subtopic: a.subtopic.title,
-      minutes: target?.length_min,
-    });
+    out.push(relatedLinkOf(a));
   }
   return out;
 }
 
-// ---------- URL helpers ----------
-
-export function articleUrl(a: {
-  category: NavCategory;
-  subtopic: NavSubtopic;
-  slug: string;
-}): string {
-  return `/${a.category.id}/${a.subtopic.id}/${a.slug}/`;
+/**
+ * One planned article as a link that says where it leads and how long it takes.
+ * The title is the taxonomy's, the one the lesson's own page shows as its h1.
+ */
+export function relatedLinkOf(a: PlannedArticle): RelatedLink {
+  const target = a.published ? loadLessonForArticle(a) : null;
+  return {
+    id: a.id,
+    title: a.title,
+    url: articleUrl(a),
+    category: a.category.title,
+    minutes: target?.length_min,
+  };
 }
 
-export function subtopicUrl(categoryId: string, subtopicId: string): string {
-  return `/${categoryId}/${subtopicId}/`;
+/**
+ * The published lesson nearest to `a` in its topic's order, looking one step
+ * after it, then one before, then two after, and so on. A lesson's neighbours
+ * in the taxonomy are the ones most like it (they were grouped together), so
+ * this is where a reader of a coming-soon page goes instead. Undefined when the
+ * topic has nothing else to read.
+ */
+export function nearestPublished(a: PlannedArticle): PlannedArticle | undefined {
+  const list = a.category.articles;
+  const at = list.findIndex((x) => x.id === a.id);
+  const readable = (x: PlannedArticle | undefined) => !!x && x.id !== a.id && x.published;
+  for (let d = 1; d < list.length; d++) {
+    if (readable(list[at + d])) return list[at + d];
+    if (readable(list[at - d])) return list[at - d];
+  }
+  return undefined;
+}
+
+// ---------- URL helpers ----------
+
+export function articleUrl(a: { category: NavCategory; slug: string }): string {
+  return `/${a.category.id}/${a.slug}/`;
 }
 
 export function categoryUrl(categoryId: string): string {

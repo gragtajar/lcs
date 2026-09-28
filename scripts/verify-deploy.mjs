@@ -7,9 +7,10 @@
 //    the build CI tested: no partial upload, no stale file, nothing rewritten
 //    (apart from the host's own script, recognised narrowly below).
 // 2. The Apache policy from public/.htaccess holds: one HTTPS origin (http and
-//    www redirect), the site's own 404 page with status 404 for every address
-//    it has no page for (404.php), hidden dotfiles, security headers, cache
-//    lifetimes and compression.
+//    www redirect), every address from before the site had two levels
+//    redirecting to its lesson or topic (ADR 011), the site's own 404 page with
+//    status 404 for every address it has no page for (404.php), hidden
+//    dotfiles, security headers, cache lifetimes and compression.
 //
 // Usage:
 //   node scripts/verify-deploy.mjs [--dist dist] [--origin https://learncivicsense.in]
@@ -19,6 +20,7 @@
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { parseLegacyAddresses } from './legacy-addresses.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (name, fallback) => {
@@ -132,24 +134,38 @@ async function checkFile(rel) {
   if (want && !want.test(type)) fail(`${urlPath}: content-type '${type}'`);
 }
 
-async function checkFiles() {
-  const files = await walk(DIST);
+/** Run `fn` over `items`, CONCURRENCY at a time; an error becomes a failure. */
+async function inPool(items, fn, label) {
   let next = 0;
   let done = 0;
   const worker = async () => {
-    while (next < files.length) {
-      const rel = files[next++];
+    while (next < items.length) {
+      const item = items[next++];
       try {
-        await checkFile(rel);
+        await fn(item);
       } catch (err) {
-        fail(`${urlPathFor(rel)}: ${err.message}`);
+        fail(`${label(item)}: ${err.message}`);
       }
       done++;
-      if (done % 100 === 0) console.log(`  ${done}/${files.length} files checked`);
+      if (done % 100 === 0) console.log(`  ${done}/${items.length} checked`);
     }
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+}
+
+async function checkFiles() {
+  const files = await walk(DIST);
+  await inPool(files, checkFile, urlPathFor);
   return files.length;
+}
+
+/** The [old, new] address pairs in the built .htaccess's frozen block (ADR 011). */
+async function legacyAddresses() {
+  const { pairs, unparsed } = parseLegacyAddresses(
+    await readFile(path.join(DIST, '.htaccess'), 'utf8'),
+  );
+  for (const line of unparsed) fail(`.htaccess: legacy rule not understood: ${line}`);
+  return pairs;
 }
 
 async function expectRedirect(from, to) {
@@ -175,6 +191,23 @@ async function checkPolicy(files) {
   await expectRedirect(`http://www.${host}/`, `${ORIGIN}/`);
   await expectRedirect(`${ORIGIN.replace('://', '://www.')}/search/`, `${ORIGIN}/search/`);
   await expectRedirect(`${ORIGIN}/traffic`, `${ORIGIN}/traffic/`);
+
+  // Every lesson and subtopic address from before the site had two levels
+  // moves in one step to its lesson or topic; also without the trailing slash,
+  // with the query string kept.
+  const legacy = await legacyAddresses();
+  if (legacy.length === 0) fail('.htaccess: no legacy addresses between the BEGIN/END markers');
+  await inPool(
+    legacy,
+    ([from, to]) => expectRedirect(`${ORIGIN}${from}`, `${ORIGIN}${to}`),
+    ([from]) => from,
+  );
+  const lessonMove = legacy.find(([from]) => from.split('/').length === 5);
+  if (lessonMove) {
+    const [from, to] = lessonMove;
+    await expectRedirect(`${ORIGIN}${from.slice(0, -1)}?q=1`, `${ORIGIN}${to}?q=1`);
+  }
+  console.log(`  ${legacy.length} addresses from before ADR 011 redirect to their lesson or topic`);
 
   // Every address the site has no page for answers 404 with the site's own
   // page, sent by 404.php (the host replaces any error body Apache generates;
@@ -249,5 +282,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  `\n✓ ${count} files served byte-for-byte${POLICY ? ', redirects, the 404 page for missing addresses, hidden files, headers, caching and compression as configured' : ''} (${secs}s)`,
+  `\n✓ ${count} files served byte-for-byte${POLICY ? ', redirects (old addresses included), the 404 page for missing addresses, hidden files, headers, caching and compression as configured' : ''} (${secs}s)`,
 );

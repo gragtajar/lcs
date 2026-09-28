@@ -1,70 +1,42 @@
 ---
 // The body of a planned lesson that has no file yet. It says so once, in the
-// site's own words, then gives the reader something to read: a published lesson
-// from the subtopic in the article's own ending grammar (one card), or from the
-// category when the subtopic has none yet. No card, no clock, no
-// roadmap phase. Per ADR-006 the URL stays live; per the search work it stays
-// out of the index body (`data-pagefind-ignore`).
+// site's own words, then gives the reader something to read: the topic's
+// published lesson nearest to this one, in the article's own ending grammar
+// (one card), and the way to every lesson in the topic. No clock, no roadmap
+// phase. Per ADR-006 the URL stays live; per the search work it stays out of the
+// index body (`data-pagefind-ignore`).
 import Icon from './Icon.astro';
 import RelatedLinks from './RelatedLinks.astro';
-import SubtopicIndex from './SubtopicIndex.astro';
 import { t } from '../lib/i18n';
-import { subtopicUrl } from '../lib/content';
+import { categoryUrl } from '../lib/content';
 import type { RelatedLink } from '../lib/content';
 
 interface Props {
   categoryId: string;
   categoryTitle: string;
-  subtopicId: string;
-  subtopicTitle: string;
-  /** Published lessons to read instead, nearest first; the first is offered. */
-  onward: RelatedLink[];
-  /** Where `onward` comes from: this subtopic, or the category when it has none yet. */
-  onwardScope: 'subtopic' | 'category' | 'none';
-  /** The category's other subtopics, with readable counts. */
-  siblings: {
-    title: string;
-    url: string;
-    readable: number;
-    comingSoon: number;
-  }[];
+  /** The topic's published lesson nearest to this one; none when it has nothing to read yet. */
+  onward: RelatedLink | undefined;
 }
 
-const { categoryId, categoryTitle, subtopicId, subtopicTitle, onward, onwardScope, siblings } =
-  Astro.props;
-const where = onwardScope === 'subtopic' ? subtopicTitle : categoryTitle;
+const { categoryId, categoryTitle, onward } = Astro.props;
 ---
 
 <section class="cs" data-pagefind-ignore>
   <p class="cs-status">{t('article.comingSoonHeading')}</p>
 
-  {
-    onward.length > 0 && (
-      <RelatedLinks next={onward[0]} heading={t('article.meanwhileIn', { where })} />
-    )
-  }
+  <RelatedLinks next={onward} heading={t('article.meanwhileIn', { where: categoryTitle })} />
 
   {
-    onwardScope === 'subtopic' ? (
-      <a class="cs-all" href={subtopicUrl(categoryId, subtopicId)}>
-        {t('article.allLessonsIn', { subtopic: subtopicTitle })}
+    onward ? (
+      <a class="cs-all" href={categoryUrl(categoryId)}>
+        {t('article.allLessonsIn', { topic: categoryTitle })}
         <Icon name="chevron-right" />
       </a>
     ) : (
-      <div class="cs-more">
-        <SubtopicIndex
-          rows={siblings}
-          heading={t('list.moreIn', { category: categoryTitle })}
-          id="more-in"
-          columns={1}
-        />
-        {onwardScope === 'none' && (
-          <a class="cs-all" href="/#topics">
-            {t('homepage.topics.heading')}
-            <Icon name="chevron-right" />
-          </a>
-        )}
-      </div>
+      <a class="cs-all" href="/#topics">
+        {t('homepage.topics.heading')}
+        <Icon name="chevron-right" />
+      </a>
     )
   }
 </section>
@@ -83,9 +55,6 @@ const where = onwardScope === 'subtopic' ? subtopicTitle : categoryTitle;
     margin: 0;
     padding-top: var(--space-5);
     border-top: 1px solid var(--color-border);
-  }
-  .cs-more {
-    margin-top: var(--space-7);
   }
   .cs-all {
     display: inline-flex;

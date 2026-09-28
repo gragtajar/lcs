@@ -30,8 +30,6 @@
     "sectionAbroadBlurb": "Pre-trip packs for travel beyond India.",
     "sectionVisitors": "For visitors to India",
     "sectionVisitorsBlurb": "A respectful guide for foreign visitors to Indian civic culture.",
-    "subcategoryCount_one": "{count} subcategory",
-    "subcategoryCount_other": "{count} subcategories",
     "articleCount_one": "{count} article",
     "articleCount_other": "{count} articles",
     "areaCount_one": "{count} area",
@@ -47,7 +45,7 @@
     "lastUpdatedWithVersion": "Last updated {date} · {version}",
     "comingSoon": "Lessons coming soon for this topic.",
     "comingSoonBadge": "Coming soon",
-    "filterCategoriesPlaceholder": "Filter categories",
+    "filterCategoriesPlaceholder": "Filter topics",
     "allCategories": "All categories"
   },
   "visitors": {
@@ -71,8 +69,7 @@
     "favoritePlaceholder": "Save lesson (coming soon)",
     "comingSoonBadge": "Coming soon",
     "comingSoonHeading": "This lesson is being written.",
-    "comingSoonPhase": "Expected in Phase {n}.",
-    "comingSoonBack": "← All lessons in {subtopic}"
+    "comingSoonPhase": "Expected in Phase {n}."
   },
   "quiz": {
     "title": "Quick check",

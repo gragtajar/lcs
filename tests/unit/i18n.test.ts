@@ -17,13 +17,13 @@ describe('t()', () => {
   });
 
   it('chooses the singular form when count === 1', () => {
-    expect(t('home.subcategoryCount', { count: 1 })).toBe('1 subcategory');
+    expect(t('topics.topicCount', { count: 1 })).toBe('1 topic');
     expect(t('home.articleCount', { count: 1 })).toBe('1 article');
   });
 
   it('chooses the plural form when count !== 1', () => {
-    expect(t('home.subcategoryCount', { count: 0 })).toBe('0 subcategories');
-    expect(t('home.subcategoryCount', { count: 11 })).toBe('11 subcategories');
+    expect(t('topics.topicCount', { count: 0 })).toBe('0 topics');
+    expect(t('topics.topicCount', { count: 14 })).toBe('14 topics');
     expect(t('home.articleCount', { count: 24 })).toBe('24 articles');
   });
 

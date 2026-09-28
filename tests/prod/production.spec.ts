@@ -108,18 +108,18 @@ test.describe('Production', () => {
     expect(problems).toEqual([]);
   });
 
-  test('category and lesson-list pages', async ({ page }, info) => {
+  test('a topic page: its lessons, with the topics sidebar', async ({ page }, info) => {
     const problems = watch(page);
     await page.goto('/traffic/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/traffic and roads/i);
-    await expect(page.locator('.si-link')).toHaveCount(10);
-    await shoot(page, info, 'category');
-
-    await page.goto('/traffic/honking-discipline/');
     await expect(page.locator('article.li').first()).toBeVisible();
+    await expect(page.locator('.article-list .li-title a').first()).toHaveAttribute(
+      'href',
+      /^\/traffic\/[a-z0-9-]+\/$/,
+    );
     const toggle = page.locator('[data-drawer-toggle]');
     if (isMobile(info)) {
-      // Phones get the categories as a drawer.
+      // Phones get the topics as a drawer.
       await expect(toggle).toBeVisible();
       await expect(async () => {
         await toggle.click();
@@ -132,13 +132,22 @@ test.describe('Production', () => {
       await expect(toggle).toBeHidden();
       await expect(page.locator('.sidebar').first()).toBeVisible();
     }
-    await shoot(page, info, 'lesson-list');
+    await shoot(page, info, 'topic');
     expect(problems).toEqual([]);
+  });
+
+  test('an address from before the site had two levels lands on its lesson', async ({ page }) => {
+    // The Apache 301 (public/.htaccess, ADR 011), followed as a browser does.
+    await page.goto('/traffic/honking-discipline/the-case-against-honking/');
+    await expect(page).toHaveURL(/\/traffic\/the-case-against-honking\/$/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/honking/i);
+    await page.goto('/traffic/honking-discipline/');
+    await expect(page).toHaveURL(/\/traffic\/$/);
   });
 
   test('a lesson: contents, quiz and sources', async ({ page }, info) => {
     const problems = watch(page);
-    await page.goto('/traffic/honking-discipline/the-case-against-honking/');
+    await page.goto('/traffic/the-case-against-honking/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/honking/i);
     await expect(page.locator('.tldr')).toBeVisible();
     if (isMobile(info)) await expect(page.locator('.toc-mobile')).toBeVisible();
@@ -158,7 +167,7 @@ test.describe('Production', () => {
   test('a lesson with an ImageKit image', async ({ page }, info) => {
     const problems = watch(page);
     await page.goto(
-      '/religious-sites-and-monuments/gurdwara-visits/the-gurdwara-visit-head-cover-langar-the-parikrama/',
+      '/religious-sites-and-monuments/the-gurdwara-visit-head-cover-langar-the-parikrama/',
     );
     const hero = page.locator('img[src*="ik.imagekit.io"]').first();
     await hero.scrollIntoViewIfNeeded();

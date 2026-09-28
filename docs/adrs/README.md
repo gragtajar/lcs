@@ -50,3 +50,4 @@ Links to relevant code, external docs, related ADRs.
 | [008](./008-godaddy-cpanel-hosting.md)   | GoDaddy cPanel hosting, FTPS deploys  | Accepted              |
 | [009](./009-lucide-icons.md)             | Lucide for icons                      | Accepted              |
 | [010](./010-php-404-responder.md)        | The 404 page is sent by PHP           | Accepted              |
+| [011](./011-two-level-library.md)        | Two levels, topics and lessons        | Accepted              |

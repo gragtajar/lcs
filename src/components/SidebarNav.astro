@@ -1,5 +1,5 @@
 ---
-import { subtopicUrl } from '../lib/content';
+import { categoryUrl } from '../lib/content';
 import { categoryIconName } from '../lib/icons';
 import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
@@ -8,24 +8,29 @@ import type { NavCategory } from '../lib/content';
 interface Props {
   /** All 14 navigable categories (11 India + 3 abroad). Visitors is excluded. */
   categories: NavCategory[];
+  /** The topic whose page this is. */
   activeCategory: string;
-  activeSubtopic: string;
 }
-const { categories, activeCategory, activeSubtopic } = Astro.props;
+const { categories, activeCategory } = Astro.props;
 
 // Two visual groups inside the sidebar, mirroring the homepage.
-const indiaCats = categories.filter((c) => c.group === 'india');
-const abroadCats = categories.filter((c) => c.group === 'abroad');
 const groups: Array<{ key: string; label: string; items: NavCategory[] }> = [
-  { key: 'india', label: t('home.sectionIndia'), items: indiaCats },
-  { key: 'abroad', label: t('home.sectionAbroad'), items: abroadCats },
+  {
+    key: 'india',
+    label: t('home.sectionIndia'),
+    items: categories.filter((c) => c.group === 'india'),
+  },
+  {
+    key: 'abroad',
+    label: t('home.sectionAbroad'),
+    items: categories.filter((c) => c.group === 'abroad'),
+  },
 ];
 
 // Counts are of lessons a reader can open today, not of lessons planned: a
-// "6" beside a subtopic with two readable lessons trains readers to distrust
-// the numbers.
-const readable = (s: NavCategory['subtopics'][number]) =>
-  s.articles.filter((a) => a.published).length;
+// "6" beside a topic with two readable lessons trains readers to distrust the
+// numbers.
+const readable = (c: NavCategory) => c.articles.filter((a) => a.published).length;
 ---
 
 <aside class="sidebar" aria-label={t('list.browseCategories')}>
@@ -48,41 +53,21 @@ const readable = (s: NavCategory['subtopics'][number]) =>
           <p class="sb-group-label">{g.label}</p>
           <ul>
             {g.items.map((c) => {
-              const isActiveCategory = c.id === activeCategory;
+              const isActive = c.id === activeCategory;
+              const n = readable(c);
               return (
-                <li
-                  class={`sb-cluster ${isActiveCategory ? 'is-active' : ''}`}
-                  data-cluster={c.id}
-                  data-search-haystack={c.title.toLowerCase()}
-                >
-                  <details open={isActiveCategory}>
-                    <summary class="sb-cluster-header">
-                      <span class="sb-cluster-icon">
-                        <Icon name={categoryIconName(c.icon)} />
-                      </span>
-                      <span class="sb-cluster-title">{c.title}</span>
-                      <Icon name="chevron-down" class="sb-chevron" />
-                    </summary>
-                    <ul class="sb-sub-list">
-                      {c.subtopics.map((s) => {
-                        const isActive = isActiveCategory && s.id === activeSubtopic;
-                        const haystack = `${c.title} ${s.title}`.toLowerCase();
-                        const n = readable(s);
-                        return (
-                          <li data-search-haystack={haystack}>
-                            <a
-                              class={`sb-sub ${isActive ? 'active' : ''}`}
-                              href={subtopicUrl(c.id, s.id)}
-                              aria-current={isActive ? 'page' : undefined}
-                            >
-                              <span>{s.title}</span>
-                              <span class="sb-sub-count">{n > 0 ? n : t('list.soonShort')}</span>
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </details>
+                <li data-cluster={c.id} data-search-haystack={c.title.toLowerCase()}>
+                  <a
+                    class:list={['sb-topic', { active: isActive }]}
+                    href={categoryUrl(c.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <span class="sb-topic-icon">
+                      <Icon name={categoryIconName(c.icon)} />
+                    </span>
+                    <span class="sb-topic-title">{c.title}</span>
+                    <span class="sb-topic-count">{n > 0 ? n : t('list.soonShort')}</span>
+                  </a>
                 </li>
               );
             })}
@@ -95,11 +80,11 @@ const readable = (s: NavCategory['subtopics'][number]) =>
 </aside>
 
 <script>
-  /* Bring the current subtopic into view inside the sidebar's own scroll box.
-     For categories late in the list the active entry otherwise sits below the
-     fold of the sidebar, exactly where "you are here" matters most. */
+  /* Bring the current topic into view inside the sidebar's own scroll box. For
+     topics late in the list it otherwise sits below the fold of the sidebar,
+     exactly where "you are here" matters most. */
   document.querySelectorAll<HTMLElement>('.sidebar').forEach((box) => {
-    const active = box.querySelector<HTMLElement>('.sb-sub.active');
+    const active = box.querySelector<HTMLElement>('.sb-topic.active');
     if (!active) return;
     const top = active.offsetTop;
     const bottom = top + active.offsetHeight;
@@ -108,9 +93,8 @@ const readable = (s: NavCategory['subtopics'][number]) =>
     }
   });
 
-  /* Sidebar name-only filter (spec §11.2). Filters categories AND their subtopics
-     by string match on their titles. Pure client-side, no Pagefind required.
-     Also hides whole groups whose categories all filter out. */
+  /* Sidebar name-only filter (spec §11.2): topics by their titles. Pure
+     client-side, no Pagefind required. Hides whole groups with no match. */
   document.querySelectorAll<HTMLInputElement>('[data-sidebar-filter]').forEach((input) => {
     const root = input.closest('.sidebar') as HTMLElement | null;
     if (!root) return;
@@ -119,46 +103,26 @@ const readable = (s: NavCategory['subtopics'][number]) =>
 
     input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
-      let totalVisibleClusters = 0;
-
+      let visible = 0;
       groups.forEach((groupEl) => {
-        let groupVisibleClusters = 0;
-        const clusters = groupEl.querySelectorAll<HTMLDetailsElement>('details');
-
-        clusters.forEach((cluster) => {
-          const clusterLi = cluster.parentElement as HTMLElement;
-          const clusterTitle = clusterLi.dataset.searchHaystack ?? '';
-          const subs = cluster.querySelectorAll<HTMLElement>('.sb-sub-list > li');
-
-          let anySubVisible = false;
-          subs.forEach((li) => {
-            const hay = li.dataset.searchHaystack ?? '';
-            const match = !q || hay.includes(q);
-            li.hidden = !match;
-            if (match) anySubVisible = true;
-          });
-
-          const clusterMatches = !q || clusterTitle.includes(q) || anySubVisible;
-          clusterLi.hidden = !clusterMatches;
-          if (clusterMatches) {
-            groupVisibleClusters++;
-            if (q) cluster.open = true;
-          }
+        let inGroup = 0;
+        groupEl.querySelectorAll<HTMLElement>('li[data-search-haystack]').forEach((li) => {
+          const match = !q || (li.dataset.searchHaystack ?? '').includes(q);
+          li.hidden = !match;
+          if (match) inGroup++;
         });
-
-        groupEl.hidden = groupVisibleClusters === 0;
-        totalVisibleClusters += groupVisibleClusters;
+        groupEl.hidden = inGroup === 0;
+        visible += inGroup;
       });
-
-      if (emptyMsg) emptyMsg.hidden = totalVisibleClusters > 0;
+      if (emptyMsg) emptyMsg.hidden = visible > 0;
     });
   });
 </script>
 
 <style>
   /* A quiet navigation column: no panel behind it, no tree lines, no pills.
-     Only the current category carries its colour; the other thirteen icons
-     stay in muted ink so a 14-hue column does not out-shout the page. */
+     Only the current topic carries its colour; the other thirteen icons stay
+     in muted ink so a 14-hue column does not out-shout the page. */
   .sidebar {
     padding: var(--space-4) var(--space-3) var(--space-6);
     height: 100%;
@@ -212,95 +176,51 @@ const readable = (s: NavCategory['subtopics'][number]) =>
     margin: 0 0 var(--space-2);
     padding-inline: var(--space-2);
   }
-  .sb-cluster + .sb-cluster {
-    margin-top: 2px;
-  }
-  .sb-cluster-header {
+  .sb-topic {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     min-height: 44px;
     padding: var(--space-2);
     border-radius: var(--radius-sm);
-    cursor: pointer;
-    list-style: none;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
     font-weight: var(--weight-ui);
-    color: var(--color-text-secondary);
+    line-height: 1.35;
     transition:
       background-color var(--dur-fast) var(--ease-out),
       color var(--dur-fast) var(--ease-out);
   }
-  .sb-cluster-header::-webkit-details-marker {
-    display: none;
-  }
-  .sb-cluster-header:hover {
-    background: var(--color-surface-alt);
-    color: var(--color-text);
-  }
-  .sb-cluster-icon {
-    color: var(--color-text-muted);
-    display: inline-flex;
-  }
-  .sb-cluster-icon :global(.icon) {
-    width: 18px;
-    height: 18px;
-  }
-  .is-active .sb-cluster-header {
-    color: var(--color-text);
-  }
-  .is-active .sb-cluster-icon {
-    color: var(--cluster-ink, var(--color-primary));
-  }
-  .sb-cluster-title {
-    flex: 1;
-    font-size: var(--text-sm);
-  }
-  .sb-chevron {
-    color: var(--color-text-muted);
-    transition: transform var(--dur-base) var(--ease-out);
-    width: 18px;
-    height: 18px;
-  }
-  details[open] .sb-chevron {
-    transform: rotate(180deg);
-  }
-  /* Sub-lists indent to the title's left edge (icon + gap); no tree line.
-     Qualified with `ul` so it outranks the `.sidebar-nav ul { padding: 0 }`
-     reset above once Astro appends its scoping attributes to both. */
-  .sidebar-nav ul.sb-sub-list {
-    padding-left: calc(18px + var(--space-2));
-    margin: var(--space-1) 0 var(--space-2);
-  }
-  .sb-sub {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-    min-height: 40px;
-    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-secondary);
-    font-size: var(--text-sm);
-    line-height: 1.4;
-    transition:
-      background-color var(--dur-fast) var(--ease-out),
-      color var(--dur-fast) var(--ease-out);
-  }
-  .sb-sub:hover {
+  .sb-topic:hover {
     background: var(--color-surface-alt);
     color: var(--color-text);
     text-decoration: none;
   }
-  .sb-sub.active {
-    background: var(--cluster-soft, var(--color-primary-soft));
-    color: var(--cluster-ink, var(--color-primary));
-    font-weight: var(--weight-ui);
-  }
-  .sb-sub-count {
-    font-size: var(--text-xs);
+  .sb-topic-icon {
+    display: inline-flex;
+    flex-shrink: 0;
     color: var(--color-text-muted);
   }
-  .sb-sub.active .sb-sub-count {
+  .sb-topic-icon :global(.icon) {
+    width: 18px;
+    height: 18px;
+  }
+  .sb-topic-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .sb-topic-count {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-body);
+    color: var(--color-text-muted);
+  }
+  .sb-topic.active {
+    background: var(--cluster-soft, var(--color-primary-soft));
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .sb-topic.active .sb-topic-icon,
+  .sb-topic.active .sb-topic-count {
     color: var(--cluster-ink, var(--color-primary));
   }
   .sidebar-empty {

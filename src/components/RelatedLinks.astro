@@ -24,7 +24,7 @@ const { next, heading = t('article.upNext') } = Astro.props;
       </h2>
       <a class="next" href={next.url}>
         <span class="next-where">
-          {next.subtopic}
+          {next.category}
           {next.minutes && (
             <span class="next-min"> · {t('list.minRead', { n: next.minutes })}</span>
           )}

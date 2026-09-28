@@ -85,9 +85,7 @@ describe('getFeaturedClusters()', () => {
   it('only features clusters with at least 3 published articles', () => {
     // Every featured cluster must have >= 3 published articles in the nav tree.
     for (const f of getFeaturedClusters('en', BUILD)) {
-      const published = f.category.subtopics
-        .flatMap((s) => s.articles)
-        .filter((a) => a.published).length;
+      const published = f.category.articles.filter((a) => a.published).length;
       expect(published).toBeGreaterThanOrEqual(3);
     }
   });

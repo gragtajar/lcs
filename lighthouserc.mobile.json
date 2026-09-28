@@ -4,7 +4,7 @@
       "staticDistDir": "./dist",
       "url": [
         "http://localhost/index.html",
-        "http://localhost/traffic/honking-discipline/the-case-against-honking/index.html"
+        "http://localhost/traffic/the-case-against-honking/index.html"
       ],
       "numberOfRuns": 3
     },

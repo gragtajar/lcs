@@ -1,0 +1,82 @@
+---
+// One topic's lessons as a directory: a row per lesson, its title and how long
+// it takes, or "Coming soon" for one still being written (the row stays a link:
+// its page exists and says so). /topics/ stacks one of these per topic.
+//
+// One column: lesson titles run to 70 characters, and a title that fits on one
+// line scans faster down a long directory than two columns of wrapped ones. No
+// hairline per row (the topic block above has one); the times line up down the
+// right edge. Rows take the topic's colour on hover via data-cluster above.
+import { t } from '../lib/i18n';
+import { articleUrl, loadLessonForArticle, type PlannedArticle } from '../lib/content';
+
+interface Props {
+  articles: PlannedArticle[];
+  /** Accessible name for the list ("Lessons in Traffic and roads"). */
+  label: string;
+}
+
+const { articles, label } = Astro.props;
+const rows = articles.map((a) => {
+  const lesson = a.published ? loadLessonForArticle(a) : null;
+  return {
+    title: a.title,
+    url: articleUrl(a),
+    soon: !lesson,
+    meta: lesson ? t('list.minRead', { n: lesson.length_min }) : t('list.comingSoonBadge'),
+  };
+});
+---
+
+<ul class="lx-list" aria-label={label}>
+  {
+    rows.map((r) => (
+      <li>
+        <a class:list={['lx-link', { 'lx-soon': r.soon }]} href={r.url}>
+          <span class="lx-title">{r.title}</span>
+          <span class="lx-meta">{r.meta}</span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .lx-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .lx-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: 44px;
+    padding: var(--space-2) 0;
+    color: var(--color-text);
+  }
+  .lx-link:hover {
+    text-decoration: none;
+  }
+  .lx-title {
+    min-width: 0;
+    font-weight: var(--weight-ui);
+    text-wrap: pretty;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .lx-link:hover .lx-title,
+  .lx-link:focus-visible .lx-title {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .lx-meta {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+  /* Not written yet: quieter title, the same words the lesson lists and search use. */
+  .lx-soon .lx-title {
+    color: var(--color-text-secondary);
+  }
+</style>

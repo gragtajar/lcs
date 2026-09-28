@@ -15,18 +15,16 @@ import {
 } from '../../src/lib/search';
 
 function record(meta: Record<string, string>, excerpt = '<mark>Honking</mark> at red lights') {
-  return { url: '/traffic/honking-discipline/x/', meta, excerpt } as PagefindResultData;
+  return { url: '/traffic/x/', meta, excerpt } as PagefindResultData;
 }
 
 describe('whereOf()', () => {
-  it('joins cluster and subtopic with an interpunct', () => {
-    expect(whereOf(record({ cluster: 'Traffic and roads', subtopic: 'Honking discipline' }))).toBe(
-      'Traffic and roads · Honking discipline',
-    );
-  });
-  it('falls back to whichever part exists', () => {
+  it('names the topic the lesson lives in (the site has no subtopics, ADR 011)', () => {
     expect(whereOf(record({ cluster: 'Traffic and roads' }))).toBe('Traffic and roads');
-    expect(whereOf(record({ subtopic: 'Honking discipline' }))).toBe('Honking discipline');
+    // A stray subtopic meta from an old index is not shown.
+    expect(whereOf(record({ cluster: 'Traffic and roads', subtopic: 'Honking' }))).toBe(
+      'Traffic and roads',
+    );
     expect(whereOf(record({}))).toBe('');
   });
 });
@@ -37,16 +35,15 @@ describe('toRow()', () => {
       record({
         title: 'Honking at red lights',
         cluster: 'Traffic and roads',
-        subtopic: 'Honking discipline',
         format: 'Scenario',
         minutes: '3',
         clusterId: 'traffic',
       }),
     );
     expect(row).toEqual({
-      url: '/traffic/honking-discipline/x/',
+      url: '/traffic/x/',
       title: 'Honking at red lights',
-      where: 'Traffic and roads · Honking discipline',
+      where: 'Traffic and roads',
       excerpt: '<mark>Honking</mark> at red lights',
       format: 'Scenario',
       minutes: 3,
@@ -78,7 +75,7 @@ describe('toRow()', () => {
   });
 
   it('falls back to the url when the page has no title', () => {
-    expect(toRow(record({})).title).toBe('/traffic/honking-discipline/x/');
+    expect(toRow(record({})).title).toBe('/traffic/x/');
   });
 });
 
@@ -175,7 +172,7 @@ describe('queryWordsFromPath()', () => {
 describe('sharesAddressWord()', () => {
   const lesson = {
     title: 'The case against honking, yes, even in Bengaluru',
-    url: '/traffic/honking-discipline/the-case-against-honking/',
+    url: '/traffic/the-case-against-honking/',
   };
 
   it('accepts a result that shares a word stem with the address, typos included', () => {

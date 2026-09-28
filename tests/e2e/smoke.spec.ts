@@ -1,37 +1,38 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-/** Subtopics that still hold unwritten lessons, most-unwritten first.
- *  Coming-soon coverage shrinks with every publish batch, so the two
- *  coming-soon tests below probe this list and use the first subtopic that
+/** Topics that still hold unwritten lessons, most-unwritten first.
+ *  Coming-soon coverage shrinks with every publish batch, so the
+ *  coming-soon tests below probe this list and use the first topic that
  *  still has a COMING SOON chip, instead of pinning one lesson that gets
  *  published out from under them. Refresh the list if all of these fill in. */
 const COMING_SOON_CANDIDATES = [
-  // Refreshed 2026-09-22: every India-side subtopic is now fully published;
-  // only the abroad packs still carry unwritten lessons.
-  '/singapore-uae-southeast-asia/uae-public-conduct-and-laws/',
-  '/uk-and-schengen/tourist-sites-and-safety-uk-eu/',
-  '/singapore-uae-southeast-asia/country-specific-cultures-sea/',
-  '/uk-and-schengen/queueing-and-cultural-norms-uk-eu/',
-  '/singapore-uae-southeast-asia/photography-tipping-bargaining-sea/',
+  // Refreshed 2026-09-28: every India-side topic is fully published; only the
+  // abroad packs still carry unwritten lessons.
+  '/singapore-uae-southeast-asia/',
+  '/uk-and-schengen/',
+  '/universal-core/',
 ];
 
-/** Returns the first candidate subtopic that still lists a coming-soon lesson,
+/** Returns the first candidate topic that still lists a coming-soon lesson,
  *  along with that lesson's URL. Null when everything on the list is published. */
 async function findComingSoon(
   page: Page,
-): Promise<{ subcategory: string; article: string; title: string } | null> {
-  for (const subcategory of COMING_SOON_CANDIDATES) {
-    await page.goto(subcategory);
+): Promise<{ topic: string; article: string; title: string } | null> {
+  for (const topic of COMING_SOON_CANDIDATES) {
+    await page.goto(topic);
     const link = page.locator('article.li-soon .li-title a').first();
     if ((await link.count()) > 0) {
       const article = await link.getAttribute('href');
       const title = (await link.textContent())?.trim();
-      if (article && title) return { subcategory, article, title };
+      if (article && title) return { topic, article, title };
     }
   }
   return null;
 }
+
+/** A lesson's address has two parts, /{topic}/{lesson}/ (ADR 011). */
+const LESSON_URL = /^\/[a-z0-9-]+\/[a-z0-9-]+\/$/;
 
 /** Opens the global search overlay and returns its input.
  *  The trigger is a Preact island, so a click fired before hydration is a no-op —
@@ -68,8 +69,8 @@ test.describe('Homepage', () => {
     expect(Math.round(footer!.y - (mission!.y + mission!.height))).toBe(0);
     // The facts line no longer carries "Free. Fast. Multilingual."
     await expect(page.locator('.hero-facts')).toHaveText('India-rooted. World-applicable.');
-    // "Browse by subtopic" leads to the catalog page.
-    await expect(page.getByRole('link', { name: /browse by subtopic/i })).toHaveAttribute(
+    // "All lessons, by topic" leads to the catalog page.
+    await expect(page.getByRole('link', { name: /all lessons, by topic/i })).toHaveAttribute(
       'href',
       '/topics/',
     );
@@ -77,22 +78,28 @@ test.describe('Homepage', () => {
 });
 
 test.describe('Topics catalog page', () => {
-  test('lists every topic with every subtopic, open, with readable counts', async ({
-    page,
-  }, info) => {
+  test('lists every topic with every lesson, open, with reading times', async ({ page }, info) => {
     await page.goto('/topics/');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/topics and subtopics/i);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/topics and lessons/i);
     await expect(page.getByRole('heading', { name: /in and around india/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /for your trip abroad/i })).toBeVisible();
-    // No accordions for the content: every topic's subtopics are on the page.
+    // Two levels: the facts count topics and lessons, nothing in between.
+    await expect(page.locator('.tp-facts')).toContainText(/14 topics/);
+    await expect(page.locator('.tp-facts')).not.toContainText(/subtopic/i);
+    // No accordions for the content: every topic's lessons are on the page.
     await expect(page.locator('.tp-topic')).toHaveCount(15); // 14 topics + visitors
     const traffic = page.locator('#traffic');
-    await expect(traffic.getByRole('link', { name: /honking discipline/i })).toHaveAttribute(
+    await expect(traffic.getByRole('link', { name: /the case against honking/i })).toHaveAttribute(
       'href',
-      '/traffic/honking-discipline/',
+      '/traffic/the-case-against-honking/',
     );
-    // Counts are lessons a reader can open today, not planned articles.
-    await expect(traffic.locator('.si-meta').first()).toHaveText(/^\d+ lessons?|coming soon/i);
+    // Each row says how long the lesson takes, or that it is still being written.
+    await expect(traffic.locator('.lx-meta').first()).toHaveText(/^\d+ min read$|^coming soon$/i);
+    const hrefs = await page
+      .locator('.lx-link')
+      .evaluateAll((links) => links.map((a) => a.getAttribute('href') ?? ''));
+    expect(hrefs.length).toBeGreaterThan(100);
+    expect(hrefs.filter((h) => !LESSON_URL.test(h))).toEqual([]);
     await expect(traffic.locator('.tp-browse')).toHaveAttribute('href', '/traffic/');
     // The page's own index jumps to a topic's block; on phones it is folded
     // behind one line first.
@@ -109,39 +116,39 @@ test.describe('Topics catalog page', () => {
   });
 });
 
-test.describe('Category and subcategory pages', () => {
-  test('category page is an index of its subtopics with readable counts', async ({ page }) => {
+test.describe('Topic pages', () => {
+  test('a topic page lists every lesson in the topic, beside the topics sidebar', async ({
+    page,
+  }) => {
     await page.goto('/traffic/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/traffic and roads/i);
-    // The current page is the last crumb; no accordion repeats the title.
+    // The current page is the last crumb, after Home.
+    await expect(page.getByRole('link', { name: /^home$/i })).toBeVisible();
     await expect(page.locator('.breadcrumb [aria-current="page"]')).toContainText(
       /traffic and roads/i,
     );
-    await expect(page.locator('details.cat')).toHaveCount(0);
-    // One row per subtopic (traffic has ten), each saying what can be read today.
-    await expect(page.locator('.si-link')).toHaveCount(10);
-    await expect(page.locator('.si-meta').first()).toContainText(/lessons?/i);
-    await expect(page.locator('.si-link').first()).toHaveAttribute('href', /^\/traffic\/.+\/$/);
-    // The ending: the other thirteen topics.
-    await expect(page.getByRole('heading', { name: /other topics/i })).toBeVisible();
-    await expect(page.locator('#other-h ~ .topics-group .topics-link')).toHaveCount(13);
-  });
-
-  test('subcategory page lists articles with a sidebar', async ({ page }) => {
-    await page.goto('/traffic/honking-discipline/');
-    // breadcrumb leads back
-    await expect(page.getByRole('link', { name: /^home$/i })).toBeVisible();
-    // sidebar has the active subtopic highlighted
-    await expect(page.locator('.sb-sub.active')).toContainText('Honking discipline');
-    // the published article shows real metadata
+    // What the topic covers, then one line of facts.
+    await expect(page.locator('.head-lede')).not.toBeEmpty();
+    await expect(page.locator('.head-facts')).toContainText(/\d+ lessons?/i);
+    // The lessons themselves, directly under the topic (ADR 011).
     await expect(page.getByRole('heading', { name: /the case against honking/i })).toBeVisible();
     await expect(page.getByText(/3 min read/i).first()).toBeVisible();
+    const hrefs = await page
+      .locator('.article-list .li-title a')
+      .evaluateAll((links) => links.map((a) => a.getAttribute('href') ?? ''));
+    expect(hrefs.length).toBeGreaterThan(10);
+    expect(hrefs.filter((h) => !/^\/traffic\/[a-z0-9-]+\/$/.test(h))).toEqual([]);
+    // The sidebar is the fourteen topics, this one current; no subtopic lists.
+    await expect(page.locator('.sb-topic')).toHaveCount(14);
+    await expect(page.locator('.sb-topic.active')).toContainText('Traffic and roads');
+    await expect(page.locator('.sb-topic.active')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('.sidebar details')).toHaveCount(0);
   });
 
   test('lesson rows show a lesson’s illustration large, on the right; no "More in"', async ({
     page,
   }, info) => {
-    await page.goto('/spitting-and-hygiene/paan-and-gutka/');
+    await page.goto('/spitting-and-hygiene/');
     const thumb = page.locator('.li.has-thumb .li-thumb').first();
     await thumb.scrollIntoViewIfNeeded();
     await expect
@@ -156,9 +163,9 @@ test.describe('Category and subcategory pages', () => {
     await expect(page.getByRole('heading', { name: /^more in /i })).toHaveCount(0);
   });
 
-  test('subcategory page mixes published and coming-soon articles', async ({ page }) => {
+  test('a topic page mixes published and coming-soon articles', async ({ page }) => {
     const found = await findComingSoon(page);
-    test.skip(!found, 'every candidate subtopic is fully published');
+    test.skip(!found, 'every candidate topic is fully published');
     // Same page still lists at least one published lesson alongside the chip.
     await expect(page.locator('.li-soon-badge').first()).toBeVisible();
     await expect(page.locator('article.li:not(.li-soon)').first()).toBeVisible();
@@ -167,24 +174,23 @@ test.describe('Category and subcategory pages', () => {
 
 test.describe('Article page (real)', () => {
   test('renders title, TL;DR, body, sources, related, and quiz', async ({ page }) => {
-    await page.goto('/traffic/honking-discipline/the-case-against-honking/');
+    await page.goto('/traffic/the-case-against-honking/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/honking/i);
-    // The trail stops at the subtopic, which stays a link (the article is the page).
-    await expect(page.locator('.breadcrumb a').last()).toHaveAttribute(
-      'href',
-      '/traffic/honking-discipline/',
-    );
+    // The trail stops at the topic, which stays a link (the article is the page).
+    await expect(page.locator('.breadcrumb a').last()).toHaveAttribute('href', '/traffic/');
+    await expect(page.locator('.breadcrumb a')).toHaveCount(2);
     await expect(page.getByText(/TL;DR/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /sources/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /quick check/i })).toBeVisible();
     // The ending is one "Up next" card; the "More lessons" list is gone.
     await expect(page.getByRole('heading', { name: /^up next$/i })).toBeVisible();
     await expect(page.locator('.related .next')).toHaveCount(1);
+    await expect(page.locator('.related .next')).toHaveAttribute('href', LESSON_URL);
     await expect(page.getByText(/^more lessons$/i)).toHaveCount(0);
   });
 
   test('renders the ShareBar at the top and bottom with per-platform links', async ({ page }) => {
-    await page.goto('/traffic/honking-discipline/the-case-against-honking/');
+    await page.goto('/traffic/the-case-against-honking/');
     await expect(page.locator('.sharebar-compact')).toHaveCount(1); // top
     await expect(page.locator('.sharebar-full')).toHaveCount(1); // bottom
     // The bottom bar exposes the per-platform fallback links + copy.
@@ -199,7 +205,7 @@ test.describe('Article page (real)', () => {
   });
 
   test('clicking a quiz option reveals per-option feedback', async ({ page }) => {
-    await page.goto('/traffic/honking-discipline/the-case-against-honking/');
+    await page.goto('/traffic/the-case-against-honking/');
     const firstOpt = page.locator('.quiz-opt').first();
     await firstOpt.scrollIntoViewIfNeeded();
     // The quiz is a Preact island: it renders server-side, so a click that lands
@@ -219,16 +225,20 @@ test.describe('Article page (real)', () => {
 test.describe('Article page (coming-soon)', () => {
   test('renders the placeholder body for a planned-but-unpublished lesson', async ({ page }) => {
     const found = await findComingSoon(page);
-    test.skip(!found, 'every candidate subtopic is fully published');
+    test.skip(!found, 'every candidate topic is fully published');
+    expect(found!.article).toMatch(LESSON_URL);
     await page.goto(found!.article);
     await expect(page.locator('.ah-soon-badge')).toContainText(/coming soon/i);
     await expect(page.locator('.cs-status')).toContainText(/lesson is being written/i);
-    // The stub leads somewhere: published lessons nearby ("Meanwhile, in …") and,
-    // when its subtopic has none, the category's other subtopics.
-    await expect(page.locator('.cs .related, .cs .si').first()).toBeVisible();
-    await expect(page.locator('.cs a').first()).toHaveAttribute('href', /^\/.+\/$/);
-    // The breadcrumb's subtopic crumb is a real link, not the "current page".
-    await expect(page.locator('.breadcrumb a').last()).toHaveAttribute('href', found!.subcategory);
+    // The stub leads somewhere: the topic's nearest readable lesson ("Meanwhile,
+    // in {topic}", one card), then every lesson in the topic.
+    const topicName = (await page.locator('.breadcrumb a').last().textContent())!.trim();
+    await expect(page.locator('.cs .related-title')).toHaveText(`Meanwhile, in ${topicName}`);
+    await expect(page.locator('.cs .related .next')).toHaveAttribute('href', LESSON_URL);
+    await expect(page.locator('.cs .related .next-where')).toContainText(topicName);
+    await expect(page.locator('.cs-all')).toHaveAttribute('href', found!.topic);
+    // The breadcrumb's topic crumb is a real link, not the "current page".
+    await expect(page.locator('.breadcrumb a').last()).toHaveAttribute('href', found!.topic);
     await expect(page.locator('.breadcrumb [aria-current="page"]')).toHaveCount(0);
     // No TOC, quiz, sources, or ShareBar on coming-soon
     await expect(page.locator('.quiz')).toHaveCount(0);
@@ -315,7 +325,7 @@ test.describe('Global search', () => {
     // Search the unwritten lesson by its own title so it ranks into the results,
     // rather than pinning a query whose lesson later gets published.
     const found = await findComingSoon(page);
-    test.skip(!found, 'every candidate subtopic is fully published');
+    test.skip(!found, 'every candidate topic is fully published');
     await page.goto('/');
     const input = await openSearchOverlay(page);
     await input.fill(found!.title.replace(/[^\w\s]/g, ' '));
@@ -551,8 +561,8 @@ test.describe('Top bar', () => {
     for (const url of [
       '/',
       '/traffic/',
-      '/traffic/honking-discipline/',
-      '/traffic/honking-discipline/the-case-against-honking/',
+      '/traffic/the-case-against-honking/',
+      '/topics/',
       '/visitors/',
       '/search/',
     ]) {
@@ -567,20 +577,16 @@ test.describe('404', () => {
   // Locally `astro preview` answers unknown routes with 404.html; on the host
   // public/404.php does (ADR 010). Either way: status 404, the site's own page.
   test('a mistyped lesson address answers 404 and names the lesson it meant', async ({ page }) => {
-    const typo = '/traffic/honking-disciplin/the-case-against-honkng/';
+    const typo = '/traffic/the-case-against-honkng/';
     const res = await page.goto(typo);
     expect(res?.status()).toBe(404);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/page not found/i);
     await expect(page.locator('[data-nf-path]')).toHaveText(typo);
-    // The answer, found by the address's words despite the typos.
+    // The answer, found by the address's words despite the typo.
     const title = page.locator('.nf-answer-title');
-    await expect(title).toHaveAttribute(
-      'href',
-      '/traffic/honking-discipline/the-case-against-honking/',
-      {
-        timeout: 15_000,
-      },
-    );
+    await expect(title).toHaveAttribute('href', '/traffic/the-case-against-honking/', {
+      timeout: 15_000,
+    });
     await expect(page.locator('.nf-answer')).toContainText(/were you looking for/i);
     // The search stays a way to correct the address, now the second way out.
     await expect(page.locator('[data-nf-query]')).toHaveValue('case against honkng');

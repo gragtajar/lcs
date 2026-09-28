@@ -1,61 +1,53 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import Breadcrumb from '../../../components/Breadcrumb.astro';
-import ArticleHeader from '../../../components/ArticleHeader.astro';
-import TldrBox from '../../../components/TldrBox.astro';
-import SourcesList from '../../../components/SourcesList.astro';
-import RelatedLinks from '../../../components/RelatedLinks.astro';
-import ComingSoonBody from '../../../components/ComingSoonBody.astro';
-import ShareBar from '../../../components/ShareBar.astro';
-import Icon from '../../../components/Icon.astro';
-import TableOfContents from '../../../islands/TableOfContents.tsx';
-import LessonQuiz, { QUIZ_SECTION_ID } from '../../../islands/LessonQuiz.tsx';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
+import TldrBox from '../../components/TldrBox.astro';
+import SourcesList from '../../components/SourcesList.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
+import ComingSoonBody from '../../components/ComingSoonBody.astro';
+import ShareBar from '../../components/ShareBar.astro';
+import Icon from '../../components/Icon.astro';
+import TableOfContents from '../../islands/TableOfContents.tsx';
+import LessonQuiz, { QUIZ_SECTION_ID } from '../../islands/LessonQuiz.tsx';
 import {
   getNavCategories,
   findPlannedArticle,
   loadLessonForArticle,
   resolveRelated,
+  relatedLinkOf,
+  nearestPublished,
   extractRuleSections,
   categoryUrl,
-  subtopicUrl,
   articleUrl,
-  type PlannedArticle,
-  type RelatedLink,
-} from '../../../lib/content';
-import { renderLessonBody } from '../../../lib/markdown';
-import { getArticleImage, getArticleThumb } from '../../../lib/images';
-import { t } from '../../../lib/i18n';
-import { articleJsonLd, howToJsonLd, breadcrumbJsonLd } from '../../../lib/seo';
+} from '../../lib/content';
+import { renderLessonBody } from '../../lib/markdown';
+import { getArticleImage, getArticleThumb } from '../../lib/images';
+import { t } from '../../lib/i18n';
+import { articleJsonLd, howToJsonLd, breadcrumbJsonLd } from '../../lib/seo';
 
 // Generate ONE page per planned article — published or not.
 // That's how the volumetric view gets every article a working URL
-// (acceptance criterion in addendum §11).
+// (acceptance criterion in addendum §11). Two levels: /{topic}/{lesson}/ (ADR 011).
 export function getStaticPaths() {
-  const out: { params: { category: string; subcategory: string; article: string } }[] = [];
-  for (const c of getNavCategories()) {
-    for (const s of c.subtopics) {
-      for (const a of s.articles) {
-        out.push({ params: { category: c.id, subcategory: s.id, article: a.slug } });
-      }
-    }
-  }
-  return out;
+  return getNavCategories().flatMap((c) =>
+    c.articles.map((a) => ({ params: { category: c.id, article: a.slug } })),
+  );
 }
 
-const { category, subcategory, article } = Astro.params;
-const planned = findPlannedArticle(category!, subcategory!, article!);
+const { category, article } = Astro.params;
+const planned = findPlannedArticle(category!, article!);
 if (!planned) return Astro.redirect('/');
 
 const cat = planned.category;
-const sub = planned.subtopic;
 
 // Only fetch a Lesson when the article is actually live; otherwise we render
 // the coming-soon variant.
 const lesson = planned.published ? loadLessonForArticle(planned) : null;
 const isComingSoon = !planned.published || !lesson;
 
-// For coming-soon articles we still need the breadcrumb, title, and a "back to
-// subcategory" link. No body parsing, no related, no quiz.
+// For coming-soon articles we still need the breadcrumb, title, and a way back
+// to the topic. No body parsing, no related, no quiz.
 const rendered = isComingSoon ? null : renderLessonBody(lesson!.body);
 const related = isComingSoon ? [] : resolveRelated(lesson!.related);
 
@@ -67,58 +59,13 @@ const shareUrl = new URL(canonical, 'https://learncivicsense.in').toString();
 // meta_description string falls through. A stub says what it is instead of
 // borrowing the category's blurb for a lesson that is not there.
 const description = isComingSoon
-  ? t('article.comingSoonDescription', { subtopic: sub.title, category: cat.title })
+  ? t('article.comingSoonDescription', { category: cat.title })
   : lesson?.meta_description || lesson?.tldr?.[0] || cat.description || planned.title;
 
-// A stub still leads somewhere: a published lesson from its subtopic, or from
-// the category when the subtopic has none yet, in the article's ending grammar.
-const toOnward = (a: PlannedArticle): RelatedLink | null => {
-  const l = loadLessonForArticle(a);
-  return l
-    ? {
-        id: a.id,
-        title: l.title,
-        url: articleUrl(a),
-        category: cat.title,
-        subtopic: a.subtopic.title,
-        minutes: l.length_min,
-      }
-    : null;
-};
-const ONWARD_MAX = 1;
-let onward: RelatedLink[] = [];
-let onwardScope: 'subtopic' | 'category' | 'none' = 'none';
-if (isComingSoon) {
-  const inSubtopic = sub.articles
-    .filter((a) => a.published && a.id !== planned.id)
-    .map(toOnward)
-    .filter((x): x is RelatedLink => x !== null);
-  if (inSubtopic.length > 0) {
-    onward = inSubtopic.slice(0, ONWARD_MAX);
-    onwardScope = 'subtopic';
-  } else {
-    const inCategory = cat.subtopics
-      .filter((s) => s.id !== sub.id)
-      .flatMap((s) => s.articles)
-      .filter((a) => a.published)
-      .map(toOnward)
-      .filter((x): x is RelatedLink => x !== null);
-    if (inCategory.length > 0) {
-      onward = inCategory.slice(0, ONWARD_MAX);
-      onwardScope = 'category';
-    }
-  }
-}
-const siblingSubtopics = isComingSoon
-  ? cat.subtopics
-      .filter((s) => s.id !== sub.id)
-      .map((s) => ({
-        title: s.title,
-        url: subtopicUrl(cat.id, s.id),
-        readable: s.articles.filter((a) => a.published).length,
-        comingSoon: s.articles.filter((a) => !a.published).length,
-      }))
-  : [];
+// A stub still leads somewhere: the topic's published lesson nearest to it, in
+// the article's ending grammar (one card).
+const onwardArticle = isComingSoon ? nearestPublished(planned) : undefined;
+const onward = onwardArticle ? relatedLinkOf(onwardArticle) : undefined;
 
 // OG/social-card overrides apply only to real articles. og:title uses the bare
 // lesson title (or its og_title override); og:description prefers og_description,
@@ -133,14 +80,12 @@ const ogDescription = lesson
 const breadcrumbLd = breadcrumbJsonLd([
   { name: 'Home', url: '/' },
   { name: cat.title, url: categoryUrl(cat.id) },
-  { name: sub.title, url: subtopicUrl(cat.id, sub.id) },
   { name: planned.title, url: canonical },
 ]);
 const articleLd =
   !isComingSoon && lesson
     ? articleJsonLd({
         category: cat,
-        subtopic: sub,
         lesson,
         url: new URL(canonical, 'https://learncivicsense.in').toString(),
       })
@@ -202,7 +147,6 @@ const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
         its format, how long it takes, and whether it can be read yet. */
     }
     <span data-pagefind-meta={`cluster:${cat.title}`} hidden></span>
-    <span data-pagefind-meta={`subtopic:${sub.title}`} hidden></span>
     <span data-pagefind-meta={`clusterId:${cat.id}`} hidden></span>
     <span data-pagefind-meta={`format:${t(`article.format.${planned.format}`)}`} hidden></span>
     {!isComingSoon && lesson && <span data-pagefind-meta={`minutes:${lesson.length_min}`} hidden />}
@@ -211,15 +155,14 @@ const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
     {thumb && <span data-pagefind-meta={`thumb_srcset:${thumb.srcset}`} hidden />}
 
     {
-      /* The trail stops at the subtopic: the page's own title sits 28px below as
-         the h1, and repeating it here wrapped the crumb to four lines on phones.
-         The BreadcrumbList JSON-LD above still carries all four levels. */
+      /* The trail stops at the topic: the page's own title sits 28px below as
+         the h1, and repeating it here wrapped the crumb on phones. The
+         BreadcrumbList JSON-LD above still carries all three levels. */
     }
     <Breadcrumb
       items={[
         { label: t('nav.home'), href: '/' },
         { label: cat.title, href: categoryUrl(cat.id) },
-        { label: sub.title, href: subtopicUrl(cat.id, sub.id) },
       ]}
     />
 
@@ -234,15 +177,7 @@ const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
 
         {
           isComingSoon ? (
-            <ComingSoonBody
-              categoryId={cat.id}
-              categoryTitle={cat.title}
-              subtopicId={sub.id}
-              subtopicTitle={sub.title}
-              onward={onward}
-              onwardScope={onwardScope}
-              siblings={siblingSubtopics}
-            />
+            <ComingSoonBody categoryId={cat.id} categoryTitle={cat.title} onward={onward} />
           ) : (
             <>
               <ShareBar

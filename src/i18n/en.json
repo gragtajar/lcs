@@ -27,8 +27,6 @@
     "sectionAbroadBlurb": "Pre-trip packs for travel beyond India.",
     "sectionVisitors": "For visitors to India",
     "sectionVisitorsBlurb": "A respectful guide for foreign visitors to Indian civic culture.",
-    "subcategoryCount_one": "{count} subcategory",
-    "subcategoryCount_other": "{count} subcategories",
     "articleCount_one": "{count} article",
     "articleCount_other": "{count} articles",
     "areaCount_one": "{count} area",
@@ -44,24 +42,23 @@
     "lastUpdatedWithVersion": "Last updated {date} · {version}",
     "comingSoon": "Lessons coming soon for this topic.",
     "comingSoonBadge": "Coming soon",
-    "filterCategoriesPlaceholder": "Filter categories",
+    "filterCategoriesPlaceholder": "Filter topics",
     "allCategories": "All categories",
-    "browseCategories": "Browse categories",
-    "closeCategories": "Close categories",
+    "browseCategories": "Browse topics",
+    "closeCategories": "Close the topic list",
     "lessonCount_one": "{count} lesson",
     "lessonCount_other": "{count} lessons",
     "totalMinutes": "{n} min in total",
     "comingSoonCount_one": "{count} coming soon",
     "comingSoonCount_other": "{count} coming soon",
-    "moreIn": "More in {category}",
-    "lessonsIn": "Lessons in {subtopic}",
+    "lessonsIn": "Lessons in {topic}",
     "noneReadable": "None of these lessons is readable yet; the first is being written.",
     "soonShort": "soon",
-    "noCategoriesMatch": "No categories match."
+    "noCategoriesMatch": "No topics match."
   },
   "topics": {
-    "title": "Topics and subtopics",
-    "lede": "Every subtopic in the library, grouped by topic, with how many lessons you can read today.",
+    "title": "Topics and lessons",
+    "lede": "Every lesson in the library, grouped by topic, with how long each takes to read.",
     "topicCount_one": "{count} topic",
     "topicCount_other": "{count} topics",
     "jumpLabel": "Jump to a topic",
@@ -69,12 +66,6 @@
     "visitorsLink": "What the guide will cover",
     "endNote": "Looking for something in particular?",
     "endSearch": "Search all lessons"
-  },
-  "category": {
-    "subtopicCount_one": "{count} subtopic",
-    "subtopicCount_other": "{count} subtopics",
-    "subtopicsIn": "Subtopics in {category}",
-    "otherTopics": "Other topics"
   },
   "visitors": {
     "heroTitle": "For visitors to India",
@@ -97,9 +88,9 @@
     "favoritePlaceholder": "Save lesson (coming soon)",
     "comingSoonBadge": "Coming soon",
     "comingSoonHeading": "This lesson is being written.",
-    "comingSoonDescription": "This lesson is being written. It belongs to {subtopic}, in {category}.",
+    "comingSoonDescription": "This lesson is being written. It is part of {category}.",
     "meanwhileIn": "Meanwhile, in {where}",
-    "allLessonsIn": "All lessons in {subtopic}",
+    "allLessonsIn": "All lessons in {topic}",
     "upNext": "Up next",
     "inCategory": "in {category}"
   },
@@ -169,7 +160,7 @@
     },
     "topics": {
       "heading": "All topics",
-      "bySubtopic": "Browse by subtopic"
+      "allLessons": "All lessons, by topic"
     },
     "mission": {
       "h2": "Who this is for",

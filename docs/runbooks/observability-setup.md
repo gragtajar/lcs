@@ -90,7 +90,7 @@ status page included.
 1. BetterStack → **Uptime → Monitors → Add monitor**.
 2. Add four monitors (the canonical surfaces of the site):
    - `https://learncivicsense.in/` — homepage
-   - `https://learncivicsense.in/traffic/honking-discipline/the-case-against-honking/` — canonical article
+   - `https://learncivicsense.in/traffic/the-case-against-honking/` — canonical article
    - `https://learncivicsense.in/search/` — search page
    - `https://learncivicsense.in/sitemap-index.xml` — signals build health
 3. For each monitor: check interval 3 minutes, alert on 2 consecutive failures.
