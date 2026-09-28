@@ -138,6 +138,47 @@
     "notFoundMore": "More lessons that match this address",
     "notFoundNone": "No lesson matches this address. Try a search, or start with one of the lessons on this page."
   },
+  "feedback": {
+    "title": "Send feedback",
+    "description": "Suggest a lesson, point out a mistake, or report something to the person who runs Learn Civic Sense.",
+    "lede": "Suggest a lesson, point out a mistake, or report something. It goes straight to the person who runs this site.",
+    "typeLabel": "What is it about?",
+    "typePlaceholder": "Choose one",
+    "types": {
+      "new-article": "New articles",
+      "correction": "Correction in article",
+      "report": "Report something",
+      "other": "Others"
+    },
+    "messageLabel": "Your message",
+    "messageHint": "Up to 500 characters. Please leave out personal details, such as a phone number.",
+    "count": "{n} / 500",
+    "left_one": "{count} character left",
+    "left_other": "{count} characters left",
+    "trapLabel": "Leave this field empty",
+    "submit": "Send feedback",
+    "sending": "Sending…",
+    "note": "The form doesn’t ask for your name or email address, so there’s no way to reply to you.",
+    "noteLink": "How feedback is handled",
+    "sentTitle": "Thank you. Your feedback was sent.",
+    "sentBody": "It goes straight to the person who runs this site.",
+    "again": "Send more feedback",
+    "notSentTitle": "Your feedback wasn’t sent",
+    "notSentBody": "Something went wrong on the way. Please go back to the form and try again in a few minutes.",
+    "back": "Back to the form",
+    "home": "Go to the homepage",
+    "errors": {
+      "type": "Please choose what your feedback is about.",
+      "length": "Please write between 3 and 500 characters.",
+      "code": "Your message looks like code or a command. Please describe it in plain words.",
+      "links": "Please include no more than 3 links.",
+      "rate": "You’ve sent several messages in a short time. Please try again later.",
+      "busy": "The form has had a lot of messages today. Please try again tomorrow.",
+      "unavailable": "Sending failed on our side. Please try again in a few minutes.",
+      "network": "Couldn’t reach the site. Check your connection and try again.",
+      "other": "Your feedback couldn’t be sent. Please reload the page and try again."
+    }
+  },
   "footer": {
     "tagline": "A free reading library for civic sense in India.",
     "copy": "Free to read. No login. No ads.",

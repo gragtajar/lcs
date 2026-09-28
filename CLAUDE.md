@@ -71,7 +71,8 @@ Production is `https://learncivicsense.in` on GoDaddy cPanel hosting (ADR 008,
 `main` runs **Deploy production** = the full CI, an FTPS upload of that exact
 build, then live verification (every file byte for byte, redirects, headers, and
 a Playwright pass on desktop/mobile × light/dark). Merges into `lcs-content` or
-`lcs-workflow` deploy through **Content sync** within ~15 minutes; start one at
+`lcs-workflow` deploy through **Content sync**, scheduled every 15 minutes but in
+practice run by GitHub only every few hours; after such a merge, start one at
 once with `gh workflow run deploy.yml --repo gragtajar/lcs --ref main -f reason="…"`.
 `/build-info.json` on the live site shows which commits are deployed. A deploy
 is done when its **Verify production** job is green; look at it, and at the

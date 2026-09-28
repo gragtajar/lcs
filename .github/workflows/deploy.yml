@@ -53,7 +53,7 @@ jobs:
           REASON: ${{ inputs.reason }}
         run: |
           echo "Trigger: ${GITHUB_EVENT_NAME}${REASON:+ ($REASON)}"
-          for f in index.html 404.html 404.php .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
+          for f in index.html 404.html 404.php feedback.php feedback/index.html .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
             test -s "dist/$f" || { echo "::error::dist/$f is missing"; exit 1; }
           done
           node -e '
@@ -64,6 +64,23 @@ jobs:
             }
             console.log(`Deploying ${b.site} with lcs-content ${b.content}${b.workflow ? " and lcs-workflow " + b.workflow : ""}: ${b.lessons.published} of ${b.lessons.planned} lessons published.`);
           '
+      - name: Write the feedback form's private settings
+        # The address feedback goes to is a secret, never in the repo or in the
+        # tested build (the dist artifact, which anyone can download from a
+        # public repo's runs). It is written here, after the download, into
+        # .lcs-private/, which the site never serves: every dotted path answers
+        # 404 (public/.htaccess, checked by Verify production). ADR 012.
+        env:
+          TO: ${{ secrets.FEEDBACK_EMAIL_TO }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$TO" | grep -Eq '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'; then
+            echo "::error::The FEEDBACK_EMAIL_TO secret is missing or not an email address"
+            exit 1
+          fi
+          mkdir -p dist/.lcs-private
+          printf "<?php\n// Written by the deploy from the FEEDBACK_EMAIL_TO secret. Never committed.\nreturn ['to' => '%s'];\n" "$TO" > dist/.lcs-private/feedback-config.php
+          echo "Wrote dist/.lcs-private/feedback-config.php"
       - name: Upload changed files over FTPS
         # Pinned to the v4.4.0 commit. It keeps a state file on the server and
         # uploads only what changed; it never deletes anything it did not upload,

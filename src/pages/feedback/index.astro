@@ -1,0 +1,343 @@
+---
+// /feedback/ — a short form: what the feedback is about, and up to 500
+// characters. It posts to /feedback.php, which emails it to the person who runs
+// the site (ADR 012); the address is nowhere in the site's code. Linked from the
+// footer only, and kept out of search engines.
+//
+// Without JavaScript the form posts normally and the endpoint redirects to
+// /feedback/sent/ or /feedback/not-sent/. With it, the result shows in place, a
+// refused message keeps its text and says why, and the counter follows the
+// typing (screen readers hear it only at 50, 20 and 0 characters left).
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t } from '../../lib/i18n';
+
+const TYPES = ['new-article', 'correction', 'report', 'other'] as const;
+const ERRORS = [
+  'type',
+  'length',
+  'code',
+  'links',
+  'rate',
+  'busy',
+  'unavailable',
+  'network',
+  'other',
+] as const;
+
+// What the page's script says, from the same strings as the page.
+const strings: Record<string, string> = {
+  count: t('feedback.count'),
+  left_one: t('feedback.left_one'),
+  left_other: t('feedback.left_other'),
+  submit: t('feedback.submit'),
+  sending: t('feedback.sending'),
+};
+for (const code of ERRORS) strings[`error_${code}`] = t(`feedback.errors.${code}`);
+---
+
+<BaseLayout
+  title={t('feedback.title')}
+  description={t('feedback.description')}
+  width="narrow"
+  noindex
+>
+  <div class="fb" data-fb>
+    <h1 class="fb-title">{t('feedback.title')}</h1>
+    <p class="fb-lede">{t('feedback.lede')}</p>
+
+    <form class="fb-form" action="/feedback.php" method="post" data-fb-form>
+      <div class="fb-field">
+        <label class="fb-label" for="fb-type">{t('feedback.typeLabel')}</label>
+        <select class="fb-select" id="fb-type" name="type" required>
+          <option value="" selected disabled>{t('feedback.typePlaceholder')}</option>
+          {TYPES.map((value) => <option value={value}>{t(`feedback.types.${value}`)}</option>)}
+        </select>
+      </div>
+
+      <div class="fb-field">
+        <label class="fb-label" for="fb-message">{t('feedback.messageLabel')}</label>
+        <textarea
+          class="fb-text"
+          id="fb-message"
+          name="message"
+          rows="7"
+          minlength="3"
+          maxlength="500"
+          required
+          aria-describedby="fb-hint"></textarea>
+        <div class="fb-under">
+          <p class="fb-hint" id="fb-hint">{t('feedback.messageHint')}</p>
+          <span class="fb-count" data-fb-count aria-hidden="true">
+            {t('feedback.count', { n: 0 })}
+          </span>
+        </div>
+        <p class="sr-only" data-fb-live aria-live="polite"></p>
+      </div>
+
+      {
+        /* People never see this field; a bot that fills it is told its message
+           was sent, and nothing is sent (public/feedback.php). */
+      }
+      <div class="fb-trap" aria-hidden="true">
+        <label for="fb-website">{t('feedback.trapLabel')}</label>
+        <input id="fb-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <p class="fb-error" data-fb-error role="alert" hidden></p>
+
+      <div class="fb-actions">
+        <button class="fb-submit" type="submit" data-fb-submit>{t('feedback.submit')}</button>
+      </div>
+
+      <p class="fb-note">
+        {t('feedback.note')}
+        <a href="/privacy/#feedback">{t('feedback.noteLink')}</a>.
+      </p>
+    </form>
+
+    <div class="fb-sent" data-fb-sent hidden>
+      <h2 class="fb-sent-title" tabindex="-1">{t('feedback.sentTitle')}</h2>
+      <p class="fb-sent-body">{t('feedback.sentBody')}</p>
+      <button class="fb-again" type="button" data-fb-again>{t('feedback.again')}</button>
+    </div>
+  </div>
+
+  <script type="application/json" id="fb-strings" set:html={JSON.stringify(strings)} />
+</BaseLayout>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-fb]');
+  const form = root?.querySelector<HTMLFormElement>('[data-fb-form]');
+  const text = form?.querySelector<HTMLTextAreaElement>('textarea');
+  const count = form?.querySelector<HTMLElement>('[data-fb-count]');
+  const live = form?.querySelector<HTMLElement>('[data-fb-live]');
+  const error = form?.querySelector<HTMLElement>('[data-fb-error]');
+  const submit = form?.querySelector<HTMLButtonElement>('[data-fb-submit]');
+  const sent = root?.querySelector<HTMLElement>('[data-fb-sent]');
+
+  if (root && form && text && count && live && error && submit && sent) {
+    const strings = JSON.parse(
+      document.getElementById('fb-strings')?.textContent ?? '{}',
+    ) as Record<string, string>;
+    const say = (key: string, n: number) =>
+      (strings[key] ?? '').replace('{n}', String(n)).replace('{count}', String(n));
+
+    // The counter, and a word to screen readers at 50, 20 and 0 characters
+    // left (not on every keystroke).
+    let announced: number | null = null;
+    const updateCount = () => {
+      const used = text.value.length;
+      const left = Math.max(0, text.maxLength - used);
+      count.textContent = say('count', used);
+      count.classList.toggle('is-near', left <= 50);
+      const mark = left === 0 ? 0 : left <= 20 ? 20 : left <= 50 ? 50 : null;
+      if (mark === null) announced = null;
+      else if (announced === null || mark < announced) {
+        announced = mark;
+        live.textContent = say(left === 1 ? 'left_one' : 'left_other', left);
+      }
+    };
+    text.addEventListener('input', updateCount);
+    updateCount();
+
+    const showError = (code: string) => {
+      error.textContent = strings[`error_${code}`] ?? strings.error_other ?? '';
+      error.hidden = false;
+    };
+
+    // The browser has already checked the fields (required, maxlength) before
+    // this runs; the endpoint checks everything again.
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      error.hidden = true;
+      submit.disabled = true;
+      submit.textContent = strings.sending ?? '';
+      form.setAttribute('aria-busy', 'true');
+      try {
+        const body = new URLSearchParams(
+          [...new FormData(form)].map(([key, value]) => [key, String(value)]),
+        );
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body,
+        });
+        const data = (await res.json().catch(() => null)) as { ok?: boolean; code?: string } | null;
+        if (res.ok && data?.ok) {
+          form.reset();
+          updateCount();
+          form.hidden = true;
+          sent.hidden = false;
+          sent.querySelector<HTMLElement>('.fb-sent-title')?.focus();
+        } else {
+          const code = data?.code ?? '';
+          showError(
+            `error_${code}` in strings ? code : res.status >= 500 ? 'unavailable' : 'other',
+          );
+        }
+      } catch {
+        showError('network');
+      } finally {
+        submit.disabled = false;
+        submit.textContent = strings.submit ?? '';
+        form.removeAttribute('aria-busy');
+      }
+    });
+
+    root.querySelector('[data-fb-again]')?.addEventListener('click', () => {
+      sent.hidden = true;
+      form.hidden = false;
+      form.querySelector<HTMLSelectElement>('select')?.focus();
+    });
+
+    // From here on a submit is handled in place (tests wait for this).
+    form.dataset.ready = '';
+  }
+</script>
+
+<style>
+  .fb {
+    padding: var(--space-5) 0 var(--space-7);
+  }
+  .fb-title {
+    font-size: clamp(2rem, 1.2rem + 3vw, var(--text-3xl));
+    margin: 0 0 var(--space-3);
+  }
+  .fb-lede {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    max-width: var(--measure);
+    margin: 0 0 var(--space-6);
+  }
+  .fb-form {
+    display: grid;
+    gap: var(--space-5);
+    max-width: var(--width-reading);
+  }
+  .fb-field {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .fb-label {
+    font-weight: var(--weight-ui);
+    color: var(--color-text);
+  }
+  /* Fields read like the site's other fields (the sidebar filter, the search
+     box): the surface colour, a hairline, the field radius; the focus ring is
+     the global one. */
+  .fb-select,
+  .fb-text {
+    width: 100%;
+    font: inherit;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  .fb-select {
+    min-height: 48px;
+    padding: 0 var(--space-3);
+  }
+  .fb-text {
+    min-height: 10rem;
+    padding: var(--space-3);
+    line-height: 1.55;
+    resize: vertical;
+  }
+  .fb-select:hover,
+  .fb-text:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  }
+  .fb-select:focus,
+  .fb-text:focus {
+    border-color: var(--color-primary);
+  }
+  .fb-under {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .fb-hint {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    max-width: var(--measure);
+  }
+  .fb-count {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .fb-count.is-near {
+    color: var(--color-text);
+    font-weight: var(--weight-ui);
+  }
+  /* Off-screen for people, still in the form for bots. */
+  .fb-trap {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .fb-error {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid color-mix(in srgb, var(--color-warning) 45%, transparent);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+    color: var(--color-text);
+    max-width: var(--measure);
+  }
+  .fb-submit {
+    min-height: 48px;
+    padding: 0 var(--space-6);
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: var(--weight-ui);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .fb-submit:hover {
+    background: color-mix(in srgb, var(--color-primary) 86%, var(--color-text));
+  }
+  .fb-submit:disabled {
+    cursor: progress;
+    opacity: 0.75;
+  }
+  .fb-note {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    max-width: var(--measure);
+  }
+  .fb-sent {
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+  .fb-sent-title {
+    font-size: var(--text-xl);
+    margin: 0 0 var(--space-2);
+  }
+  .fb-sent-body {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+  .fb-again {
+    min-height: 44px;
+    margin-top: var(--space-4);
+    padding: 0 var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-ui);
+  }
+  .fb-again:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  }
+</style>

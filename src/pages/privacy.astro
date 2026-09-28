@@ -1,61 +1,102 @@
 ---
+// Every statement here was checked against the live site and the code on
+// 2026-09-29: the host's injected script and its cookies, no analytics, no
+// error tracking, what the feedback form keeps. These change it, so update
+// this page with them: turning on analytics (PUBLIC_CF_ANALYTICS_TOKEN, see
+// BaseLayout) or error tracking (SENTRY_DSN, see astro.config.mjs), changing
+// what public/feedback.php keeps, or adding anything that loads from another
+// site.
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout
   title="Privacy"
-  description="What Learn Civic Sense does and does not collect."
+  description="What Learn Civic Sense collects, what its host and image service see, and what the feedback form keeps."
   width="narrow"
 >
   <article class="legal">
     <h1>Privacy policy</h1>
-    <p class="lede">A short, honest accounting of the data this site touches.</p>
+    <p class="lede">What happens to your data when you use this site, in plain words.</p>
 
-    <h2>What is collected</h2>
-    <ul>
-      <li>
-        <strong>Page views</strong>, aggregated by Cloudflare Web Analytics. Country-level
-        geography, browser, referrer, Core Web Vitals. No cookies, no fingerprinting, no cross-site
-        tracking.
-      </li>
-      <li>
-        <strong>JavaScript errors</strong>, sampled by Sentry, only when the interactive islands
-        (search overlay, theme toggle, table-of-contents, quiz) throw. Stack traces, browser, page
-        URL. No personal data attached.
-      </li>
-    </ul>
-
-    <h2>What is NOT collected</h2>
-    <ul>
-      <li>No accounts, logins, or profiles.</li>
-      <li>No cookies set by us.</li>
-      <li>No third-party trackers (no Google Analytics, no Facebook Pixel, no ad networks).</li>
-      <li>No newsletter sign-ups, contact forms, or any PII collection at launch.</li>
-    </ul>
-
-    <h2>Data retention</h2>
+    <h2>What this site collects</h2>
     <p>
-      Cloudflare Web Analytics holds aggregate metrics for 6 months. Sentry error events are
-      retained 30 days on the free tier.
+      Nothing about you while you read. There are no accounts or logins, no analytics, no
+      advertising and no error tracking, and the site sets no cookies of its own.
+    </p>
+    <ul>
+      <li>
+        <strong>Your theme choice.</strong> If you pick Light or Dark in the theme menu, the choice is
+        kept in your own browser (local storage) so the next page uses it. It never leaves your device.
+        With System, nothing is kept.
+      </li>
+      <li>
+        <strong>Search</strong> runs in your browser: the site sends it parts of a search index, and what
+        you type is not sent as text to us or to anyone else.
+      </li>
+    </ul>
+
+    <h2 id="feedback">The feedback form</h2>
+    <p>
+      If you send feedback, the site receives what you chose it is about and your message (up to 500
+      characters). It is emailed to the person who runs this site and is not stored on the website.
+      The form doesn’t ask for your name or email address, so there is no way to reply to you;
+      please leave personal details out of the message.
+    </p>
+    <p>
+      So that no one can flood the form, the server keeps, for each sender, a keyed hash of their IP
+      address (a code worked out from it, not the address itself) with the times they sent feedback.
+      Entries older than a day are no longer used, and are deleted the next time anyone uses the
+      form.
     </p>
 
-    <h2>How to remove your data</h2>
+    <h2>What others see</h2>
+    <ul>
+      <li>
+        <strong>Our host, GoDaddy,</strong> runs the web server. Like any web server, it receives your
+        IP address and the addresses of the pages you open.
+        <a href="https://www.godaddy.com/legal/agreements/privacy-policy" rel="noopener noreferrer"
+          >GoDaddy’s privacy notice</a
+        > covers what it keeps.
+      </li>
+      <li>
+        <strong>GoDaddy also adds its own script to every page</strong>, for monitoring performance
+        (loaded from img1.wsimg.com). That script sets three cookies (<code>_tccl_visitor</code>,
+        <code>_tccl_visit</code> and <code>_scc_session</code>) and sends its measurements to
+        GoDaddy (secureserver.net). We did not add it; its own note says opting out goes through
+        GoDaddy’s hosting support.
+      </li>
+      <li>
+        <strong>Lesson illustrations</strong> come from ImageKit (ik.imagekit.io), an image service. Your
+        browser loads them from ImageKit, which sees your IP address as any site serving an image does.
+        See
+        <a href="https://imagekit.io/privacy-policy" rel="noopener noreferrer"
+          >ImageKit’s privacy policy</a
+        >.
+      </li>
+      <li>
+        <strong>Share buttons</strong> are plain links. Nothing from WhatsApp, X, LinkedIn or Telegram
+        loads on this site; they are involved only when you tap one.
+      </li>
+    </ul>
+
+    <h2>Your choices</h2>
     <p>
-      Since we don't collect anything that identifies you, there's nothing to remove. If you'd still
-      like Cloudflare's aggregated metrics excluded, install
-      <a href="https://privacybadger.org/" rel="noopener noreferrer">Privacy Badger</a> or a similar request-blocker
-      and visits will stop reaching the beacon.
+      Every lesson can be read with cookies and scripts blocked. Search, the quiz and the theme menu
+      need JavaScript, but none of them needs a cookie. A content blocker such as
+      <a href="https://privacybadger.org/" rel="noopener noreferrer">Privacy Badger</a> stops the host’s
+      script.
     </p>
 
     <h2>Contact</h2>
     <p>
-      For privacy questions, file an issue at
+      For privacy questions, use the <a href="/feedback/">feedback form</a> (choose “Report something”)
+      or open an issue on
       <a href="https://github.com/gragtajar/lcs/issues" rel="noopener noreferrer"
         >our GitHub repository</a
-      > using the <em>content issue</em> template.
+      >.
     </p>
 
-    <p class="meta">Last updated: 2026-06-03.</p>
+    <p class="meta">Last updated: 2026-09-29.</p>
   </article>
 </BaseLayout>
 
@@ -83,6 +124,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
   .legal li {
     margin-block: var(--space-2);
+  }
+  .legal code {
+    font-size: 0.9em;
   }
   .legal .meta {
     color: var(--color-text-muted);

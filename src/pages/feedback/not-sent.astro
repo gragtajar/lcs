@@ -1,0 +1,44 @@
+---
+// Where a plain (no-script) form post lands when the feedback was not sent,
+// for whatever reason: public/feedback.php answers it with a 303 here. With
+// script, the form page says why in place and keeps the message.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t } from '../../lib/i18n';
+---
+
+<BaseLayout title={t('feedback.notSentTitle')} width="narrow" noindex>
+  <div class="fb-result">
+    <h1>{t('feedback.notSentTitle')}</h1>
+    <p>{t('feedback.notSentBody')}</p>
+    <p class="fb-result-links">
+      <a href="/feedback/">{t('feedback.back')}</a>
+      <a href="/">{t('feedback.home')}</a>
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .fb-result {
+    padding: var(--space-5) 0 var(--space-7);
+    max-width: var(--measure);
+  }
+  .fb-result h1 {
+    font-size: clamp(1.75rem, 1.2rem + 2vw, var(--text-2xl));
+    margin: 0 0 var(--space-3);
+  }
+  .fb-result p {
+    color: var(--color-text-secondary);
+  }
+  .fb-result-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    margin-top: var(--space-5);
+  }
+  .fb-result-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: var(--weight-ui);
+  }
+</style>

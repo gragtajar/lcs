@@ -13,7 +13,7 @@ first paint), it belongs in `src/islands/` instead.
 | `ArticleListItem.astro` | topic page                         | list-row card per article (real or coming-soon)          |
 | `Breadcrumb.astro`      | topic, topics, article pages       | `<nav>` with chevron-separated crumbs                    |
 | `ComingSoonBody.astro`  | article page (placeholder variant) | status line + the topic's nearest lesson + its topic     |
-| `Footer.astro`          | every page                         | minimal footer with About/Search/Privacy/Terms links     |
+| `Footer.astro`          | every page                         | footer with About, Privacy, Terms and Feedback links     |
 | `BrandIcon.astro`       | ShareBar                           | share platforms' own marks (Simple Icons, Bootstrap)     |
 | `Icon.astro`            | everywhere                         | one Lucide icon as inline SVG, by name (ADR 009)         |
 | `RelatedLinks.astro`    | article page                       | the one "Up next" card (resolved by ID via taxonomy)     |
