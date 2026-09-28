@@ -1,0 +1,82 @@
+name: Mail probe (temporary)
+
+# One-off check for the feedback form; this PR is closed, never merged. Can
+# the host's PHP mail() reach the owner's inbox, and does the host honour the
+# protections the endpoint will rely on (a per-folder .user.ini, Apache's
+# LimitRequestBody, a config file that cannot be fetched)? It installs a probe
+# in a randomly named folder, sends the two test emails once, prints yes/no
+# answers only (never the recipient), then deletes the folder.
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/mail-probe.yml
+      - .github/mail-probe/**
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: PHP mail probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload, check, send the two test emails once, clean up
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          TO: ${{ secrets.FEEDBACK_EMAIL_TO }}
+        run: |
+          # Not -e: a failed check must not skip the clean-up, which the EXIT
+          # trap runs whatever happens.
+          set +e
+          set -u
+          umask 077
+          if ! printf '%s' "$TO" | grep -Eq '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'; then
+            echo "::error::FEEDBACK_EMAIL_TO is missing or not an email address"
+            exit 1
+          fi
+          printf 'machine %s\nlogin %s\npassword %s\n' "$FTP_SERVER" "$FTP_USERNAME" "$FTP_PASSWORD" > "$HOME/.netrc"
+          ftp() { curl -sS --netrc --ssl-reqd --insecure --connect-timeout 20 --max-time 90 "$@"; }
+          D="lcs-mail-probe-$(openssl rand -hex 6)"
+          TOKEN=$(openssl rand -hex 24)
+          cleanup() {
+            for f in send.php cfg.php .htaccess .user.ini sent.lock; do
+              ftp --list-only -Q "DELE $D/$f" "ftp://$FTP_SERVER/" -o /dev/null 2>/dev/null
+            done
+            ftp --list-only -Q "RMD $D" "ftp://$FTP_SERVER/" -o /dev/null 2>/dev/null
+            rm -f "$HOME/.netrc"
+            local left
+            left=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://learncivicsense.in/$D/send.php")
+            echo "after clean-up the probe answers $left (404 = gone)"
+            if [ "$left" != "404" ]; then echo "::error::the probe folder is still on the host"; exit 1; fi
+          }
+          trap cleanup EXIT
+
+          t="$RUNNER_TEMP/p"; mkdir -p "$t"
+          printf "<?php return ['to' => '%s', 'token' => '%s'];\n" "$TO" "$TOKEN" > "$t/cfg.php"
+          ftp --ftp-create-dirs -T .github/mail-probe/htaccess "ftp://$FTP_SERVER/$D/.htaccess" -o /dev/null || echo "::error::upload .htaccess failed"
+          ftp -T .github/mail-probe/user.ini "ftp://$FTP_SERVER/$D/.user.ini" -o /dev/null || echo "::error::upload .user.ini failed"
+          ftp -T "$t/cfg.php" "ftp://$FTP_SERVER/$D/cfg.php" -o /dev/null || echo "::error::upload cfg.php failed"
+          ftp -T .github/mail-probe/send.php "ftp://$FTP_SERVER/$D/send.php" -o /dev/null || echo "::error::upload send.php failed"
+          rm -f "$t/cfg.php"
+          sleep 3
+
+          B="https://learncivicsense.in/$D"
+          Q="token=$TOKEN"
+          b="$RUNNER_TEMP/body"
+          code() { curl -s -o "$b" -w '%{http_code}' --max-time 30 "$@"; }
+
+          echo "no token:              $(code "$B/send.php?action=ini") (expect 403)"
+          echo "settings (GET):        $(code "$B/send.php?$Q&action=ini") $(cat "$b")"
+          head -c 20000 /dev/zero | tr '\0' 'a' > "$t/big.txt"
+          echo "20 KB POST:            $(code -X POST --data-binary @"$t/big.txt" "$B/send.php?$Q&action=ini") (expect 413)"
+          printf 'attachment\n' > "$t/small.txt"
+          echo "file upload POST:      $(code -F "f=@$t/small.txt" "$B/send.php?$Q&action=ini") $(cat "$b")"
+          c=$(code "$B/cfg.php"); leak=no; grep -q '@' "$b" && leak=YES
+          echo "config file fetched:   $c (expect 403) | address in the body: $leak"
+          echo "send:                  $(code "$B/send.php?$Q&action=send") $(cat "$b")"
+          echo "send again:            $(code "$B/send.php?$Q&action=send") $(cat "$b") (expect already sent)"

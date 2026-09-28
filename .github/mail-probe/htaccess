@@ -1,0 +1,9 @@
+# Uploaded as .htaccess into the probe folder. Tests two protections the real
+# feedback endpoint will rely on: Apache refusing an oversized body before PHP
+# runs, and a config file that can never be fetched over the web.
+<Files "send.php">
+  LimitRequestBody 16384
+</Files>
+<Files "cfg.php">
+  Require all denied
+</Files>
