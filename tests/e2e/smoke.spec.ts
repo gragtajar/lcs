@@ -556,6 +556,122 @@ test.describe('Theme menu', () => {
   });
 });
 
+test.describe('Feedback form', () => {
+  // `astro preview` runs no PHP, so /feedback.php is answered here the way the
+  // real endpoint answers (scripts/test-feedback-endpoint.mjs tests that one).
+  const TYPES = ['New articles', 'Correction in article', 'Report something', 'Others'];
+
+  test('the footer links to it, on every kind of page', async ({ page }) => {
+    for (const url of ['/', '/traffic/', '/traffic/the-case-against-honking/', '/privacy/']) {
+      await page.goto(url);
+      await expect(page.locator('.footer-nav a[href="/feedback/"]')).toHaveText('Feedback');
+    }
+  });
+
+  test('asks for a type and up to 500 characters, takes no file, stays out of search', async ({
+    page,
+  }) => {
+    await page.goto('/feedback/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Send feedback');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    const form = page.locator('form[data-fb-form]');
+    await expect(form).toHaveAttribute('action', '/feedback.php');
+    await expect(form).toHaveAttribute('method', 'post');
+    const type = page.getByLabel('What is it about?');
+    await expect(type).toHaveAttribute('required', '');
+    await expect(type.locator('option:not([disabled])')).toHaveText(TYPES);
+    const message = page.getByLabel('Your message');
+    await expect(message).toHaveAttribute('maxlength', '500');
+    await expect(message).toHaveAttribute('required', '');
+    // No attachments, in any form.
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
+    await expect(form).not.toHaveAttribute('enctype', /multipart/);
+    // The trap field is there for bots, out of sight and out of the tab order.
+    const trap = page.locator('input[name="website"]');
+    await expect(trap).toHaveAttribute('tabindex', '-1');
+    await expect(trap).not.toBeInViewport();
+  });
+
+  test('sends in place and says thank you', async ({ page }) => {
+    const sent = { body: '', accept: '' };
+    await page.route('**/feedback.php', async (route) => {
+      sent.body = route.request().postData() ?? '';
+      sent.accept = route.request().headers().accept ?? '';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '{"ok":true,"code":"sent"}',
+      });
+    });
+    await page.goto('/feedback/');
+    await expect(page.locator('form[data-fb-form][data-ready]')).toHaveCount(1);
+    await page.getByLabel('What is it about?').selectOption({ label: 'Correction in article' });
+    await page.getByLabel('Your message').fill('The fine in the table is out of date.');
+    await page.getByRole('button', { name: 'Send feedback' }).click();
+    const thanks = page.getByRole('heading', { name: 'Thank you. Your feedback was sent.' });
+    await expect(thanks).toBeVisible();
+    await expect(thanks).toBeFocused();
+    await expect(page.locator('form[data-fb-form]')).toBeHidden();
+    const params = new URLSearchParams(sent.body);
+    expect(params.get('type')).toBe('correction');
+    expect(params.get('message')).toBe('The fine in the table is out of date.');
+    expect(params.get('website')).toBe('');
+    expect(sent.accept).toContain('application/json');
+    // And the form comes back, empty, for another message.
+    await page.getByRole('button', { name: 'Send more feedback' }).click();
+    await expect(page.getByLabel('What is it about?')).toBeFocused();
+    await expect(page.getByLabel('Your message')).toHaveValue('');
+  });
+
+  test('a refused message keeps its text and says why', async ({ page }) => {
+    await page.route('**/feedback.php', (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: '{"ok":false,"code":"rate"}',
+      }),
+    );
+    await page.goto('/feedback/');
+    await expect(page.locator('form[data-fb-form][data-ready]')).toHaveCount(1);
+    await page.getByLabel('What is it about?').selectOption({ label: 'Others' });
+    await page.getByLabel('Your message').fill('Please add a lesson on lift etiquette.');
+    await page.getByRole('button', { name: 'Send feedback' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'You’ve sent several messages in a short time. Please try again later.',
+    );
+    await expect(page.getByLabel('Your message')).toHaveValue(
+      'Please add a lesson on lift etiquette.',
+    );
+    await expect(page.getByRole('button', { name: 'Send feedback' })).toBeEnabled();
+  });
+
+  test('the counter follows the typing and speaks near the limit', async ({ page }) => {
+    await page.goto('/feedback/');
+    await expect(page.locator('form[data-fb-form][data-ready]')).toHaveCount(1);
+    await page.getByLabel('Your message').fill('a'.repeat(480));
+    await expect(page.locator('[data-fb-count]')).toHaveText('480 / 500');
+    await expect(page.locator('[data-fb-count]')).toHaveClass(/is-near/);
+    await expect(page.locator('[data-fb-live]')).toHaveText('20 characters left');
+  });
+
+  test('without JavaScript, both result pages lead back', async ({ page }) => {
+    await page.goto('/feedback/sent/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Thank you. Your feedback was sent.',
+    );
+    await expect(page.getByRole('link', { name: 'Send more feedback' })).toHaveAttribute(
+      'href',
+      '/feedback/',
+    );
+    await page.goto('/feedback/not-sent/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your feedback wasn’t sent');
+    await expect(page.getByRole('link', { name: 'Back to the form' })).toHaveAttribute(
+      'href',
+      '/feedback/',
+    );
+  });
+});
+
 test.describe('Top bar', () => {
   test('is identical and sticky on every primary page', async ({ page }) => {
     for (const url of [

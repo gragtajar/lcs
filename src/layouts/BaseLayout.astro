@@ -53,7 +53,9 @@ const meta = buildMeta({
 });
 
 // Analytics: only inject the Cloudflare Web Analytics beacon when a token is
-// present in the build env. Local dev and forked PRs run without it.
+// present in the build env. Local dev and forked PRs run without it. No deploy
+// sets it today, and the privacy page says there are no analytics: setting it
+// changes what the site collects, so update src/pages/privacy.astro with it.
 const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | undefined;
 ---
 

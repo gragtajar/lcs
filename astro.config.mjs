@@ -9,6 +9,9 @@ import sentry from '@sentry/astro';
 // Sentry is conditionally included only when SENTRY_DSN is set, so local dev
 // and forked CI builds don't drag in the Sentry runtime. Source-map upload
 // happens only when SENTRY_AUTH_TOKEN is also present (i.e. production deploys).
+// No deploy sets it today, and the privacy page says there is no error
+// tracking: setting it changes what the site collects, so update
+// src/pages/privacy.astro in the same change.
 
 const SENTRY_DSN = process.env.SENTRY_DSN;
 const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
@@ -21,8 +24,9 @@ const integrations = [
     priority: 0.8,
     lastmod: new Date(),
     // The dedicated image sitemap (src/pages/sitemap-images.xml.ts) is referenced
-    // directly from robots.txt; keep it out of the page sitemap index.
-    filter: (page) => !page.includes('/sitemap-images.xml'),
+    // directly from robots.txt; keep it out of the page sitemap index. The
+    // feedback pages are noindex (a form and its two result pages).
+    filter: (page) => !page.includes('/sitemap-images.xml') && !page.includes('/feedback/'),
     i18n: {
       defaultLocale: 'en',
       locales: { en: 'en-IN' },

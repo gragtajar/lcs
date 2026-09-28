@@ -19,6 +19,7 @@
 
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
+import https from 'node:https';
 import path from 'node:path';
 import { parseLegacyAddresses } from './legacy-addresses.mjs';
 
@@ -179,6 +180,111 @@ async function expectRedirect(from, to) {
   }
 }
 
+/**
+ * A request exactly as written, Origin header included (node:https, not fetch,
+ * so no header is ever dropped). Resolves with { status, headers, body }.
+ */
+function rawRequest(url, { method = 'GET', headers = {}, body } = {}) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      url,
+      { method, headers: { 'user-agent': 'lcs-deploy-verify', ...headers } },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () =>
+          resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }),
+        );
+      },
+    );
+    req.on('error', reject);
+    req.setTimeout(30_000, () => req.destroy(new Error('timed out')));
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * The feedback endpoint (ADR 012), checked without sending an email: every
+ * request here is refused, or is the trap a bot falls into (answered "sent",
+ * nothing sent). What the endpoint itself decides is tested in CI by
+ * scripts/test-feedback-endpoint.mjs; this proves the host's side.
+ */
+async function checkFeedback(page404) {
+  const url = `${ORIGIN}/feedback.php`;
+  const origin = new URL(ORIGIN).origin;
+  const formHeaders = {
+    Origin: origin,
+    Accept: 'application/json',
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  const expect = (label, res, status, code) => {
+    let json = null;
+    try {
+      json = JSON.parse(res.body.toString('utf8'));
+    } catch {
+      // not JSON
+    }
+    if (res.status !== status || (code && json?.code !== code)) {
+      fail(
+        `feedback: ${label}: expected ${status}${code ? ` "${code}"` : ''}, got ${res.status} ${res.body.toString('utf8').slice(0, 80)}`,
+      );
+    }
+    if (res.headers['x-powered-by']) fail(`feedback: ${label}: sends X-Powered-By`);
+  };
+
+  let res = await rawRequest(url, { headers: { Accept: 'application/json' } });
+  expect('GET', res, 405, 'method');
+  if (!/no-store/.test(res.headers['cache-control'] ?? '')) {
+    fail(`feedback: cache-control '${res.headers['cache-control']}', expected no-store`);
+  }
+  res = await rawRequest(url, {
+    method: 'POST',
+    headers: { ...formHeaders, Origin: 'https://example.com' },
+    body: 'type=other&message=from+another+site',
+  });
+  expect('a post from another site', res, 403, 'origin');
+  res = await rawRequest(url, {
+    method: 'POST',
+    headers: { ...formHeaders, 'Content-Type': 'multipart/form-data; boundary=x' },
+    body: '--x\r\nContent-Disposition: form-data; name="f"; filename="a.txt"\r\n\r\nfile\r\n--x--\r\n',
+  });
+  // Apache's rule answers before PHP (the endpoint would say 415 "media").
+  expect('a multipart post (a file)', res, 403);
+  res = await rawRequest(url, {
+    method: 'POST',
+    headers: formHeaders,
+    body: `message=${'a'.repeat(20000)}`,
+  });
+  expect('a 20 KB post', res, 413);
+  res = await rawRequest(url, {
+    method: 'POST',
+    headers: formHeaders,
+    body: 'type=praise&message=an+unknown+type',
+  });
+  expect('an unknown type', res, 400, 'type');
+  res = await rawRequest(url, {
+    method: 'POST',
+    headers: formHeaders,
+    body: 'type=other&message=from+a+bot&website=http%3A%2F%2Fspam.example',
+  });
+  expect('the trap field', res, 200, 'sent');
+
+  // The private settings and the rate-limit state are never served: each is a
+  // dotted path, answered by the site's 404 page.
+  for (const privatePath of [
+    '/.lcs-private/',
+    '/.lcs-private/feedback-config.php',
+    '/.lcs-private/feedback-rate.json',
+    '/.lcs-private/feedback-key',
+  ]) {
+    const r = await rawRequest(`${ORIGIN}${privatePath}`);
+    if (r.status !== 404 || compareHtml(r.body, page404) === 'different') {
+      fail(`${privatePath}: HTTP ${r.status}, expected the site's 404 page`);
+    }
+  }
+}
+
 async function expectHeader(urlPath, name, pattern, init) {
   const res = await request(`${ORIGIN}${urlPath}`, init);
   const value = res.headers.get(name) ?? '';
@@ -246,6 +352,8 @@ async function checkPolicy(files) {
     if (res.status === 200) fail(`${hidden}: served (HTTP 200), should be hidden`);
   }
 
+  await checkFeedback(page404);
+
   await expectHeader('/', 'x-content-type-options', /^nosniff$/);
   await expectHeader('/', 'x-frame-options', /^DENY$/);
   await expectHeader('/', 'referrer-policy', /strict-origin-when-cross-origin/);
@@ -282,5 +390,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  `\n✓ ${count} files served byte-for-byte${POLICY ? ', redirects (old addresses included), the 404 page for missing addresses, hidden files, headers, caching and compression as configured' : ''} (${secs}s)`,
+  `\n✓ ${count} files served byte-for-byte${POLICY ? ', redirects (old addresses included), the 404 page for missing addresses, the feedback endpoint’s guards, hidden files, headers, caching and compression as configured' : ''} (${secs}s)`,
 );

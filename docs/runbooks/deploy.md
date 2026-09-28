@@ -5,26 +5,34 @@ red. The decision record is [ADR 008](../adrs/008-godaddy-cpanel-hosting.md).
 
 ## How a change reaches the live site
 
-| Change                                    | What starts the deploy                                    |
-| ----------------------------------------- | --------------------------------------------------------- |
-| A pull request merged into `lcs`          | the push to `main` starts **Deploy production**           |
-| A pull request merged into `lcs-content`  | **Content sync** notices within ~15 minutes and starts it |
-| A pull request merged into `lcs-workflow` | the same, when a token can read that repo                 |
-| Anything else, or right now               | start it by hand (below)                                  |
+| Change                                    | What starts the deploy                             |
+| ----------------------------------------- | -------------------------------------------------- |
+| A pull request merged into `lcs`          | the push to `main` starts **Deploy production**    |
+| A pull request merged into `lcs-content`  | **Content sync** notices and starts it (see below) |
+| A pull request merged into `lcs-workflow` | the same, when a token can read that repo          |
+| Anything else, or right now               | start it by hand (below)                           |
 
 Every change to any of the three repos goes through a pull request. In `lcs`
 the pull request runs **CI**; merge it only when every check is green.
+
+Content sync is scheduled every 15 minutes, but GitHub drops scheduled runs
+under load: in September 2026 it ran every 2.5–6 hours (12 runs in 48 hours).
+After a content or workflow merge, start a deploy by hand if it matters.
 
 **Deploy production** then runs, in order:
 
 1. **Checks** — the whole CI workflow again, on the merged commit: format,
    ESLint, Stylelint, TypeScript, unit tests with coverage, content lint, the
    build (with the ImageKit registry refreshed), E2E on desktop and mobile in
-   light and dark, Lighthouse desktop and mobile, size-limit.
-2. **Upload to GoDaddy (FTPS)** — the build from step 1, unchanged. Only
-   changed files are uploaded.
-3. **Verify production** — every file served byte for byte, redirects, the
-   site's 404 page (status 404) for missing addresses, hidden files, headers,
+   light and dark, Lighthouse desktop and mobile, size-limit, and every branch
+   of the feedback endpoint under PHP (nothing is emailed).
+2. **Upload to GoDaddy (FTPS)** — the build from step 1, unchanged, plus the
+   feedback form's private settings, written from the `FEEDBACK_EMAIL_TO`
+   secret into `.lcs-private/` (never in the build, never served; ADR 012).
+   Only changed files are uploaded.
+3. **Verify production** — every file served byte for byte, redirects (all
+   331 addresses from before ADR 011 included), the site's 404 page (status 404) for missing addresses, the feedback endpoint's guards (without
+   sending an email), hidden files and the private settings, headers,
    caching, gzip; then a browser pass on the live
    site on desktop and mobile in light and dark, with a screenshot of each key
    page (artifact `production-report`).
@@ -81,6 +89,12 @@ cause and re-run the deploy by hand; the next sync check continues from there.
   `csp.secureserver.net`. Its own comment says opting out is done by contacting
   GoDaddy hosting support. Verification recognises exactly this injection and
   shows a warning on each run; anything else that differs from the build fails.
+- Mail that PHP sends from this host lands in Gmail's spam folder, both from
+  the server's own address and as `feedback@learncivicsense.in` (the domain
+  has no SPF or DKIM records; tested in PR #37). Feedback emails therefore go
+  out from the server's own address with the subject `[Learn Civic Sense
+feedback] …`, and the owner's Gmail filter on that subject ("Never send it
+  to Spam") keeps them in the inbox.
 - The FTP certificate is issued to `*.prod.phx3.secureserver.net`. With
   `FTP_SERVER` = `learncivicsense.in` the upload uses `security: loose`
   (encrypted, server not verified); set `FTP_SERVER` to
@@ -99,3 +113,4 @@ cause and re-run the deploy by hand; the next sync check continues from there.
 | `CONTENT_REPO_TOKEN`   | cloning `lcs-content`; Content sync                       |
 | `IMAGEKIT_PRIVATE_KEY` | refreshing the article-image registry at build time       |
 | `WORKFLOW_REPO_TOKEN`  | optional: cloning `lcs-workflow` (manifest, content lint) |
+| `FEEDBACK_EMAIL_TO`    | the address feedback is emailed to (ADR 012)              |

@@ -31,6 +31,12 @@
   RewriteCond %{HTTP_HOST} !^learncivicsense\.in$ [NC]
   RewriteRule ^ https://learncivicsense.in%{REQUEST_URI} [R=301,L]
 
+  # The feedback form takes plain form posts only (ADR 012). A multipart body,
+  # which is how a file is uploaded, is refused here (403) before PHP would
+  # parse it; the endpoint refuses one again itself.
+  RewriteCond %{HTTP:Content-Type} ^\s*multipart/ [NC]
+  RewriteRule ^feedback\.php$ - [F,L]
+
   # Addresses from before the site had two levels (ADR 011, 2026-09-28): a
   # lesson was /{topic}/{subtopic}/{lesson}/ and each subtopic had a page,
   # /{topic}/{subtopic}/. Every one of them moves permanently to its lesson
@@ -232,7 +238,7 @@
   <ElseIf "%{REQUEST_URI} =~ m#^/placeholders/#">
     Header set Cache-Control "public, max-age=604800"
   </ElseIf>
-  <ElseIf "%{REQUEST_URI} == '/build-info.json' || %{REQUEST_URI} == '/404.php'">
+  <ElseIf "%{REQUEST_URI} == '/build-info.json' || %{REQUEST_URI} == '/404.php' || %{REQUEST_URI} == '/feedback.php'">
     Header set Cache-Control "no-store"
   </ElseIf>
   <ElseIf "%{REQUEST_URI} =~ m#^/sitemap[^/]*\.xml$#">
@@ -242,3 +248,10 @@
     Header set Cache-Control "public, max-age=300, stale-while-revalidate=86400"
   </Else>
 </IfModule>
+
+# The feedback endpoint needs a few kilobytes at most (500 characters): the
+# web server refuses a larger body (413) before PHP reads it. Tested on this
+# host in PR #37; LimitRequestBody is core Apache, no module needed.
+<Files "feedback.php">
+  LimitRequestBody 16384
+</Files>

@@ -63,9 +63,12 @@ jobs:
           IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
       - name: Check the build is complete
         run: |
-          for f in index.html 404.html 404.php .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
+          for f in index.html 404.html 404.php feedback.php feedback/index.html .htaccess build-info.json robots.txt sitemap-index.xml pagefind/pagefind.js; do
             test -s "dist/$f" || { echo "::error::dist/$f is missing"; exit 1; }
           done
+          # The feedback form's private settings are written by the deploy only,
+          # never into this build (which is uploaded as an artifact below).
+          test ! -e dist/.lcs-private || { echo "::error::dist/.lcs-private must not be in the build"; exit 1; }
           node -e '
             const b = require("./dist/build-info.json");
             console.log(JSON.stringify(b, null, 2));
@@ -106,6 +109,26 @@ jobs:
         run: |
           pip install pyyaml
           python3 ../learncivicsense-workflow/04-auto-lint/lint.py --repo ../learncivicsense-content/
+
+  feedback-endpoint:
+    name: Feedback endpoint (PHP)
+    # Pinned: ubuntu-latest moves to 26.04 in November 2026. 24.04 ships PHP
+    # 8.3, the host's line (8.3.x, PR #37).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: PHP, its extensions, and the syntax of the site's PHP
+        run: |
+          php -v | head -1
+          php -m | grep -qix mbstring || { echo "::error::PHP lacks mbstring"; exit 1; }
+          php -l public/feedback.php
+          php -l public/404.php
+      - name: Every branch of the endpoint (nothing is emailed)
+        run: node scripts/test-feedback-endpoint.mjs
 
   e2e:
     name: E2E (desktop + mobile, light + dark)
