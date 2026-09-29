@@ -35,6 +35,7 @@ import {
   type ArticleStat,
 } from './homepage-rotation';
 import heroChipsData from '../data/hero-chips.json' with { type: 'json' };
+import { hasArticleImage } from './images';
 import { createLogger } from './logger';
 
 const log = createLogger('homepage-data');
@@ -111,6 +112,7 @@ function buildClusterStats(locale: Locale): {
         qualityScore:
           typeof entry?.quality_score === 'number' ? entry.quality_score : DEFAULT_QUALITY_SCORE,
         publishedAt,
+        illustrated: hasArticleImage(a.id),
       });
     }
     if (articles.length === 0) continue;

@@ -124,6 +124,42 @@ describe('pickArticles()', () => {
     expect(pickArticles(c, build)).toHaveLength(3);
   });
 
+  it('leads with the best-scored illustrated lesson when the cluster has one', () => {
+    const c = cluster('sacred', [
+      article('s1', 'scenario', 35, '2026-06-20'),
+      article('s2', 'rule', 34, '2026-06-19'),
+      // Far enough apart that the weekly jitter (at most 0.2) cannot reorder them.
+      { ...article('s3', 'comparison', 30, '2026-01-10'), illustrated: true },
+      { ...article('s4', 'scenario', 5, '2026-01-09'), illustrated: true },
+    ]);
+    const picked = pickArticles(c, build);
+    expect(picked[0]!.id).toBe('s3');
+    expect(picked).toHaveLength(3);
+    // The other two still prefer the formats the lead does not have.
+    expect(new Set(picked.map((p) => p.format)).size).toBe(3);
+  });
+
+  it('without illustrations, leads with the best-scored lesson as before', () => {
+    const arts = [
+      article('a1', 'scenario', 35, '2026-06-20'),
+      article('a2', 'rule', 34, '2026-06-19'),
+      article('a3', 'comparison', 33, '2026-06-18'),
+    ];
+    const plain = pickArticles(cluster('traffic', arts), build);
+    const flagged = pickArticles(
+      cluster(
+        'traffic',
+        arts.map((a) => ({ ...a, illustrated: false })),
+      ),
+      build,
+    );
+    expect(flagged.map((a) => a.id)).toEqual(plain.map((a) => a.id));
+  });
+
+  it('returns nothing for a cluster with no articles', () => {
+    expect(pickArticles(cluster('empty', []), build)).toEqual([]);
+  });
+
   it('is deterministic for a fixed build date', () => {
     const c = cluster('traffic', [
       article('a1', 'scenario', 35, '2026-06-20'),
