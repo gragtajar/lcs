@@ -423,7 +423,7 @@ const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
      body sits one step up. The measure token is in ch, so it scales with it
      (54ch ≈ 529px ≈ 70 characters). */
   .article-body {
-    font-size: 1.125rem;
+    font-size: var(--text-reading);
     line-height: var(--leading-body);
   }
   .article-body :global(h2) {
@@ -467,7 +467,7 @@ const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
   .article-body :global(a) {
     color: var(--color-primary);
     text-decoration: none;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 70%, transparent);
   }
   .article-body :global(a:hover) {
     border-bottom-color: var(--color-primary);

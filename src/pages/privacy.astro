@@ -5,23 +5,23 @@
 // this page with them: turning on analytics (PUBLIC_CF_ANALYTICS_TOKEN, see
 // BaseLayout) or error tracking (SENTRY_DSN, see astro.config.mjs), changing
 // what public/feedback.php keeps, or adding anything that loads from another
-// site.
-import BaseLayout from '../layouts/BaseLayout.astro';
+// site. Change `updated` with the words, not with the design.
+import InfoLayout from '../layouts/InfoLayout.astro';
+import InfoSection from '../components/InfoSection.astro';
 ---
 
-<BaseLayout
+<InfoLayout
   title="Privacy"
   description="What Learn Civic Sense collects, what its host and image service see, and what the feedback form keeps."
-  width="narrow"
+  heading="Privacy policy"
+  lede="What happens to your data when you use this site, in plain words."
+  updated="2026-09-29"
 >
-  <article class="legal">
-    <h1>Privacy policy</h1>
-    <p class="lede">What happens to your data when you use this site, in plain words.</p>
-
-    <h2>What this site collects</h2>
+  <InfoSection heading="What this site collects">
     <p>
       Nothing about you while you read. There are no accounts or logins, no analytics, no
-      advertising and no error tracking, and the site sets no cookies of its own.
+      advertising and no error tracking, and the site sets no cookies of its own. Our host’s own
+      script does set cookies; see <a href="#what-others-see">What others see</a>.
     </p>
     <ul>
       <li>
@@ -34,8 +34,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         you type is not sent as text to us or to anyone else.
       </li>
     </ul>
+  </InfoSection>
 
-    <h2 id="feedback">The feedback form</h2>
+  <InfoSection heading="The feedback form" id="feedback">
     <p>
       If you send feedback, the site receives what you chose it is about and your message (up to 500
       characters). It is emailed to the person who runs this site and is not stored on the website.
@@ -48,8 +49,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       Entries older than a day are no longer used, and are deleted the next time anyone uses the
       form.
     </p>
+  </InfoSection>
 
-    <h2>What others see</h2>
+  <InfoSection heading="What others see">
     <ul>
       <li>
         <strong>Our host, GoDaddy,</strong> runs the web server. Like any web server, it receives your
@@ -59,8 +61,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         > covers what it keeps.
       </li>
       <li>
-        <strong>GoDaddy also adds its own script to every page</strong>, for monitoring performance
-        (loaded from img1.wsimg.com). That script sets three cookies (<code>_tccl_visitor</code>,
+        <strong>GoDaddy also adds its own script</strong> to every page, for monitoring performance (loaded
+        from img1.wsimg.com). That script sets three cookies (<code>_tccl_visitor</code>,
         <code>_tccl_visit</code> and <code>_scc_session</code>) and sends its measurements to
         GoDaddy (secureserver.net). We did not add it; its own note says opting out goes through
         GoDaddy’s hosting support.
@@ -78,16 +80,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         loads on this site; they are involved only when you tap one.
       </li>
     </ul>
+  </InfoSection>
 
-    <h2>Your choices</h2>
+  <InfoSection heading="Your choices">
     <p>
       Every lesson can be read with cookies and scripts blocked. Search, the quiz and the theme menu
       need JavaScript, but none of them needs a cookie. A content blocker such as
       <a href="https://privacybadger.org/" rel="noopener noreferrer">Privacy Badger</a> stops the host’s
       script.
     </p>
+  </InfoSection>
 
-    <h2>Contact</h2>
+  <InfoSection heading="Contact">
     <p>
       For privacy questions, use the <a href="/feedback/">feedback form</a> (choose “Report something”)
       or open an issue on
@@ -95,42 +99,5 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         >our GitHub repository</a
       >.
     </p>
-
-    <p class="meta">Last updated: 2026-09-29.</p>
-  </article>
-</BaseLayout>
-
-<style>
-  .legal h1 {
-    font-size: var(--text-3xl);
-    margin: var(--space-5) 0 var(--space-3);
-  }
-  .legal h2 {
-    font-size: var(--text-xl);
-    margin: var(--space-6) 0 var(--space-2);
-  }
-  .legal .lede {
-    font-size: var(--text-lg);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-5);
-  }
-  .legal p,
-  .legal ul {
-    margin-bottom: var(--space-3);
-    max-width: var(--measure);
-  }
-  .legal ul {
-    padding-left: var(--space-5);
-  }
-  .legal li {
-    margin-block: var(--space-2);
-  }
-  .legal code {
-    font-size: 0.9em;
-  }
-  .legal .meta {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    margin-top: var(--space-6);
-  }
-</style>
+  </InfoSection>
+</InfoLayout>

@@ -659,6 +659,95 @@ test.describe('Language menu', () => {
   });
 });
 
+test.describe('About, Privacy and Terms', () => {
+  test('share one layout: a trail home, a heading, a lede, facts, then side-heading sections', async ({
+    page,
+  }) => {
+    const pages: Array<[string, string]> = [
+      ['/about/', 'About Learn Civic Sense'],
+      ['/privacy/', 'Privacy policy'],
+      ['/terms/', 'Terms of use'],
+    ];
+    for (const [url, h1] of pages) {
+      await page.goto(url);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1);
+      await expect(page.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/');
+      await expect(page.locator('.info-lede')).not.toBeEmpty();
+      await expect(page.locator('.info-facts')).toBeVisible();
+      // Every section has an address from its heading, and its name is an h2.
+      const sections = page.locator('.info-section');
+      expect(await sections.count()).toBeGreaterThanOrEqual(4);
+      for (const id of await sections.evaluateAll((s) => s.map((x) => x.id))) {
+        expect(id).toMatch(/^[a-z0-9-]+$/);
+      }
+      await expect(sections.first().locator('h2')).toBeVisible();
+    }
+  });
+
+  test('About: the library in numbers, the homepage’s audience, lessons to start with; no roadmap', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const mission = (await page.locator('.mission-body p').first().textContent())?.trim();
+    await page.goto('/about/');
+    await expect(page.locator('.info-facts > span:not(.info-sep)')).toHaveText([
+      /^\d+ topics$/,
+      /^\d+ lessons$/,
+    ]);
+    await expect(page.getByRole('heading', { name: /roadmap/i })).toHaveCount(0);
+    // One source for "Who this is for": the homepage's words.
+    await expect(page.locator('#who-this-is-for p').first()).toHaveText(mission!);
+    await expect(page.locator('#how-the-content-is-built')).toContainText(
+      'Sources are linked at the end of each lesson that cites them.',
+    );
+    const starts = page.locator('.about-start-link');
+    expect(await starts.count()).toBeGreaterThanOrEqual(3);
+    for (const href of await starts.evaluateAll((as) => as.map((a) => a.getAttribute('href')))) {
+      expect(href).toMatch(LESSON_URL);
+    }
+    await expect(page.locator('.about-next a')).toHaveText([
+      'All lessons, by topic',
+      'Send feedback',
+    ]);
+  });
+
+  test('Privacy: dated, points to the host’s cookies first, and keeps the feedback address', async ({
+    page,
+  }) => {
+    await page.goto('/privacy/');
+    await expect(page.locator('.info-facts time')).toHaveAttribute('datetime', '2026-09-29');
+    const pointer = page.locator('#what-this-site-collects a[href="#what-others-see"]');
+    await expect(pointer).toHaveText('What others see');
+    await pointer.click();
+    await expect(page).toHaveURL(/#what-others-see$/);
+    // Arriving draws the section's rule in the brand colour.
+    await expect(page.locator('#what-others-see')).toHaveCSS('border-top-width', '2px');
+    // The feedback form's "How feedback is handled" link lands here.
+    await page.goto('/feedback/');
+    await page.getByRole('link', { name: 'How feedback is handled' }).click();
+    await expect(page).toHaveURL(/\/privacy\/#feedback$/);
+    await expect(page.locator('#feedback h2')).toHaveText('The feedback form');
+  });
+
+  test('Terms: accurate about the code, the site and the sources', async ({ page }) => {
+    await page.goto('/terms/');
+    await expect(page.locator('.info-facts time')).toHaveAttribute('datetime', '2026-09-29');
+    await expect(page.locator('#source-code')).toContainText(
+      'The content license above covers the lessons, not the code.',
+    );
+    await expect(page.locator('#acceptable-use')).toContainText('strains the site');
+    await expect(page.locator('#no-warranty')).toContainText('link the sources they cite');
+    await expect(page.locator('main')).not.toContainText(/open source|CDN/);
+  });
+
+  test('links in the text are underlined, not marked by colour alone', async ({ page }) => {
+    await page.goto('/privacy/');
+    const link = page.locator('#your-choices a').first();
+    await expect(link).toHaveCSS('border-bottom-style', 'solid');
+    await expect(link).toHaveCSS('border-bottom-width', '1px');
+  });
+});
+
 test.describe('Footer', () => {
   test('lists About, Feedback, Privacy and Terms, in that order', async ({ page }) => {
     await page.goto('/');

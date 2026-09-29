@@ -1,0 +1,115 @@
+---
+// One section of an About, Privacy or Terms page (InfoLayout.astro): its name
+// on the left of the 4/8 grid, its text on the right on the reading measure,
+// a hairline above. The name and the text's first line share a baseline.
+// Lists in the text are hairline rows, the site's list idiom, not bullets.
+// Inline links are underlined: the brand teal alone is too close to the text
+// colour to mark a link (WCAG 1.4.1), so the underline is 3:1 or more.
+// Every section has an address, from its heading unless given one
+// (/privacy/#feedback), and arriving at it draws its rule in the brand colour.
+interface Props {
+  heading: string;
+  /** The section's address, when not the slug of its heading. */
+  id?: string;
+}
+
+const { heading } = Astro.props;
+const id =
+  Astro.props.id ??
+  heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+---
+
+<section class="info-section" id={id}>
+  <h2 class="info-section-h">{heading}</h2>
+  <div class="info-section-body">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .info-section {
+    display: grid;
+    gap: var(--space-3) var(--space-7);
+    padding: var(--space-5) 0 var(--space-6);
+    border-top: 1px solid var(--color-border);
+  }
+  @media (min-width: 960px) {
+    .info-section {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+      align-items: baseline;
+    }
+  }
+  /* Arriving from a link: the rule takes the brand colour, as a topic's block
+     takes its own on /topics/. */
+  .info-section:target {
+    border-top: 2px solid var(--color-primary);
+    padding-top: calc(var(--space-5) - 1px);
+  }
+  /* The homepage's and /topics/'s block names: a subhead's weight, not a
+     second display voice beside the page's h1. */
+  .info-section-h {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-heading);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  /* The lesson body's reading size and measure. */
+  .info-section-body {
+    font-size: var(--text-reading);
+    line-height: var(--leading-body);
+    max-width: var(--measure);
+  }
+  .info-section-body :global(p) {
+    margin: 0 0 var(--space-4);
+  }
+  .info-section-body > :global(:last-child) {
+    margin-bottom: 0;
+  }
+  .info-section-body :global(strong) {
+    font-weight: var(--weight-heading);
+  }
+  .info-section-body :global(a) {
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 70%, transparent);
+  }
+  .info-section-body :global(a:hover) {
+    text-decoration: none;
+    border-bottom-color: var(--color-primary);
+  }
+  .info-section-body :global(code) {
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-alt);
+    font-family: var(--font-family-mono);
+    font-size: 0.85em;
+  }
+  /* A plain list (no class of its own) is a set of hairline rows. */
+  .info-section-body :global(ul:not([class])) {
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+  .info-section-body :global(ul:not([class]) > li) {
+    padding: var(--space-3) 0;
+  }
+  .info-section-body :global(ul:not([class]) > li + li) {
+    border-top: 1px solid var(--color-border);
+  }
+  .info-section-body :global(ul:not([class]) > li:first-child) {
+    padding-top: 0;
+  }
+  /* Rows that follow a paragraph start on a rule of their own, so the first
+     one does not read as the paragraph's continuation. */
+  .info-section-body :global(p + ul:not([class])) {
+    border-top: 1px solid var(--color-border);
+  }
+  .info-section-body :global(p + ul:not([class]) > li:first-child) {
+    padding-top: var(--space-3);
+  }
+  .info-section-body :global(ul:not([class]) > li:last-child) {
+    padding-bottom: 0;
+  }
+</style>

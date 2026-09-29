@@ -11,11 +11,12 @@ first paint), it belongs in `src/islands/` instead.
 | ----------------------- | ---------------------------------- | ----------------------------------------------------------- |
 | `ArticleHeader.astro`   | article page                       | h1 + format chip + metadata row + image placeholder         |
 | `ArticleListItem.astro` | topic page                         | list-row card per article (real or coming-soon)             |
-| `Breadcrumb.astro`      | topic, topics, article pages       | `<nav>` with chevron-separated crumbs                       |
+| `Breadcrumb.astro`      | topic, topics, article, info pages | `<nav>` with chevron-separated crumbs                       |
 | `ComingSoonBody.astro`  | article page (placeholder variant) | status line + the topic's nearest lesson + its topic        |
 | `Footer.astro`          | every page                         | footer with About, Feedback, Privacy and Terms links        |
 | `BrandIcon.astro`       | ShareBar                           | share platforms' own marks (Simple Icons, Bootstrap)        |
 | `Icon.astro`            | everywhere                         | one Lucide icon as inline SVG, by name (ADR 009)            |
+| `InfoSection.astro`     | About, Privacy, Terms              | one side-heading section of `src/layouts/InfoLayout.astro`  |
 | `RelatedLinks.astro`    | article page                       | the one "Up next" card (resolved by ID via taxonomy)        |
 | `SidebarNav.astro`      | topic pages                        | the 14 topics, this one current, + name-only filter         |
 | `LessonIndex.astro`     | topics page                        | one-line rows of a topic's lessons: time or Coming soon     |
