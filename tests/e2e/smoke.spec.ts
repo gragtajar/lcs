@@ -556,6 +556,123 @@ test.describe('Theme menu', () => {
   });
 });
 
+test.describe('Language menu', () => {
+  /** A Preact island (client:idle), opened with retries like the theme menu. */
+  async function openLanguageMenu(page: Page) {
+    const menu = page.getByRole('menu', { name: 'Language' });
+    await expect(async () => {
+      if (!(await menu.isVisible())) await page.locator('.lang-toggle').click();
+      await expect(menu).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+    return menu;
+  }
+
+  test('is in the top bar of every kind of page, English by default', async ({ page }) => {
+    for (const url of [
+      '/',
+      '/traffic/',
+      '/traffic/the-case-against-honking/',
+      '/topics/',
+      '/search/',
+      '/about/',
+      '/feedback/',
+      '/zzqq-xxyy/',
+    ]) {
+      await page.goto(url);
+      await expect(page.locator('.topbar .lang-toggle')).toHaveAccessibleName('Language: English');
+    }
+  });
+
+  test('offers English, ticked, and Hindi as coming soon', async ({ page }) => {
+    await page.goto('/about/');
+    const menu = await openLanguageMenu(page);
+    const items = menu.getByRole('menuitemradio');
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toHaveAccessibleName('English');
+    await expect(items.nth(0)).toHaveAttribute('aria-checked', 'true');
+    await expect(items.nth(1)).toHaveText(/हिन्दी\s*Hindi\s*Coming soon/i);
+    await expect(items.nth(1)).toHaveAttribute('aria-checked', 'false');
+    await expect(items.nth(1)).toHaveAttribute('aria-disabled', 'true');
+    await expect(items.nth(1).locator('[lang="hi"]')).toHaveText('हिन्दी');
+
+    // Hindi can't be chosen yet: a click (forced, since it is marked disabled)
+    // leaves the page as it is, in English, with the menu still open.
+    await items.nth(1).click({ force: true });
+    await expect(menu).toBeVisible();
+    await expect(page).toHaveURL(/\/about\/$/);
+    await expect(items.nth(0)).toHaveAttribute('aria-checked', 'true');
+
+    // English is already in use: choosing it just closes the menu.
+    await items.nth(0).click();
+    await expect(menu).toBeHidden();
+    await expect(page.locator('.lang-toggle')).toBeFocused();
+  });
+
+  test('works from the keyboard, and reaches Hindi to say it is coming', async ({ page }, info) => {
+    test.skip(!!info.project.use.isMobile, 'keyboard use is tested on desktop');
+    await page.goto('/about/');
+    const button = page.locator('.lang-toggle');
+    const menu = await openLanguageMenu(page);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(button).toBeFocused();
+
+    await page.keyboard.press('ArrowDown');
+    const items = menu.getByRole('menuitemradio');
+    await expect(items.nth(0)).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(items.nth(1)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('Home');
+    await expect(items.nth(0)).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(button).toBeFocused();
+  });
+
+  test('closes on a click outside, and when the theme menu opens', async ({ page }) => {
+    await page.goto('/');
+    const menu = await openLanguageMenu(page);
+    await page.mouse.click(10, 400);
+    await expect(menu).toBeHidden();
+
+    await openLanguageMenu(page);
+    await page.locator('.theme-toggle').click();
+    await expect(menu).toBeHidden();
+    await expect(page.getByRole('menu', { name: 'Theme' })).toBeVisible();
+  });
+
+  test('fits the top bar at 320px without a sideways scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/traffic/the-case-against-honking/');
+    const toggle = page.locator('.lang-toggle');
+    await expect(toggle).toBeVisible();
+    // Only the icon on a phone; the name still says the language.
+    await expect(page.locator('.lang-toggle-label')).toBeHidden();
+    await expect(toggle).toHaveAccessibleName('Language: English');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+    const menu = await openLanguageMenu(page);
+    const box = await menu.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+  });
+});
+
+test.describe('Footer', () => {
+  test('lists About, Feedback, Privacy and Terms, in that order', async ({ page }) => {
+    await page.goto('/');
+    const links = page.locator('.footer-nav a');
+    await expect(links).toHaveText(['About', 'Feedback', 'Privacy', 'Terms']);
+    expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual([
+      '/about/',
+      '/feedback/',
+      '/privacy/',
+      '/terms/',
+    ]);
+  });
+});
+
 test.describe('Feedback form', () => {
   // `astro preview` runs no PHP, so /feedback.php is answered here the way the
   // real endpoint answers (scripts/test-feedback-endpoint.mjs tests that one).

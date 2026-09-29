@@ -12,15 +12,20 @@ deliberate exception. Before adding one, ask:
 
 If you said "no" to all three, you have an island.
 
-## Inventory (5 islands, ~14 KB gzipped total)
+## Inventory (6 islands)
 
 | File                  | Hydration                       | What it does                                                                                          |
 | --------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `LanguageMenu.tsx`    | `client:idle` (TopBar)          | English (ticked) and Hindi, listed as coming soon; stores nothing                                     |
 | `ThemeMenu.tsx`       | `client:idle` (TopBar)          | Light / Dark / System menu; stores Light or Dark in `lcs-theme`; System follows the device live       |
 | `SearchOverlay.tsx`   | `client:idle` (TopBar)          | full-screen modal; loads Pagefind on demand; debounced query; keyboard nav; coming-soon chip flagging |
 | `TableOfContents.tsx` | `client:visible` (article page) | sticky right-rail list of h2/h3; IntersectionObserver scroll-spy; smooth-scrolls to anchors           |
 | `LessonQuiz.tsx`      | `client:visible` (article page) | inline quiz; per-option feedback + explanation reveal; no score (deliberate)                          |
 | `SearchPage.tsx`      | `client:load` (/search/)        | the shareable results page: same index + row as the overlay; `?q=` kept current; count; "Show more"   |
+
+The two top-bar menus share their keyboard and pointer behaviour (the WAI-ARIA
+menu-button pattern) through the `useMenuButton.ts` hook; `useDelayedFlag.ts`
+is the search islands' shared loading-state hook.
 
 (`CategoryAccordion.tsx` was prototyped early but removed — native `<details>`
 
@@ -40,7 +45,8 @@ If you said "no" to all three, you have an island.
 ## Size budget
 
 The aggregate of `dist/_astro/*.js` is budgeted at **40 KB gzipped** in
-`.size-limit.json`. Currently 14.67 KB. New islands eat into the headroom —
+`.size-limit.json`. Currently 25.98 KB for the worst-case page (an article),
+measured with `npm run size` on 2026-09-29. New islands eat into the headroom —
 make sure new functionality is worth the bytes.
 
 ## How to add one
