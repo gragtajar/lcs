@@ -1,15 +1,19 @@
 ---
 // FeaturedCluster (homepage brief §2) — one featured cluster: its name, description
 // and colour on the left; on the right its three auto-selected lessons as a lead
-// (title, excerpt, meta) and two secondaries, in the hairline-row idiom the lesson
-// list uses. No card around it and no cards inside it: the page is paper, and each
-// lesson is a row whose title is the link, stretched over the row so the accessible
-// name is the title alone.
+// (title, excerpt, meta, picture) and two secondaries, in the hairline-row idiom the
+// lesson list uses. No card around it and no cards inside it: the page is paper, and
+// each lesson is a row whose title is the link, stretched over the row so the
+// accessible name is the title alone.
+//
+// The lead always has a picture, on the same two columns as the secondaries below
+// it: the lesson's illustration (the rotation leads with an illustrated lesson when
+// the topic has one), or else the topic's cover, printed in its own colours.
 import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
 import { categoryIconName } from '../lib/icons';
 import { categoryUrl } from '../lib/content';
-import { getArticleThumb } from '../lib/images';
+import { getArticleLeadPicture } from '../lib/images';
 import type { FeaturedCluster } from '../lib/homepage-data';
 
 interface Props {
@@ -22,14 +26,15 @@ const [lead, ...rest] = articles;
 
 const publishedCount = category.articles.filter((a) => a.published).length;
 const headingId = `cluster-${category.id}`;
-const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
+const leadPicture = lead ? getArticleLeadPicture(lead.lesson.id) : undefined;
+const iconName = categoryIconName(category.icon);
 ---
 
 <section class="cluster" data-cluster={category.id} aria-labelledby={headingId}>
   <div class="cluster-intro">
     <h3 class="cluster-name" id={headingId}>
       <span class="cluster-icon">
-        <Icon name={categoryIconName(category.icon)} />
+        <Icon name={iconName} />
       </span>
       <a href={categoryUrl(category.id)}>{category.title}</a>
     </h3>
@@ -43,7 +48,7 @@ const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
   {
     lead && (
       <div class="cluster-lessons">
-        <article class:list={['lead', { 'has-img': leadThumb }]}>
+        <article class="lead">
           <h4 class="lead-title">
             <a href={lead.url}>{lead.lesson.title}</a>
           </h4>
@@ -60,18 +65,25 @@ const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
               </span>
             )}
           </p>
-          {leadThumb && (
+          {leadPicture ? (
             <img
-              class="lead-img"
-              src={leadThumb.src}
-              srcset={leadThumb.srcset}
-              sizes="(max-width: 559px) 40vw, 240px"
+              class="lead-pic lead-img"
+              src={leadPicture.src}
+              srcset={leadPicture.srcset}
+              sizes="(min-width: 1200px) 347px, (min-width: 960px) calc((100vw - 112px) / 3 - 16px), (min-width: 768px) calc(50vw - 48px), (min-width: 640px) calc(50vw - 32px), calc(100vw - 32px)"
               alt=""
-              width="320"
-              height="180"
+              width="640"
+              height="360"
               loading="lazy"
               decoding="async"
             />
+          ) : (
+            <div class="lead-pic lead-cover" aria-hidden="true">
+              <span class="lead-cover-art">
+                <Icon name={iconName} />
+                <Icon name={iconName} />
+              </span>
+            </div>
           )}
         </article>
 
@@ -205,56 +217,108 @@ const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
     text-decoration: none;
   }
 
+  /* The lead: its text beside its picture, on the secondaries' two columns, so
+     the picture stands over the second of them. On phones the picture follows
+     the title, full width. */
   .lead {
     display: grid;
-    align-items: start;
-  }
-  /* A real illustration (never an empty slot) sits on the right, as in the
-     lesson lists: up to 240px beside the text, beside the excerpt on phones. */
-  .lead.has-img {
-    grid-template-columns: minmax(0, 1fr) clamp(8.5rem, 34%, 15rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
-      'title img'
-      'excerpt img'
-      'meta img';
-    column-gap: var(--space-5);
+      'title pic'
+      'excerpt pic'
+      'meta pic';
+    column-gap: var(--space-6);
+    align-items: start;
   }
-  .lead.has-img .lead-title {
+  .lead-title {
     grid-area: title;
   }
-  .lead.has-img .lead-excerpt {
+  .lead-excerpt {
     grid-area: excerpt;
   }
-  .lead.has-img .row-meta {
+  .lead .row-meta {
     grid-area: meta;
   }
-  .lead.has-img .lead-img {
-    grid-area: img;
-  }
-  @media (max-width: 559px) {
-    .lead.has-img {
-      grid-template-columns: minmax(0, 1fr) 40%;
-      grid-template-areas:
-        'title title'
-        'excerpt img'
-        'meta img';
-      column-gap: var(--space-4);
-    }
-    .lead.has-img .lead-img {
-      margin-top: var(--space-2);
-    }
-  }
-  .lead-img {
+  .lead-pic {
+    grid-area: pic;
     width: 100%;
-    height: auto;
     aspect-ratio: 16 / 9;
-    object-fit: cover;
+    /* Level with the title's capitals, not its line box. */
     margin-top: 4px;
     border-radius: var(--radius-md);
-    background: var(--color-surface-alt);
     outline: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
     outline-offset: -1px;
+  }
+  @media (max-width: 639px) {
+    .lead {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      grid-template-areas:
+        'title'
+        'pic'
+        'excerpt'
+        'meta';
+    }
+    .lead-pic {
+      margin-top: var(--space-3);
+    }
+    .lead-excerpt {
+      margin-top: var(--space-3);
+    }
+  }
+  /* A real illustration, 16:9 as authored, with a hairline so a pale drawing
+     keeps its edge on the paper ground. */
+  .lead-img {
+    height: auto;
+    object-fit: cover;
+    background: var(--color-surface-alt);
+  }
+  /* No illustration yet: the topic's cover, printed like the illustrations are
+     (risograph): its soft colour for paper, a halftone of its ink thickening
+     toward one corner, and its mark printed twice, the second plate a little
+     off register. Decorative; the title beside it is the link. */
+  .lead-cover {
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    container-type: inline-size;
+    background: var(--cluster-soft, var(--color-primary-soft));
+  }
+  .lead-cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle,
+      var(--cluster-ink, var(--color-primary)) 0 1.2px,
+      transparent 1.6px
+    );
+    background-size: 8px 8px;
+    opacity: 0.32;
+    mask-image: radial-gradient(140% 120% at 100% 100%, #000 10%, transparent 68%);
+  }
+  .lead-cover-art {
+    position: relative;
+    display: grid;
+  }
+  .lead-cover-art :global(.icon) {
+    grid-area: 1 / 1;
+    /* A quarter of the cover's width; the rem size is for browsers without
+       container units. */
+    width: 4.5rem;
+    height: 4.5rem;
+    width: 26cqi;
+    height: 26cqi;
+    stroke-width: 1.25;
+  }
+  .lead-cover-art :global(.icon:first-child) {
+    color: color-mix(in srgb, var(--cluster-ink, var(--color-primary)) 40%, transparent);
+    translate: 4px 3px;
+  }
+  .lead-cover-art :global(.icon:last-child) {
+    color: var(--cluster-ink, var(--color-primary));
   }
   .lead-title {
     font-size: var(--text-lg);
@@ -262,24 +326,18 @@ const leadThumb = lead ? getArticleThumb(lead.lesson.id) : undefined;
     margin: 0;
     max-width: var(--measure);
   }
-  /* Three lines hold a whole meta description (~155 characters at this measure);
-     the clamp is a guard for the odd long one, not the normal case. */
+  /* Four lines hold a whole meta description (~155 characters at ~45-50 per
+     line, beside the picture or on a phone); the clamp is a guard for the odd
+     long one, not the normal case. */
   .lead-excerpt {
     margin: var(--space-2) 0 0;
     color: var(--color-text-secondary);
     max-width: var(--measure);
     display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-  @media (max-width: 639px) {
-    /* ~45 characters per line on a phone: four lines for the same whole thought. */
-    .lead-excerpt {
-      -webkit-line-clamp: 4;
-      line-clamp: 4;
-    }
   }
 
   .row-meta {

@@ -77,6 +77,50 @@ test.describe('Homepage', () => {
   });
 });
 
+test.describe('Homepage pictures', () => {
+  test('each featured topic leads with its lesson’s illustration or the topic’s cover', async ({
+    page,
+  }, info) => {
+    await page.goto('/');
+    const leads = page.locator('.cluster .lead');
+    const n = await leads.count();
+    expect(n).toBeGreaterThanOrEqual(3);
+    for (let i = 0; i < n; i++) {
+      const lead = leads.nth(i);
+      const img = lead.locator('img.lead-img');
+      const cover = lead.locator('.lead-cover');
+      expect((await img.count()) + (await cover.count())).toBe(1);
+      if ((await img.count()) > 0) {
+        await expect(img).toHaveAttribute('src', /^https:\/\/ik\.imagekit\.io\/civic\//);
+        await expect(img).toHaveAttribute('srcset', /1080w/);
+        // The title beside it is the link and names the lesson.
+        await expect(img).toHaveAttribute('alt', '');
+      } else {
+        // Decorative: the topic's mark, printed twice (the off-register plate).
+        await expect(cover).toHaveAttribute('aria-hidden', 'true');
+        await expect(cover.locator('svg')).toHaveCount(2);
+      }
+    }
+
+    // In proportion with the rows under it: on a wide screen the picture stands
+    // over the second smaller lesson, exactly as wide; on a phone it takes the
+    // column, under the title.
+    const first = page.locator('.cluster').first();
+    const pic = (await first.locator('.lead-pic').boundingBox())!;
+    if (info.project.use.isMobile) {
+      const lead = (await first.locator('.lead').boundingBox())!;
+      expect(Math.abs(pic.width - lead.width)).toBeLessThanOrEqual(1);
+      const title = (await first.locator('.lead-title').boundingBox())!;
+      expect(pic.y).toBeGreaterThan(title.y + title.height - 1);
+    } else {
+      const second = (await first.locator('.secondaries li').nth(1).boundingBox())!;
+      expect(Math.abs(pic.x - second.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(pic.width - second.width)).toBeLessThanOrEqual(1);
+    }
+    expect(Math.abs(pic.width / pic.height - 16 / 9)).toBeLessThan(0.02);
+  });
+});
+
 test.describe('Topics catalog page', () => {
   test('lists every topic with every lesson, open, with reading times', async ({ page }, info) => {
     await page.goto('/topics/');

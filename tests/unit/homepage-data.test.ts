@@ -5,6 +5,7 @@ import {
   getFeaturedClusters,
   getTopicIndex,
 } from '../../src/lib/homepage-data';
+import { hasArticleImage } from '../../src/lib/images';
 
 // Integration test: runs the homepage assembly against the real content repo (same
 // pattern as content.test.ts). The PUBLISH-MANIFEST may or may not be present; these
@@ -80,6 +81,20 @@ describe('getFeaturedClusters()', () => {
     const ids1 = getFeaturedClusters('en', BUILD).map((f) => f.category.id);
     const ids2 = getFeaturedClusters('en', BUILD).map((f) => f.category.id);
     expect(ids1).toEqual(ids2);
+  });
+
+  it('leads a cluster with an illustrated lesson whenever the cluster has one', () => {
+    // Checked across a year of weekly rotations, so it holds for whichever
+    // clusters and lessons a given week features.
+    for (let week = 0; week < 52; week++) {
+      const date = new Date(BUILD.getTime() + week * 7 * 24 * 3600 * 1000);
+      for (const f of getFeaturedClusters('en', date)) {
+        const hasIllustrated = f.category.articles.some(
+          (a) => a.published && hasArticleImage(a.id),
+        );
+        expect(hasArticleImage(f.articles[0]!.lesson.id)).toBe(hasIllustrated);
+      }
+    }
   });
 
   it('only features clusters with at least 3 published articles', () => {

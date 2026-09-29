@@ -16,6 +16,8 @@ export interface ArticleStat {
   /** 0..35 editorial quality score. */
   qualityScore: number;
   publishedAt: Date;
+  /** The lesson has an uploaded illustration, so it can lead its card with it. */
+  illustrated?: boolean;
 }
 
 export interface ClusterStats {
@@ -110,6 +112,10 @@ const ARTICLE_JITTER_WEIGHT = 0.2;
  * Pick ARTICLES_PER_CARD articles from a cluster: quality + recency + jitter, then a
  * greedy pass that prefers distinct formats (1 scenario + 1 rule + 1 comparison when
  * available) while always returning the requested count if enough candidates exist.
+ *
+ * The first article is the card's lead, shown with its picture: the best-scored
+ * illustrated lesson when the cluster has one, else the best-scored lesson (whose
+ * card then shows the topic's cover). Without illustrations the pick is unchanged.
  */
 export function pickArticles(cluster: ClusterStats, buildDate: Date): ArticleStat[] {
   const scored = cluster.articles
@@ -122,14 +128,17 @@ export function pickArticles(cluster: ClusterStats, buildDate: Date): ArticleSta
     })
     .sort((a, b) => b.score - a.score || a.article.id.localeCompare(b.article.id));
 
-  const picked: ArticleStat[] = [];
-  const formatsUsed = new Set<string>();
   const want = Math.min(ARTICLES_PER_CARD, scored.length);
+  if (want === 0) return [];
+
+  const lead = (scored.find(({ article }) => article.illustrated) ?? scored[0]!).article;
+  const picked: ArticleStat[] = [lead];
+  const formatsUsed = new Set<string>([lead.format]);
 
   // First pass: take the highest-scored article whose format hasn't been used yet.
   for (const { article } of scored) {
     if (picked.length >= want) break;
-    if (!formatsUsed.has(article.format)) {
+    if (!picked.includes(article) && !formatsUsed.has(article.format)) {
       picked.push(article);
       formatsUsed.add(article.format);
     }
