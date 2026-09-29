@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import LanguageMenu from '../islands/LanguageMenu.tsx';
 import ThemeMenu from '../islands/ThemeMenu.tsx';
 import SearchOverlay from '../islands/SearchOverlay.tsx';
 import { t } from '../lib/i18n';
@@ -29,6 +30,16 @@ import { t } from '../lib/i18n';
     </button>
 
     <div class="topbar-actions">
+      <LanguageMenu
+        client:idle
+        strings={{
+          label: t('topbar.languageLabel'),
+          menu: t('topbar.language'),
+          english: t('topbar.languageEnglish'),
+          hindi: t('topbar.languageHindi'),
+          soon: t('topbar.languageSoon'),
+        }}
+      />
       <ThemeMenu
         client:idle
         strings={{
@@ -168,6 +179,66 @@ import { t } from '../lib/i18n';
     align-items: center;
     gap: var(--space-2);
   }
+  /* The narrowest phones (320px) hold brand, search, language and theme only
+     with the bar's gaps halved. */
+  @media (max-width: 359px) {
+    .topbar-inner,
+    .topbar-actions {
+      gap: var(--space-1);
+    }
+  }
+
+  /* The two menus' wrappers: each anchors its own menu. */
+  :global(.topbar-menu-wrap) {
+    --toggle-size: 38px;
+    position: relative;
+    display: inline-flex;
+  }
+
+  /* The language button names the language in use; the icon says what it
+     changes. On phones only the icon stays, a circle like the theme button's. */
+  :global(.lang-toggle) {
+    height: var(--toggle-size);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+  }
+  :global(.lang-toggle:hover),
+  :global(.lang-menu-wrap[data-open] .lang-toggle) {
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+  }
+  :global(.lang-toggle .icon) {
+    width: 20px;
+    height: 20px;
+  }
+  :global(.lang-toggle .lang-toggle-caret) {
+    width: 14px;
+    height: 14px;
+    color: var(--color-text-muted);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  :global(.lang-menu-wrap[data-open] .lang-toggle-caret) {
+    transform: rotate(180deg);
+  }
+  @media (max-width: 640px) {
+    :global(.lang-toggle) {
+      width: var(--toggle-size);
+      justify-content: center;
+      padding: 0;
+      border-radius: var(--radius-full);
+    }
+    :global(.lang-toggle-label),
+    :global(.lang-toggle .lang-toggle-caret) {
+      display: none;
+    }
+  }
+
   :global(.theme-toggle) {
     width: var(--toggle-size);
     height: var(--toggle-size);
@@ -199,11 +270,6 @@ import { t } from '../lib/i18n';
      right edge). The 6px gap is padding on the tooltip itself, so the pointer
      can cross onto it without it vanishing; Escape hides it, and so does
      opening the menu (ThemeMenu.tsx). */
-  :global(.theme-menu-wrap) {
-    --toggle-size: 38px;
-    position: relative;
-    display: inline-flex;
-  }
   :global(.theme-tip) {
     position: absolute;
     top: 100%;
@@ -261,10 +327,11 @@ import { t } from '../lib/i18n';
     pointer-events: none;
   }
 
-  /* The menu: a small sheet under the button, right-aligned like the tooltip it
-     replaces while open. Rows are 44px touch targets; the tick marks the mode
-     in use and keeps its space when hidden, so the labels never shift. */
-  :global(.theme-menu) {
+  /* A menu (theme, language): a small sheet under its button, right-aligned
+     like the theme tooltip it replaces while open. Rows are 44px touch
+     targets; the tick marks the choice in use and keeps its space when
+     hidden, so the labels never shift. */
+  :global(.topbar-menu) {
     position: absolute;
     top: calc(100% + 6px);
     right: 0;
@@ -280,15 +347,15 @@ import { t } from '../lib/i18n';
       transform var(--dur-fast) var(--ease-out);
   }
   @starting-style {
-    :global(.theme-menu) {
+    :global(.topbar-menu) {
       opacity: 0;
       transform: translateY(-4px);
     }
   }
-  :global(.theme-menu[hidden]) {
+  :global(.topbar-menu[hidden]) {
     display: none;
   }
-  :global(.theme-menu-item) {
+  :global(.topbar-menu-item) {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -301,27 +368,59 @@ import { t } from '../lib/i18n';
     font-weight: var(--weight-ui);
     text-align: left;
   }
-  :global(.theme-menu-item:hover),
-  :global(.theme-menu-item:focus-visible) {
+  :global(.topbar-menu-item:hover),
+  :global(.topbar-menu-item:focus-visible) {
     background: var(--color-surface-alt);
     color: var(--color-text);
   }
-  :global(.theme-menu-item[aria-checked='true']) {
+  :global(.topbar-menu-item[aria-checked='true']) {
     color: var(--color-text);
   }
-  :global(.theme-menu-item .icon) {
+  :global(.topbar-menu-item .icon) {
     width: 18px;
     height: 18px;
     flex-shrink: 0;
   }
-  :global(.theme-menu-label) {
+  :global(.topbar-menu-label) {
     flex: 1;
   }
-  :global(.theme-menu-check) {
+  :global(.topbar-menu-check) {
     color: var(--color-primary);
   }
-  :global(.theme-menu-item[aria-checked='false'] .theme-menu-check) {
+  :global(.topbar-menu-item[aria-checked='false'] .topbar-menu-check) {
     visibility: hidden;
+  }
+  /* A choice that is not available yet (Hindi): muted, and a pointer over it
+     changes nothing; keyboard focus still shows where it is. */
+  :global(.topbar-menu-item[aria-disabled='true']) {
+    color: var(--color-text-muted);
+    cursor: default;
+  }
+  :global(.topbar-menu-item[aria-disabled='true']:hover:not(:focus-visible)) {
+    background: none;
+    color: var(--color-text-muted);
+  }
+
+  /* The language menu is as wide as its longest row, so Hindi's status never
+     wraps under its name. */
+  :global(.lang-menu) {
+    width: max-content;
+  }
+  :global(.lang-gloss) {
+    margin-left: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+  /* The site's status chip (lesson lists, search): amber means "forthcoming". */
+  :global(.lang-soon) {
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-ui);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
   }
 
   /* Search overlay (rendered by the island, styled here so SSR + hydration share it). */

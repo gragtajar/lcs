@@ -20,11 +20,11 @@ graph LR
 
 ## Three layers, no surprises
 
-| Layer                        | What it does                                                                                                                                              | Where                          |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Static HTML**              | The whole site renders at build time. Each of ~350 routes becomes an `index.html` shipped over CDN.                                                       | `src/pages/`, `dist/`          |
-| **Per-component scoped CSS** | Astro scopes `<style>` blocks per `.astro` file. Shared tokens + reset live in `src/styles/`.                                                             | `src/styles/`, every component |
-| **Preact islands**           | Five interactive surfaces (theme toggle, search overlay, sidebar accordion, TOC scroll-spy, lesson quiz) hydrate from JS chunks. Everything else is HTML. | `src/islands/`                 |
+| Layer                        | What it does                                                                                                                                                    | Where                          |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **Static HTML**              | The whole site renders at build time. Each of ~350 routes becomes an `index.html` shipped over CDN.                                                             | `src/pages/`, `dist/`          |
+| **Per-component scoped CSS** | Astro scopes `<style>` blocks per `.astro` file. Shared tokens + reset live in `src/styles/`.                                                                   | `src/styles/`, every component |
+| **Preact islands**           | Six interactive surfaces (language menu, theme menu, search overlay, search page, TOC scroll-spy, lesson quiz) hydrate from JS chunks. Everything else is HTML. | `src/islands/`                 |
 
 ## Routing model
 
