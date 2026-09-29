@@ -1,85 +1,59 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+// Change `updated` with the words, not with the design. The repository has no
+// licence file (checked 2026-09-29), so this page says only that the code is
+// public and that the content licence does not cover it; name a code licence
+// here when one is added.
+import InfoLayout from '../layouts/InfoLayout.astro';
+import InfoSection from '../components/InfoSection.astro';
 ---
 
-<BaseLayout title="Terms" description="Content license and platform usage." width="narrow">
-  <article class="legal">
-    <h1>Terms of use</h1>
-    <p class="lede">
-      Learn Civic Sense is a free reading library. The terms below cover content licensing,
-      acceptable use, and the limits of what we can promise.
-    </p>
-
-    <h2>Content license</h2>
+<InfoLayout
+  title="Terms"
+  description="Content license and platform usage."
+  heading="Terms of use"
+  lede="Learn Civic Sense is a free reading library. The terms below cover content licensing, acceptable use, and the limits of what we can promise."
+  updated="2026-09-29"
+>
+  <InfoSection heading="Content license">
     <p>
       All lessons on this site are published under the
-      <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">
-        Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
-      </a>
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer"
+        >Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)</a
+      >
       license. You may copy, adapt, and redistribute the lessons, including for commercial purposes, as
       long as you credit Learn Civic Sense (learncivicsense.in) and share derivatives under the same license.
     </p>
+  </InfoSection>
 
-    <h2>Source code</h2>
+  <InfoSection heading="Source code">
     <p>
-      The website code is open source. See the
-      <a href="https://github.com/gragtajar/lcs" rel="noopener noreferrer">GitHub repository</a>
-      for the license that applies to the codebase (separate from the content license above).
+      The code that runs this website is public in its
+      <a href="https://github.com/gragtajar/lcs" rel="noopener noreferrer">GitHub repository</a>.
+      The content license above covers the lessons, not the code.
     </p>
+  </InfoSection>
 
-    <h2>Acceptable use</h2>
+  <InfoSection heading="Acceptable use">
     <ul>
       <li>You may read, share, and link to lessons freely.</li>
       <li>You may quote and adapt content under the CC BY-SA 4.0 terms.</li>
       <li>You may not misrepresent the site as your own, or strip attribution.</li>
-      <li>You may not deploy automated abuse (scraping at scale that strains the CDN).</li>
+      <li>You may not deploy automated abuse (scraping at scale that strains the site).</li>
     </ul>
+  </InfoSection>
 
-    <h2>No warranty</h2>
+  <InfoSection heading="No warranty">
     <p>
-      Lessons aim for accuracy and cite their sources, but the site is not professional legal,
-      medical, or safety advice. Where a lesson references Indian law or a regulation, treat the
-      citation as a pointer to the source, not a final authority.
+      Lessons aim for accuracy and link the sources they cite, but the site is not professional
+      legal, medical, or safety advice. Where a lesson references Indian law or a regulation, treat
+      the citation as a pointer to the source, not a final authority.
     </p>
+  </InfoSection>
 
-    <h2>Changes</h2>
+  <InfoSection heading="Changes">
     <p>
-      We may update these terms. The current version is always at this URL with the "last updated"
-      date below.
+      We may update these terms. The current version is always at this URL, with the “last updated”
+      date at the top of the page.
     </p>
-
-    <p class="meta">Last updated: 2026-06-03.</p>
-  </article>
-</BaseLayout>
-
-<style>
-  .legal h1 {
-    font-size: var(--text-3xl);
-    margin: var(--space-5) 0 var(--space-3);
-  }
-  .legal h2 {
-    font-size: var(--text-xl);
-    margin: var(--space-6) 0 var(--space-2);
-  }
-  .legal .lede {
-    font-size: var(--text-lg);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-5);
-  }
-  .legal p,
-  .legal ul {
-    margin-bottom: var(--space-3);
-    max-width: var(--measure);
-  }
-  .legal ul {
-    padding-left: var(--space-5);
-  }
-  .legal li {
-    margin-block: var(--space-2);
-  }
-  .legal .meta {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    margin-top: var(--space-6);
-  }
-</style>
+  </InfoSection>
+</InfoLayout>

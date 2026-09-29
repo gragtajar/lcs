@@ -346,6 +346,11 @@ import { t } from '../lib/i18n';
       opacity var(--dur-fast) var(--ease-out),
       transform var(--dur-fast) var(--ease-out);
   }
+  /* On dark the elevation token already draws a hairline ring round the
+     sheet (tokens.css); a border as well doubled the edge. */
+  :global([data-theme='dark'] .topbar-menu) {
+    border: 0;
+  }
   @starting-style {
     :global(.topbar-menu) {
       opacity: 0;

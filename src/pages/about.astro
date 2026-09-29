@@ -1,66 +1,171 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import InfoLayout from '../layouts/InfoLayout.astro';
+import InfoSection from '../components/InfoSection.astro';
+import Icon from '../components/Icon.astro';
+import { getHomepageStats, resolveHeroChips } from '../lib/homepage-data';
+import { getNavCategories } from '../lib/content';
+import { categoryIconName } from '../lib/icons';
 import { t } from '../lib/i18n';
+
+// The same counts as the homepage's hero, in /topics/'s order: the topics that
+// have at least one lesson, and the lessons a reader can open today.
+const { lessonCount, clusterCount } = getHomepageStats();
+
+// The homepage's curated first lessons, each with its topic's icon and colour.
+const iconOf = new Map(getNavCategories().map((c) => [c.id, categoryIconName(c.icon)]));
+const start = resolveHeroChips();
 ---
 
-<BaseLayout title="About" width="narrow">
-  <article class="about">
-    <h1>About {t('siteName')}</h1>
-    <p class="lede">{t('siteTagline')}</p>
-
-    <h2>What this is</h2>
+<InfoLayout
+  title="About"
+  description="What Learn Civic Sense is, who it is for, what it is not, and how its lessons are written."
+  heading={`About ${t('siteName')}`}
+  lede={t('siteTagline')}
+  facts={[
+    t('topics.topicCount', { count: clusterCount }),
+    t('list.lessonCount', { count: lessonCount }),
+  ]}
+>
+  <InfoSection heading="What this is">
     <p>
       A free reading library for civic sense in India. Short lessons, drawn from everyday
       public-space situations: roads, transport, queues, markets, monuments, and the internet. No
       login. No accounts. No ads.
     </p>
+  </InfoSection>
 
-    <h2>Who this is for</h2>
-    <p>
-      Adults and students in Indian cities, plus first-time travellers and returning NRIs. The
-      lessons assume you are a thoughtful person who has not yet had the conversation in front of
-      you.
-    </p>
+  {/* The homepage's words (MissionSection), from the same strings, so the two never differ. */}
+  <InfoSection heading={t('homepage.mission.h2')}>
+    <p>{t('homepage.mission.para1')}</p>
+    <p>{t('homepage.mission.para2')}</p>
+    <p>{t('homepage.mission.para3')}</p>
+  </InfoSection>
 
-    <h2>What this is not</h2>
+  <InfoSection heading="What this is not">
     <p>
       A lecture. A moral scoring system. A government tract. There are no quizzes with grades, no
       streaks, no points. The reading is the entire product.
     </p>
+  </InfoSection>
 
-    <h2>How the content is built</h2>
+  <InfoSection heading="How the content is built">
     <p>
       Each lesson is written from a real Indian situation, cross-checked against published sources
       (government rules, peer-reviewed research, civic-society reports), and edited for plain
-      language. Sources are linked at the bottom of every lesson.
+      language. Sources are linked at the end of each lesson that cites them.
     </p>
+  </InfoSection>
 
-    <h2>Roadmap</h2>
-    <p>
-      The launch covers Traffic and Public Transport. The next phases add the other 9 categories,
-      Hindi versions, and the other 6 Indian languages.
-    </p>
-  </article>
-</BaseLayout>
+  {
+    start.length > 0 && (
+      <InfoSection heading={t('homepage.hero.startHere')}>
+        <ul class="about-start">
+          {start.map((chip) => (
+            <li data-cluster={chip.category}>
+              <a class="about-start-link" href={chip.href}>
+                <span class="about-start-icon">
+                  <Icon name={iconOf.get(chip.category) ?? 'book-open'} />
+                </span>
+                <span class="about-start-label">{chip.label}</span>
+                {chip.minutes ? (
+                  <span class="about-start-meta">{t('list.minRead', { n: chip.minutes })}</span>
+                ) : null}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </InfoSection>
+    )
+  }
+
+  <p class="about-next" slot="end">
+    <a href="/topics/">
+      {t('homepage.topics.allLessons')}
+      <Icon name="chevron-right" />
+    </a>
+    <a href="/feedback/">
+      {t('feedback.title')}
+      <Icon name="chevron-right" />
+    </a>
+  </p>
+</InfoLayout>
 
 <style>
-  .about h1 {
-    font-size: var(--text-3xl);
-    margin-top: var(--space-5);
-    margin-bottom: var(--space-3);
+  /* The homepage's and 404's "Start with one lesson" rows, each led by its
+     topic's icon in the topic's colour; the title takes the colour on hover. */
+  .about-start {
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
-  .about h2 {
-    font-size: var(--text-xl);
-    margin-top: var(--space-6);
-    margin-bottom: var(--space-2);
+  .about-start li + li {
+    border-top: 1px solid var(--color-border);
   }
-  .about .lede {
-    font-size: var(--text-lg);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-5);
+  .about-start-link {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-height: 44px;
+    padding: var(--space-2) 0;
+    color: var(--color-text);
   }
-  .about p {
-    margin-bottom: var(--space-3);
-    max-width: var(--measure);
+  .about-start-link:hover {
+    text-decoration: none;
+  }
+  /* InfoSection underlines links in running text; a row is not running text. */
+  :global(.info-section-body) .about-start-link {
+    border-bottom: 0;
+  }
+  .about-start-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-self: center;
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .about-start-icon :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
+  .about-start-label {
+    flex: 1;
+    min-width: 0;
+    font-weight: var(--weight-ui);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .about-start-link:hover .about-start-label,
+  .about-start-link:focus-visible .about-start-label {
+    color: var(--cluster-ink, var(--color-primary));
+  }
+  .about-start-meta {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  /* The way on: the homepage's "Browse all" links, into the library first. */
+  .about-next {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-6);
+    margin: 0;
+  }
+  .about-next a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    font-weight: var(--weight-ui);
+  }
+  .about-next a:hover {
+    text-decoration: none;
+  }
+  .about-next :global(.icon) {
+    width: 18px;
+    height: 18px;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .about-next a:hover :global(.icon) {
+    transform: translateX(2px);
   }
 </style>

@@ -231,6 +231,9 @@
   --text-2xl: 2.0625rem; /* 33 — h2 */
   --text-3xl: 2.5625rem; /* 41 — page h1 */
   --text-4xl: 3.25rem; /* 52 — display */
+  /* Long-form reading (lesson bodies, About/Privacy/Terms): Hind's compact
+     letterforms read small at 17px, so prose sits one step up. */
+  --text-reading: 1.125rem; /* 18 */
 
   /* Leading: display text tight, body tuned to a ~66-character measure. Hind's
      own line box is 1.6 em, so body sits on it exactly. */

@@ -1,0 +1,110 @@
+---
+// The site's own pages about itself: About, Privacy, Terms. They read like the
+// rest of the library: a trail back home, the heading with a lede on the
+// measure and one line of facts, then each section as a side-heading block on
+// the 4/8 grid the homepage and /topics/ use (InfoSection.astro), its name on
+// the left and its text on the right, between hairlines. A page may end with a
+// way on (the `end` slot), laid under the text column.
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import { t, formatDate } from '../lib/i18n';
+
+interface Props {
+  /** The browser tab's title and the last crumb (the footer's name for the page). */
+  title: string;
+  description: string;
+  /** The page's h1. */
+  heading: string;
+  lede: string;
+  /** When the page's content last changed (ISO date), shown first in the facts. */
+  updated?: string;
+  /** Further facts for the line under the lede. */
+  facts?: string[];
+}
+
+const { title, description, heading, lede, updated, facts = [] } = Astro.props;
+const hasFacts = Boolean(updated) || facts.length > 0;
+---
+
+<BaseLayout title={title} description={description} width="wide">
+  <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: title }]} />
+
+  <article class="info">
+    <header class="info-head">
+      <h1 class="info-title">{heading}</h1>
+      <p class="info-lede">{lede}</p>
+      {
+        hasFacts && (
+          <p class="info-facts">
+            {updated && (
+              <span>
+                Last updated <time datetime={updated}>{formatDate(updated)}</time>
+              </span>
+            )}
+            {facts.map((f, i) => (
+              <>
+                {(updated || i > 0) && (
+                  <span class="info-sep" aria-hidden="true">
+                    ·
+                  </span>
+                )}
+                <span>{f}</span>
+              </>
+            ))}
+          </p>
+        )
+      }
+    </header>
+
+    <slot />
+
+    {
+      Astro.slots.has('end') && (
+        <div class="info-end">
+          <slot name="end" />
+        </div>
+      )
+    }
+  </article>
+</BaseLayout>
+
+<style>
+  .info-head {
+    margin: var(--space-5) 0 var(--space-7);
+  }
+  .info-title {
+    font-size: clamp(2rem, 1.2rem + 3vw, var(--text-3xl));
+    margin: 0 0 var(--space-3);
+    max-width: var(--width-reading);
+  }
+  .info-lede {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    max-width: var(--measure);
+  }
+  .info-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* The way on sits on the grid's text column, under the last section's rule. */
+  .info-end {
+    display: grid;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+  @media (min-width: 960px) {
+    .info-end {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+      column-gap: var(--space-7);
+    }
+    .info-end > :global(*) {
+      grid-column: 2;
+    }
+  }
+</style>
