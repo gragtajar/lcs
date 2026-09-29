@@ -5,6 +5,13 @@
 **For:** Claude Code, on top of the Phase 1 production-readiness work already in progress.
 **Status:** Each section was verified in a Node sandbox against the actual package APIs and current documentation before being written. Hallucinations from the previous v2 draft have been caught and corrected (six are listed in §0.2).
 
+> **Historical document (note added 2026-09-29).** This spec describes the site as first
+> planned. Its subcategory pages and three-part lesson addresses
+> (`/{category}/{subcategory}/{lesson}/`) were replaced on 2026-09-28 by two levels,
+> topics and lessons, at `/{topic}/{lesson}/` ([ADR 011](docs/adrs/011-two-level-library.md));
+> the old addresses redirect permanently. For how the site works today, read
+> [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ---
 
 ## 0. How to read this addendum

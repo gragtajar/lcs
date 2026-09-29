@@ -35,7 +35,6 @@
     "areaCount_one": "{count} area",
     "areaCount_other": "{count} areas",
     "lessonsPlanned": "~{count} lessons planned",
-    "categoryMeta": "{subs} · {arts}",
     "phaseBadge": "Phase {n}",
     "soon": "soon"
   },

@@ -81,7 +81,9 @@ the website only.
   JSON-LD is Home, topic, lesson.
 - The content repo's documentation and the publish manifest's `url_path`
   values describe the two-level addresses (lcs-content and lcs-workflow, same
-  day), and so does the daily writing task in lcs-tasks.
+  day). The daily writing task in lcs-tasks followed on 2026-09-29: its
+  `url_path` line was changed in the owner's local copy, the copy the task
+  runs from, and reaches GitHub with the owner's next push of lcs-tasks.
 
 ## References
 

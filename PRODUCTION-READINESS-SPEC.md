@@ -5,6 +5,13 @@
 **For:** Claude Code, to harden the current Astro + Pagefind + Cloudflare Pages build for public launch
 **Status:** Ready to implement. Pairs with `WEBSITE-BUILD-SPEC.md` (v1, foundation) and `WEBSITE-BUILD-SPEC-v2-ADDENDUM.md` (volumetric navigation).
 
+> **Historical document (note added 2026-09-29).** This spec describes the site as first
+> planned. Its subcategory pages and three-part lesson addresses
+> (`/{category}/{subcategory}/{lesson}/`) were replaced on 2026-09-28 by two levels,
+> topics and lessons, at `/{topic}/{lesson}/` ([ADR 011](docs/adrs/011-two-level-library.md));
+> the old addresses redirect permanently. For how the site works today, read
+> [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ---
 
 ## How to use this document
