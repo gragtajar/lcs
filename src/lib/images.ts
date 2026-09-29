@@ -105,9 +105,12 @@ export function getArticleThumb(articleId: string): ArticleThumb | undefined {
 /**
  * Widths of the picture a homepage topic leads with: about 350px wide on a
  * desktop, the whole column on a phone (up to ~400px), so up to 1080 for a 3x
- * phone screen. The browser picks by slot × DPR.
+ * phone screen. The browser picks the first width at or above slot × DPR, so
+ * the steps stay under ~15%: a 380px phone slot at 1.75x (Lighthouse's phone)
+ * needs 665px and gets 680, not 800 (15 KB of it unseen, which Lighthouse
+ * fails as an oversized image).
  */
-const LEAD_WIDTHS = [400, 640, 800, 1080];
+const LEAD_WIDTHS = [400, 520, 600, 680, 760, 840, 960, 1080];
 
 /** A featured topic's lead picture, or undefined when the article has no uploaded image. */
 export function getArticleLeadPicture(articleId: string): ArticleThumb | undefined {
@@ -115,7 +118,7 @@ export function getArticleLeadPicture(articleId: string): ArticleThumb | undefin
   if (!path) return undefined;
   const at = (width: number) => imagekitUrl(path, { width, format: 'auto' });
   return {
-    src: at(LEAD_WIDTHS[1]!),
+    src: at(680),
     srcset: LEAD_WIDTHS.map((w) => `${at(w)} ${w}w`).join(', '),
   };
 }
