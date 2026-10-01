@@ -6,9 +6,10 @@
 // each lesson is a row whose title is the link, stretched over the row so the
 // accessible name is the title alone.
 //
-// The lead always has a picture, on the same two columns as the secondaries below
-// it: the lesson's illustration (the rotation leads with an illustrated lesson when
-// the topic has one), or else the topic's cover, printed in its own colours.
+// The lead always has a picture, at the size the lesson lists use (up to 240px,
+// 16:9, on the right): the lesson's illustration (the rotation leads with an
+// illustrated lesson when the topic has one), or else the topic's cover, printed
+// in its own colours.
 import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
 import { categoryIconName } from '../lib/icons';
@@ -70,10 +71,10 @@ const iconName = categoryIconName(category.icon);
               class="lead-pic lead-img"
               src={leadPicture.src}
               srcset={leadPicture.srcset}
-              sizes="(min-width: 1200px) 347px, (min-width: 960px) calc((100vw - 112px) / 3 - 16px), (min-width: 768px) calc(50vw - 48px), (min-width: 640px) calc(50vw - 32px), calc(100vw - 32px)"
+              sizes="(min-width: 1200px) 240px, (min-width: 960px) calc(22.67vw - 25px), (min-width: 560px) 240px, calc(40vw - 13px)"
               alt=""
-              width="640"
-              height="360"
+              width="320"
+              height="180"
               loading="lazy"
               decoding="async"
             />
@@ -217,18 +218,20 @@ const iconName = categoryIconName(category.icon);
     text-decoration: none;
   }
 
-  /* The lead: its text beside its picture, on the secondaries' two columns, so
-     the picture stands over the second of them. On phones the picture follows
-     the title, full width. */
+  /* The lead: its text on the left, its picture on the right at the lesson
+     lists' size (a third of the column, up to 240px; 16:9, 135px tall, about
+     the height of the text beside it): an accent beside the words, not a block
+     over them. On phones the picture sits beside the title, and the excerpt
+     runs the full width under both. */
   .lead {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(8.5rem, 34%, 15rem);
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
       'title pic'
       'excerpt pic'
       'meta pic';
-    column-gap: var(--space-6);
+    column-gap: var(--space-5);
     align-items: start;
   }
   .lead-title {
@@ -250,18 +253,15 @@ const iconName = categoryIconName(category.icon);
     outline: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
     outline-offset: -1px;
   }
-  @media (max-width: 639px) {
+  @media (max-width: 559px) {
     .lead {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: none;
+      grid-template-columns: minmax(0, 1fr) 40%;
+      grid-template-rows: auto;
       grid-template-areas:
-        'title'
-        'pic'
-        'excerpt'
-        'meta';
-    }
-    .lead-pic {
-      margin-top: var(--space-3);
+        'title pic'
+        'excerpt excerpt'
+        'meta meta';
+      column-gap: var(--space-4);
     }
     .lead-excerpt {
       margin-top: var(--space-3);
@@ -292,10 +292,10 @@ const iconName = categoryIconName(category.icon);
     inset: 0;
     background-image: radial-gradient(
       circle,
-      var(--cluster-ink, var(--color-primary)) 0 1.2px,
-      transparent 1.6px
+      var(--cluster-ink, var(--color-primary)) 0 1px,
+      transparent 1.35px
     );
-    background-size: 8px 8px;
+    background-size: 6px 6px;
     opacity: 0.32;
     mask-image: radial-gradient(140% 120% at 100% 100%, #000 10%, transparent 68%);
   }
@@ -307,15 +307,16 @@ const iconName = categoryIconName(category.icon);
     grid-area: 1 / 1;
     /* A quarter of the cover's width; the rem size is for browsers without
        container units. */
-    width: 4.5rem;
-    height: 4.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
     width: 26cqi;
     height: 26cqi;
     stroke-width: 1.25;
   }
+  /* The off-register plate moves with the cover's size: about 3px at 240px. */
   .lead-cover-art :global(.icon:first-child) {
     color: color-mix(in srgb, var(--cluster-ink, var(--color-primary)) 40%, transparent);
-    translate: 4px 3px;
+    translate: 1.2cqi 0.9cqi;
   }
   .lead-cover-art :global(.icon:last-child) {
     color: var(--cluster-ink, var(--color-primary));
@@ -326,18 +327,24 @@ const iconName = categoryIconName(category.icon);
     margin: 0;
     max-width: var(--measure);
   }
-  /* Four lines hold a whole meta description (~155 characters at ~45-50 per
-     line, beside the picture or on a phone); the clamp is a guard for the odd
-     long one, not the normal case. */
+  /* Three lines hold a whole meta description (~155 characters at this
+     measure); the clamp is a guard for the odd long one, not the normal case. */
   .lead-excerpt {
     margin: var(--space-2) 0 0;
     color: var(--color-text-secondary);
     max-width: var(--measure);
     display: -webkit-box;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  @media (max-width: 639px) {
+    /* ~45 characters per line on a phone: four lines for the same whole thought. */
+    .lead-excerpt {
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+    }
   }
 
   .row-meta {

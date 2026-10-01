@@ -92,7 +92,7 @@ test.describe('Homepage pictures', () => {
       expect((await img.count()) + (await cover.count())).toBe(1);
       if ((await img.count()) > 0) {
         await expect(img).toHaveAttribute('src', /^https:\/\/ik\.imagekit\.io\/civic\//);
-        await expect(img).toHaveAttribute('srcset', /1080w/);
+        await expect(img).toHaveAttribute('srcset', /240w.*560w/);
         // The title beside it is the link and names the lesson.
         await expect(img).toHaveAttribute('alt', '');
       } else {
@@ -102,20 +102,26 @@ test.describe('Homepage pictures', () => {
       }
     }
 
-    // In proportion with the rows under it: on a wide screen the picture stands
-    // over the second smaller lesson, exactly as wide; on a phone it takes the
-    // column, under the title.
+    // The lesson lists' size, an accent beside the words: on a wide screen at
+    // most a third of the column and 240px, on the right, level with the title;
+    // on a phone 40% of the column beside the title, the excerpt under both.
     const first = page.locator('.cluster').first();
     const pic = (await first.locator('.lead-pic').boundingBox())!;
+    const lead = (await first.locator('.lead').boundingBox())!;
+    const title = (await first.locator('.lead-title').boundingBox())!;
+    expect(Math.abs(pic.y - title.y)).toBeLessThanOrEqual(8);
+    expect(pic.x).toBeGreaterThanOrEqual(title.x + title.width - 1);
+    expect(Math.abs(pic.x + pic.width - (lead.x + lead.width))).toBeLessThanOrEqual(1);
     if (info.project.use.isMobile) {
-      const lead = (await first.locator('.lead').boundingBox())!;
-      expect(Math.abs(pic.width - lead.width)).toBeLessThanOrEqual(1);
-      const title = (await first.locator('.lead-title').boundingBox())!;
-      expect(pic.y).toBeGreaterThan(title.y + title.height - 1);
+      expect(Math.abs(pic.width - lead.width * 0.4)).toBeLessThanOrEqual(2);
+      const excerpt = (await first.locator('.lead-excerpt').boundingBox())!;
+      expect(excerpt.y).toBeGreaterThanOrEqual(
+        Math.max(title.y + title.height, pic.y + pic.height) - 1,
+      );
+      expect(Math.abs(excerpt.width - lead.width)).toBeLessThanOrEqual(1);
     } else {
-      const second = (await first.locator('.secondaries li').nth(1).boundingBox())!;
-      expect(Math.abs(pic.x - second.x)).toBeLessThanOrEqual(1);
-      expect(Math.abs(pic.width - second.width)).toBeLessThanOrEqual(1);
+      expect(pic.width).toBeLessThanOrEqual(240.5);
+      expect(pic.width).toBeLessThanOrEqual(lead.width * 0.34 + 1);
     }
     expect(Math.abs(pic.width / pic.height - 16 / 9)).toBeLessThan(0.02);
   });
