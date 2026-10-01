@@ -103,14 +103,15 @@ export function getArticleThumb(articleId: string): ArticleThumb | undefined {
 }
 
 /**
- * Widths of the picture a homepage topic leads with: about 350px wide on a
- * desktop, the whole column on a phone (up to ~400px), so up to 1080 for a 3x
- * phone screen. The browser picks the first width at or above slot × DPR, so
- * the steps stay under ~15%: a 380px phone slot at 1.75x (Lighthouse's phone)
- * needs 665px and gets 680, not 800 (15 KB of it unseen, which Lighthouse
- * fails as an oversized image).
+ * Widths of the picture a homepage topic leads with: the lesson lists' size,
+ * up to 240px on a desktop and 40% of the column on a phone (about 130-160px),
+ * so up to 560 for a 3x phone or a 2x desktop. The browser picks the first
+ * width at or above slot × DPR, so the steps stay under ~20%: Lighthouse's
+ * desktop (240px at 1x) gets 240, its phone (152px at 1.75x, 266px) gets 280;
+ * a wider gap there downloads unseen bytes that Lighthouse fails as an
+ * oversized image.
  */
-const LEAD_WIDTHS = [400, 520, 600, 680, 760, 840, 960, 1080];
+const LEAD_WIDTHS = [240, 280, 320, 360, 400, 480, 560];
 
 /** A featured topic's lead picture, or undefined when the article has no uploaded image. */
 export function getArticleLeadPicture(articleId: string): ArticleThumb | undefined {
@@ -118,7 +119,7 @@ export function getArticleLeadPicture(articleId: string): ArticleThumb | undefin
   if (!path) return undefined;
   const at = (width: number) => imagekitUrl(path, { width, format: 'auto' });
   return {
-    src: at(680),
+    src: at(320),
     srcset: LEAD_WIDTHS.map((w) => `${at(w)} ${w}w`).join(', '),
   };
 }
