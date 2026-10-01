@@ -33,9 +33,15 @@ function watch(page: Page): string[] {
   });
   page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
   page.on('requestfailed', (r) => {
-    if (!isHostMonitoring(r.url())) {
-      problems.push(`request failed: ${r.url()} (${r.failure()?.errorText})`);
-    }
+    if (isHostMonitoring(r.url())) return;
+    // An image request the browser cancelled itself is not a failure a reader
+    // sees. Chromium re-picks a responsive image's file when the page's metrics
+    // change, as they do inside this suite's full-page screenshots: in deploy
+    // run 36860644289 the homepage's 400w illustrations loaded (200) at page
+    // load, then 240w requests began 32-110 ms into the capture and were
+    // cancelled. HTTP errors still count (below), as does every other failure.
+    if (r.resourceType() === 'image' && r.failure()?.errorText === 'net::ERR_ABORTED') return;
+    problems.push(`request failed: ${r.url()} (${r.failure()?.errorText})`);
   });
   page.on('response', (r) => {
     if (r.status() >= 400 && !isHostMonitoring(r.url())) {
@@ -105,6 +111,16 @@ test.describe('Production', () => {
     else await expect(label).toBeVisible();
 
     await shoot(page, info, 'home');
+    // The featured topics' illustrations load from ImageKit for real (the
+    // topics without one show a CSS cover, not an image).
+    for (const img of await page.locator('img.lead-img').all()) {
+      await img.scrollIntoViewIfNeeded();
+      await expect
+        .poll(() => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth), {
+          timeout: 15_000,
+        })
+        .toBeGreaterThan(0);
+    }
     expect(problems).toEqual([]);
   });
 
