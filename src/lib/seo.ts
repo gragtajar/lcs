@@ -35,13 +35,28 @@ export interface RenderedMeta {
   ogType: 'website' | 'article';
   ogTitle: string;
   ogDescription: string;
-  ogImage?: string;
-  twitterCard: 'summary' | 'summary_large_image';
+  ogImage: string;
+  /** Set for the site's share image, whose size and content are known. */
+  ogImageAlt?: string;
+  ogImageWidth?: number;
+  ogImageHeight?: number;
+  twitterCard: 'summary_large_image';
 }
 
 const SITE_ORIGIN = 'https://learncivicsense.in';
 const SITE_NAME = 'Learn Civic Sense';
 const SITE_TAGLINE = 'Practical civic sense for India';
+
+/**
+ * The share image of every page without its own (a lesson's illustration is
+ * its own): the logo over the site's name, 1200x630. Built from the logo by
+ * scripts/build-brand-assets.mjs into public/og-image.png.
+ */
+export const SITE_SHARE_IMAGE = `${SITE_ORIGIN}/og-image.png`;
+const SITE_SHARE_IMAGE_ALT = `The ${SITE_NAME} logo, a hand-drawn figure in a frame, above the site's name`;
+
+/** The logo as an image for structured data: public/logo.png, 512x512. */
+export const SITE_LOGO = `${SITE_ORIGIN}/logo.png`;
 
 export function buildMeta(input: MetaInput): RenderedMeta {
   const type = input.type ?? 'website';
@@ -55,8 +70,12 @@ export function buildMeta(input: MetaInput): RenderedMeta {
     ogType: type,
     ogTitle: input.ogTitle || fullTitle,
     ogDescription: input.ogDescription || input.description,
-    ogImage: input.image,
-    twitterCard: input.image ? 'summary_large_image' : 'summary',
+    ogImage: input.image ?? SITE_SHARE_IMAGE,
+    ...(input.image
+      ? {}
+      : { ogImageAlt: SITE_SHARE_IMAGE_ALT, ogImageWidth: 1200, ogImageHeight: 630 }),
+    // Every page has an image now, so every card is the large one.
+    twitterCard: 'summary_large_image',
   };
 }
 
@@ -82,7 +101,11 @@ export function articleJsonLd(input: ArticleJsonLdInput): Record<string, unknown
     datePublished: lesson.last_updated || undefined,
     dateModified: lesson.last_updated || undefined,
     author: { '@type': 'Organization', name: SITE_NAME },
-    publisher: { '@type': 'Organization', name: SITE_NAME },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      logo: { '@type': 'ImageObject', url: SITE_LOGO, width: 512, height: 512 },
+    },
     articleSection: category.title,
     inLanguage: 'en-IN',
     wordCount: countWords(lesson.body),
@@ -128,6 +151,31 @@ export function howToJsonLd(input: HowToJsonLdInput): Record<string, unknown> | 
       name: s.heading,
       text: s.text,
     })),
+  };
+}
+
+/**
+ * The site as an organisation, with its logo: the homepage's JSON-LD, where
+ * search engines look for a site's logo.
+ */
+export function organizationJsonLd(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE_NAME,
+    url: `${SITE_ORIGIN}/`,
+    logo: SITE_LOGO,
+  };
+}
+
+/** The site itself, by name: the homepage's JSON-LD. */
+export function websiteJsonLd(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: `${SITE_ORIGIN}/`,
+    inLanguage: 'en-IN',
   };
 }
 

@@ -101,22 +101,23 @@ Measured with `npm run size` on 2026-09-29. Targets enforced in CI via
 
 ## Where to look for X
 
-| To change...                                 | Edit...                                                             |
-| -------------------------------------------- | ------------------------------------------------------------------- |
-| A color, spacing token, or breakpoint        | `src/styles/tokens.css`                                             |
-| The lesson-page layout                       | `src/pages/[category]/[article].astro`                              |
-| The topic-page layout                        | `src/pages/[category]/index.astro`                                  |
-| The homepage section structure               | `src/pages/index.astro` + `src/components/FeaturedCluster.astro`    |
-| Search behavior (UI)                         | `src/islands/SearchOverlay.tsx` + `src/islands/SearchPage.tsx`      |
-| Redirects for old addresses                  | the frozen block in `public/.htaccess` (ADR-011)                    |
-| The 404 page                                 | `src/pages/404.astro` + `public/404.php` (ADR-010)                  |
-| The feedback form                            | `src/pages/feedback/` + `public/feedback.php` (ADR-012)             |
-| About, Privacy, Terms                        | `src/layouts/InfoLayout.astro` + `src/components/InfoSection.astro` |
-| Search behavior (indexing)                   | `data-pagefind-*` attributes on article page                        |
-| Taxonomy parsing or new content shape        | `src/lib/content.ts`                                                |
-| SEO meta or JSON-LD                          | `src/lib/seo.ts`                                                    |
-| UI strings                                   | `src/i18n/en.json`                                                  |
-| Build flags (publish mode, launch allowlist) | `src/config.ts`                                                     |
+| To change...                                 | Edit...                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| A color, spacing token, or breakpoint        | `src/styles/tokens.css`                                                               |
+| The logo, favicon, app icons, share image    | `src/assets/logo.svg`, then `npm run brand:assets` (`scripts/build-brand-assets.mjs`) |
+| The lesson-page layout                       | `src/pages/[category]/[article].astro`                                                |
+| The topic-page layout                        | `src/pages/[category]/index.astro`                                                    |
+| The homepage section structure               | `src/pages/index.astro` + `src/components/FeaturedCluster.astro`                      |
+| Search behavior (UI)                         | `src/islands/SearchOverlay.tsx` + `src/islands/SearchPage.tsx`                        |
+| Redirects for old addresses                  | the frozen block in `public/.htaccess` (ADR-011)                                      |
+| The 404 page                                 | `src/pages/404.astro` + `public/404.php` (ADR-010)                                    |
+| The feedback form                            | `src/pages/feedback/` + `public/feedback.php` (ADR-012)                               |
+| About, Privacy, Terms                        | `src/layouts/InfoLayout.astro` + `src/components/InfoSection.astro`                   |
+| Search behavior (indexing)                   | `data-pagefind-*` attributes on article page                                          |
+| Taxonomy parsing or new content shape        | `src/lib/content.ts`                                                                  |
+| SEO meta or JSON-LD                          | `src/lib/seo.ts`                                                                      |
+| UI strings                                   | `src/i18n/en.json`                                                                    |
+| Build flags (publish mode, launch allowlist) | `src/config.ts`                                                                       |
 
 ## What's deliberately NOT here
 

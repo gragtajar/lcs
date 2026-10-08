@@ -205,6 +205,9 @@
   AddType application/json .json
   AddType application/manifest+json .webmanifest
   AddType image/svg+xml .svg
+  # The site's own icons and share image (scripts/build-brand-assets.mjs).
+  AddType image/x-icon .ico
+  AddType image/png .png
   AddType font/woff2 .woff2
   # Pagefind's index files are pre-compressed binary blobs read by fetch().
   AddType application/octet-stream .pagefind .pf_fragment .pf_index .pf_meta
@@ -234,9 +237,6 @@
   </If>
   <ElseIf "%{REQUEST_URI} =~ m#^/pagefind/#">
     Header set Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
-  </ElseIf>
-  <ElseIf "%{REQUEST_URI} =~ m#^/placeholders/#">
-    Header set Cache-Control "public, max-age=604800"
   </ElseIf>
   <ElseIf "%{REQUEST_URI} == '/build-info.json' || %{REQUEST_URI} == '/404.php' || %{REQUEST_URI} == '/feedback.php'">
     Header set Cache-Control "no-store"

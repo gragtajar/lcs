@@ -37,6 +37,10 @@
   --color-accent: #a35304;
   --color-accent-soft: #f6e9db;
 
+  /* The logo (src/assets/logo.svg): its own ink and paper. */
+  --logo-ink: #232323;
+  --logo-paper: #e8e8e7;
+
   /* Lines & states */
   --color-border: #e2dfda;
   --color-focus: #0e6e62;
@@ -75,6 +79,10 @@
   --color-selection: #2b4f48;
   --color-accent: #e0a35c;
   --color-accent-soft: #3a2c1b;
+  /* The logo reversed: dark ink would vanish into the dark page, so the
+     paper's light grey draws the frame and figure, on the ink's dark grey. */
+  --logo-ink: #e8e8e7;
+  --logo-paper: #232323;
   --color-border: #3a3833;
   --color-focus: #6bb5a2;
   --color-success: #5bbe8c;

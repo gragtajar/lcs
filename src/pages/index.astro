@@ -12,6 +12,7 @@ import {
 } from '../lib/homepage-data';
 import { DEFAULT_LOCALE } from '../config.ts';
 import { t } from '../lib/i18n';
+import { organizationJsonLd, websiteJsonLd } from '../lib/seo';
 
 // The rotation selects per build week (deterministic, stateless). BUILD_DATE lets a
 // reproducible build or test pin the window; otherwise it's the current build time.
@@ -25,6 +26,12 @@ const topics = getTopicIndex(locale);
 ---
 
 <BaseLayout title="" width="flush">
+  {/* Search engines read the site's name and logo from its homepage. */}
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd())} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd())} />
+  </Fragment>
+
   <Hero chips={heroChips} lessonCount={lessonCount} clusterCount={clusterCount} />
 
   <section id="featured" class="home-featured" aria-labelledby="featured-h">

@@ -798,6 +798,95 @@ test.describe('About, Privacy and Terms', () => {
   });
 });
 
+test.describe('Brand: logo, icons and share image', () => {
+  test('the top bar and the footer carry the logo beside the site name', async ({ page }) => {
+    await page.goto('/');
+    const brand = page.locator('.topbar .brand');
+    await expect(brand).toHaveAccessibleName('Learn Civic Sense');
+    const logo = brand.locator('svg.brand-logo');
+    await expect(logo).toBeVisible();
+    await expect(logo).toHaveAttribute('aria-hidden', 'true');
+    await expect(logo.locator('.logo-ink')).toHaveCount(1);
+    await expect(logo.locator('.logo-paper')).toHaveCount(3);
+    const box = (await logo.boundingBox())!;
+    expect(Math.abs(box.width / box.height - 168 / 236)).toBeLessThan(0.02);
+    await expect(page.locator('.footer svg.footer-logo')).toBeVisible();
+  });
+
+  test('the logo keeps its own colours, reversed in the dark theme', async ({ page }, info) => {
+    await page.goto('/');
+    const dark = info.project.use.colorScheme === 'dark';
+    const fill = (part: string) =>
+      page
+        .locator(`.brand-logo ${part}`)
+        .first()
+        .evaluate((el) => getComputedStyle(el).fill);
+    expect(await fill('.logo-ink')).toBe(dark ? 'rgb(232, 232, 231)' : 'rgb(35, 35, 35)');
+    expect(await fill('.logo-paper')).toBe(dark ? 'rgb(35, 35, 35)' : 'rgb(232, 232, 231)');
+  });
+
+  test('every page names the icons, and each is served as an image', async ({ page, request }) => {
+    await page.goto('/');
+    const href = (selector: string) => page.locator(selector).getAttribute('href');
+    expect(await href('link[rel="icon"][sizes="32x32"]')).toBe('/favicon.ico');
+    expect(await href('link[rel="icon"][type="image/svg+xml"]')).toBe('/favicon.svg');
+    expect(await href('link[rel="apple-touch-icon"]')).toBe('/apple-touch-icon.png');
+    const files: Array<[string, RegExp]> = [
+      ['/favicon.ico', /icon/],
+      ['/favicon.svg', /svg/],
+      ['/apple-touch-icon.png', /png/],
+      ['/icon-192.png', /png/],
+      ['/icon-512.png', /png/],
+      ['/icon-maskable-512.png', /png/],
+      ['/logo.png', /png/],
+      ['/og-image.png', /png/],
+    ];
+    for (const [path, type] of files) {
+      const res = await request.get(path);
+      expect(res.status(), path).toBe(200);
+      expect(res.headers()['content-type'], path).toMatch(type);
+    }
+  });
+
+  test('every page shares an image: a lesson its illustration, any other page the logo card', async ({
+    page,
+  }) => {
+    const og = (property: string) =>
+      page.locator(`meta[property="${property}"]`).getAttribute('content');
+    // The topic page, an info page, and a lesson without an illustration.
+    for (const url of ['/', '/traffic/', '/about/', '/traffic/the-case-against-honking/']) {
+      await page.goto(url);
+      expect(await og('og:image'), url).toBe('https://learncivicsense.in/og-image.png');
+      expect(await og('og:image:width'), url).toBe('1200');
+      expect(await og('og:image:height'), url).toBe('630');
+      expect(await og('og:image:alt'), url).toMatch(/Learn Civic Sense logo/);
+      await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+        'content',
+        'summary_large_image',
+      );
+    }
+    await page.goto(
+      '/religious-sites-and-monuments/the-gurdwara-visit-head-cover-langar-the-parikrama/',
+    );
+    expect(await og('og:image')).toMatch(/^https:\/\/ik\.imagekit\.io\/civic\/.*sacred-004\.png$/);
+    await expect(page.locator('meta[property="og:image:alt"]')).toHaveCount(0);
+  });
+
+  test('the homepage tells search engines the site and its logo', async ({ page }) => {
+    await page.goto('/');
+    const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
+    const data = blocks.map((b) => JSON.parse(b) as Record<string, unknown>);
+    expect(data.find((d) => d['@type'] === 'Organization')).toMatchObject({
+      name: 'Learn Civic Sense',
+      url: 'https://learncivicsense.in/',
+      logo: 'https://learncivicsense.in/logo.png',
+    });
+    expect(data.find((d) => d['@type'] === 'WebSite')).toMatchObject({
+      name: 'Learn Civic Sense',
+    });
+  });
+});
+
 test.describe('Footer', () => {
   test('lists About, Feedback, Privacy and Terms, in that order', async ({ page }) => {
     await page.goto('/');

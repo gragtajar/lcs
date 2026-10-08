@@ -1,13 +1,9 @@
 ---
-// Article hero image. Renders a responsive <img> pointing at ImageKit delivery URLs
-// (single source, resized + format-optimised by the CDN) when the article has an image,
-// falling back to a bundled placeholder otherwise. Aspect-ratio box reserves space → zero CLS.
-import {
-  getArticleImage,
-  getArticleImageSrcset,
-  getArticleImageSizes,
-  hasArticleImage,
-} from '../lib/images';
+// Article hero image: a responsive <img> pointing at ImageKit delivery URLs (single
+// source, resized + format-optimised by the CDN). Only for an article with an uploaded
+// image (ArticleHeader checks): a lesson without one shows no hero at all.
+// Aspect-ratio box reserves space → zero CLS.
+import { getArticleImage, getArticleImageSrcset, getArticleImageSizes } from '../lib/images';
 
 interface Props {
   articleId: string;
@@ -19,13 +15,12 @@ interface Props {
 
 const { articleId, alt, eager = true, aspectRatio = '16:9' } = Astro.props;
 
-const hasImage = hasArticleImage(articleId);
 const src = getArticleImage(articleId, 'hero');
-const srcset = hasImage ? getArticleImageSrcset(articleId) : undefined;
-const sizes = hasImage ? getArticleImageSizes() : undefined;
+const srcset = getArticleImageSrcset(articleId);
+const sizes = getArticleImageSizes();
 ---
 
-<div class={`article-hero ${hasImage ? '' : 'article-hero-placeholder'}`} data-aspect={aspectRatio}>
+<div class="article-hero" data-aspect={aspectRatio}>
   <img
     src={src}
     srcset={srcset}
@@ -63,10 +58,5 @@ const sizes = hasImage ? getArticleImageSizes() : undefined;
     height: 100%;
     object-fit: cover;
     display: block;
-  }
-  /* Placeholder reads as a soft brand panel rather than a "broken image". */
-  .article-hero-placeholder img {
-    object-fit: contain;
-    opacity: 0.9;
   }
 </style>

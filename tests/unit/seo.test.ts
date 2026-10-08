@@ -5,6 +5,8 @@ import {
   howToJsonLd,
   collectionJsonLd,
   breadcrumbJsonLd,
+  organizationJsonLd,
+  websiteJsonLd,
 } from '../../src/lib/seo';
 import type { Lesson, NavCategory } from '../../src/lib/content';
 
@@ -25,14 +27,22 @@ describe('buildMeta()', () => {
     );
   });
 
-  it('uses summary_large_image twitter card when an image is set', () => {
-    expect(buildMeta({ title: 't', description: 'd', path: '/', image: 'x.jpg' }).twitterCard).toBe(
-      'summary_large_image',
-    );
+  it("uses a page's own image as is, in the large twitter card", () => {
+    const m = buildMeta({ title: 't', description: 'd', path: '/', image: 'x.jpg' });
+    expect(m.ogImage).toBe('x.jpg');
+    expect(m.twitterCard).toBe('summary_large_image');
+    // Its size and content are not known here, so neither is claimed.
+    expect(m.ogImageAlt).toBeUndefined();
+    expect(m.ogImageWidth).toBeUndefined();
   });
 
-  it('defaults to summary twitter card when no image', () => {
-    expect(buildMeta({ title: 't', description: 'd', path: '/' }).twitterCard).toBe('summary');
+  it("gives a page without its own image the site's share image (the logo card)", () => {
+    const m = buildMeta({ title: 't', description: 'd', path: '/' });
+    expect(m.ogImage).toBe('https://learncivicsense.in/og-image.png');
+    expect(m.ogImageWidth).toBe(1200);
+    expect(m.ogImageHeight).toBe(630);
+    expect(m.ogImageAlt).toMatch(/Learn Civic Sense logo/);
+    expect(m.twitterCard).toBe('summary_large_image');
   });
 
   it('defaults og:type to website but accepts article', () => {
@@ -110,6 +120,11 @@ describe('articleJsonLd()', () => {
     expect(ld.articleSection).toBe('Traffic and roads');
     expect(ld.wordCount).toBe(5);
     expect(ld.inLanguage).toBe('en-IN');
+    expect(ld.publisher).toMatchObject({
+      '@type': 'Organization',
+      name: 'Learn Civic Sense',
+      logo: { '@type': 'ImageObject', url: 'https://learncivicsense.in/logo.png' },
+    });
   });
 
   it('falls back to category description when TLDR is empty', () => {
@@ -208,6 +223,23 @@ describe('collectionJsonLd()', () => {
     });
     expect(ld['@type']).toBe('CollectionPage');
     expect((ld.hasPart as unknown[]).length).toBe(1);
+  });
+});
+
+describe('organizationJsonLd() / websiteJsonLd()', () => {
+  it('names the site and gives search engines its logo', () => {
+    expect(organizationJsonLd()).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Learn Civic Sense',
+      url: 'https://learncivicsense.in/',
+      logo: 'https://learncivicsense.in/logo.png',
+    });
+    expect(websiteJsonLd()).toMatchObject({
+      '@type': 'WebSite',
+      name: 'Learn Civic Sense',
+      url: 'https://learncivicsense.in/',
+    });
   });
 });
 

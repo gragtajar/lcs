@@ -41,6 +41,8 @@ const TYPES = {
   '.json': /^application\/json/,
   '.webmanifest': /json/,
   '.svg': /^image\/svg\+xml/,
+  '.ico': /^image\/(x-icon|vnd\.microsoft\.icon)/,
+  '.png': /^image\/png/,
   '.xml': /xml/,
   '.txt': /^text\/plain/,
   '.woff2': /^font\/woff2/,

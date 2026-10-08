@@ -1,4 +1,5 @@
 ---
+import Logo from './Logo.astro';
 import { t } from '../lib/i18n';
 const year = new Date().getFullYear();
 ---
@@ -6,6 +7,7 @@ const year = new Date().getFullYear();
 <footer class="footer" data-pagefind-ignore>
   <div class="footer-inner">
     <div class="footer-brand">
+      <Logo class="footer-logo" />
       <strong>{t('siteName')}</strong>
       <span>{t('footer.tagline')}</span>
     </div>
@@ -44,10 +46,20 @@ const year = new Date().getFullYear();
     gap: var(--space-3);
     font-size: var(--text-sm);
   }
+  /* The logo beside the name and tagline, as tall as the two lines. */
   .footer-brand {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-3);
+    row-gap: var(--space-1);
+  }
+  .footer-brand :global(.footer-logo) {
+    grid-row: span 2;
+    display: block;
+    height: 44px;
+    width: auto;
+    aspect-ratio: 168 / 236;
   }
   .footer-brand strong {
     color: var(--color-text);
