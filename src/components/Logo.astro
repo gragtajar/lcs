@@ -1,0 +1,16 @@
+---
+// The site's logo mark (src/assets/logo.svg) inline, so the theme colours its
+// ink and paper (--logo-ink / --logo-paper in tokens.css, styled in
+// global.css). Decorative: always sits beside the site's name, which names the
+// link. Size it with the class (height; the width follows the artwork).
+import logoSource from '../assets/logo.svg?raw';
+import { inlineLogo } from '../lib/logo-svg.mjs';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<Fragment set:html={inlineLogo(logoSource, className)} />

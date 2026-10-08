@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import Logo from './Logo.astro';
 import LanguageMenu from '../islands/LanguageMenu.tsx';
 import ThemeMenu from '../islands/ThemeMenu.tsx';
 import SearchOverlay from '../islands/SearchOverlay.tsx';
@@ -9,7 +10,7 @@ import { t } from '../lib/i18n';
 <header class="topbar" data-pagefind-ignore>
   <div class="topbar-inner">
     <a class="brand" href="/">
-      <span class="brand-mark" aria-hidden="true">civic</span>
+      <Logo class="brand-logo" />
       <span class="brand-name">{t('siteName')}</span>
     </a>
 
@@ -123,17 +124,13 @@ import { t } from '../lib/i18n';
     color: var(--color-text);
     text-decoration: none;
   }
-  .brand-mark {
-    display: inline-grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-sm);
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    font-size: 0.7rem;
-    font-weight: var(--weight-heading);
-    letter-spacing: 0;
+  /* The logo mark, portrait (168:236): 32px tall, 23px wide. */
+  .brand :global(.brand-logo) {
+    display: block;
+    flex-shrink: 0;
+    height: 32px;
+    width: auto;
+    aspect-ratio: 168 / 236;
   }
   .brand-name {
     font-size: 0.95rem;

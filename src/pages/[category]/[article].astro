@@ -22,7 +22,7 @@ import {
   articleUrl,
 } from '../../lib/content';
 import { renderLessonBody } from '../../lib/markdown';
-import { getArticleImage, getArticleThumb } from '../../lib/images';
+import { getArticleImage, getArticleThumb, hasArticleImage } from '../../lib/images';
 import { t } from '../../lib/i18n';
 import { articleJsonLd, howToJsonLd, breadcrumbJsonLd } from '../../lib/seo';
 
@@ -122,7 +122,9 @@ const thumb = isComingSoon ? undefined : getArticleThumb(planned.id);
   width="flush"
   canonical={canonical}
   type="article"
-  image={isComingSoon ? undefined : getArticleImage(planned.id, 'og', true)}
+  image={!isComingSoon && hasArticleImage(planned.id)
+    ? getArticleImage(planned.id, 'og', true)
+    : undefined}
   ogTitle={ogTitle}
   ogDescription={ogDescription}
 >

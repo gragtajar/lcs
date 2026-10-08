@@ -153,6 +153,14 @@ button:active {
   border-radius: var(--radius-xs);
 }
 
+/* The logo mark (src/components/Logo.astro): ink and paper from the theme. */
+.logo-ink {
+  fill: var(--logo-ink);
+}
+.logo-paper {
+  fill: var(--logo-paper);
+}
+
 /* Visually hidden but available to screen readers. */
 .sr-only {
   position: absolute;

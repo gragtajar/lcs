@@ -2,9 +2,11 @@
 //
 // One high-resolution source per article is uploaded to ImageKit; the CDN derives
 // every responsive/optimised variant from URL transformations (see imagekit.ts).
-// Only articles present in `src/data/article-images.json` have an image — every other
-// article renders the bundled placeholder, so an unlisted id never yields a broken
-// image. Filename stem == article id (e.g. `sacred-001` -> `sacred-001.png`).
+// Only articles present in `src/data/article-images.json` have an image; for every
+// other article the URL falls back to the site's share image (the logo over the
+// site's name, public/og-image.png), so an unlisted id never yields a broken image
+// or a share card without one. Filename stem == article id (e.g. `sacred-001` ->
+// `sacred-001.png`).
 
 import { imagekitUrl } from './imagekit';
 import articleImagesData from '../data/article-images.json' with { type: 'json' };
@@ -13,8 +15,8 @@ export type ImageVariant = 'hero' | 'og';
 
 const SITE_ORIGIN = 'https://learncivicsense.in';
 
-/** Local placeholder used for articles without an uploaded image. */
-const PLACEHOLDER_PATH = '/placeholders/default-article.svg';
+/** The site's share image, for articles without an uploaded image (a PNG: share cards take no SVG). */
+const FALLBACK_PATH = '/og-image.png';
 
 /** article id -> ImageKit file path. */
 const registry: Record<string, string> = articleImagesData.images;
@@ -33,17 +35,17 @@ export function hasArticleImage(articleId: string): boolean {
   return Object.prototype.hasOwnProperty.call(registry, articleId);
 }
 
-function placeholder(absolute: boolean): string {
-  return absolute ? `${SITE_ORIGIN}${PLACEHOLDER_PATH}` : PLACEHOLDER_PATH;
+function fallback(absolute: boolean): string {
+  return absolute ? `${SITE_ORIGIN}${FALLBACK_PATH}` : FALLBACK_PATH;
 }
 
 /**
- * Resolve one article image variant to a delivery URL, or the local placeholder when
+ * Resolve one article image variant to a delivery URL, or the site's share image when
  * the article has no uploaded image.
  *
  * @param articleId - Lesson id, e.g. `sacred-001`.
  * @param variant - Named size role.
- * @param absolute - Only affects the placeholder (ImageKit URLs are already absolute).
+ * @param absolute - Only affects the fallback (ImageKit URLs are already absolute).
  *   Needed for og:image, which must be absolute.
  */
 export function getArticleImage(
@@ -52,7 +54,7 @@ export function getArticleImage(
   absolute = false,
 ): string {
   const path = registry[articleId];
-  if (!path) return placeholder(absolute);
+  if (!path) return fallback(absolute);
   if (variant === 'og') {
     // Social cards: fixed 1200x630 (default maintain_ratio centre-crop), JPEG for the
     // widest scraper compatibility.
@@ -63,7 +65,7 @@ export function getArticleImage(
 
 /**
  * Responsive `srcset` for the hero from a single source (f-auto per width), or undefined
- * when the article has no uploaded image (the caller then renders the placeholder src).
+ * when the article has no uploaded image.
  */
 export function getArticleImageSrcset(articleId: string): string | undefined {
   const path = registry[articleId];

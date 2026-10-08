@@ -7,23 +7,24 @@ first paint), it belongs in `src/islands/` instead.
 
 ## Inventory
 
-| File                    | Used by                            | What it renders                                             |
-| ----------------------- | ---------------------------------- | ----------------------------------------------------------- |
-| `ArticleHeader.astro`   | article page                       | h1 + format chip + metadata row + image placeholder         |
-| `ArticleListItem.astro` | topic page                         | list-row card per article (real or coming-soon)             |
-| `Breadcrumb.astro`      | topic, topics, article, info pages | `<nav>` with chevron-separated crumbs                       |
-| `ComingSoonBody.astro`  | article page (placeholder variant) | status line + the topic's nearest lesson + its topic        |
-| `Footer.astro`          | every page                         | footer with About, Feedback, Privacy and Terms links        |
-| `BrandIcon.astro`       | ShareBar                           | share platforms' own marks (Simple Icons, Bootstrap)        |
-| `Icon.astro`            | everywhere                         | one Lucide icon as inline SVG, by name (ADR 009)            |
-| `InfoSection.astro`     | About, Privacy, Terms              | one side-heading section of `src/layouts/InfoLayout.astro`  |
-| `RelatedLinks.astro`    | article page                       | the one "Up next" card (resolved by ID via taxonomy)        |
-| `SidebarNav.astro`      | topic pages                        | the 14 topics, this one current, + name-only filter         |
-| `LessonIndex.astro`     | topics page                        | one-line rows of a topic's lessons: time or Coming soon     |
-| `TopicIndex.astro`      | homepage, search page, 404 page    | the 14 topics with readable counts, grouped India/abroad    |
-| `SourcesList.astro`     | article page                       | numbered citations from frontmatter `sources:`              |
-| `TldrBox.astro`         | article page                       | amber-tinted "TL;DR" callout                                |
-| `TopBar.astro`          | every page (via BaseLayout)        | sticky header: logo, search trigger, language + theme menus |
+| File                    | Used by                            | What it renders                                              |
+| ----------------------- | ---------------------------------- | ------------------------------------------------------------ |
+| `ArticleHeader.astro`   | article page                       | h1 + format chip + metadata row + image placeholder          |
+| `ArticleListItem.astro` | topic page                         | list-row card per article (real or coming-soon)              |
+| `Breadcrumb.astro`      | topic, topics, article, info pages | `<nav>` with chevron-separated crumbs                        |
+| `ComingSoonBody.astro`  | article page (placeholder variant) | status line + the topic's nearest lesson + its topic         |
+| `Footer.astro`          | every page                         | footer with About, Feedback, Privacy and Terms links         |
+| `BrandIcon.astro`       | ShareBar                           | share platforms' own marks (Simple Icons, Bootstrap)         |
+| `Icon.astro`            | everywhere                         | one Lucide icon as inline SVG, by name (ADR 009)             |
+| `InfoSection.astro`     | About, Privacy, Terms              | one side-heading section of `src/layouts/InfoLayout.astro`   |
+| `Logo.astro`            | TopBar, Footer                     | the logo mark inline (`src/assets/logo.svg`), theme-coloured |
+| `RelatedLinks.astro`    | article page                       | the one "Up next" card (resolved by ID via taxonomy)         |
+| `SidebarNav.astro`      | topic pages                        | the 14 topics, this one current, + name-only filter          |
+| `LessonIndex.astro`     | topics page                        | one-line rows of a topic's lessons: time or Coming soon      |
+| `TopicIndex.astro`      | homepage, search page, 404 page    | the 14 topics with readable counts, grouped India/abroad     |
+| `SourcesList.astro`     | article page                       | numbered citations from frontmatter `sources:`               |
+| `TldrBox.astro`         | article page                       | amber-tinted "TL;DR" callout                                 |
+| `TopBar.astro`          | every page (via BaseLayout)        | sticky header: logo, search trigger, language + theme menus  |
 
 ## Conventions
 

@@ -84,22 +84,30 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
     {!noindex && <meta property="og:url" content={meta.canonicalUrl} />}
     <meta property="og:site_name" content={t('siteName')} />
     <meta property="og:locale" content="en_IN" />
-    {meta.ogImage && <meta property="og:image" content={meta.ogImage} />}
+    <meta property="og:image" content={meta.ogImage} />
+    {meta.ogImageWidth && <meta property="og:image:width" content={String(meta.ogImageWidth)} />}
+    {meta.ogImageHeight && <meta property="og:image:height" content={String(meta.ogImageHeight)} />}
+    {meta.ogImageAlt && <meta property="og:image:alt" content={meta.ogImageAlt} />}
 
     {/* Twitter */}
     <meta name="twitter:card" content={meta.twitterCard} />
     <meta name="twitter:title" content={meta.ogTitle} />
     <meta name="twitter:description" content={meta.ogDescription} />
-    {meta.ogImage && <meta name="twitter:image" content={meta.ogImage} />}
+    <meta name="twitter:image" content={meta.ogImage} />
+    {meta.ogImageAlt && <meta name="twitter:image:alt" content={meta.ogImageAlt} />}
 
     {
       /*
-      Icons + PWA manifest. PNG variants (favicon-32, apple-touch-icon) are added
-      when real brand artwork lands; for now the SVG favicon scales fine on modern
-      browsers, and the manifest gives Android home-screen colour cues.
+      Icons, all built from the logo (src/assets/logo.svg) by
+      scripts/build-brand-assets.mjs. The .ico (16/32/48) is for browsers
+      without SVG icons; its sizes="32x32" keeps browsers that read both from
+      preferring it over the SVG, which also swaps its colours in a dark UI.
+      iOS takes the 180px tile; the manifest carries Android's.
     */
     }
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
 
     {

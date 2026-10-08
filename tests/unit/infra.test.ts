@@ -61,10 +61,10 @@ describe('article images (ImageKit)', () => {
     expect(getArticleThumb('traffic-001')).toBeUndefined();
   });
 
-  it('falls back to the local placeholder for an article without an image', () => {
-    expect(getArticleImage('traffic-001', 'hero')).toBe('/placeholders/default-article.svg');
+  it("falls back to the site's share image (a PNG) for an article without an image", () => {
+    expect(getArticleImage('traffic-001', 'hero')).toBe('/og-image.png');
     expect(getArticleImage('traffic-001', 'og', true)).toBe(
-      'https://learncivicsense.in/placeholders/default-article.svg',
+      'https://learncivicsense.in/og-image.png',
     );
     expect(getArticleImageSrcset('traffic-001')).toBeUndefined();
   });
