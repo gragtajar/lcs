@@ -22,6 +22,10 @@ const url = articleUrl(article);
 const isComingSoon = !article.published || !lesson;
 const excerpt = lesson ? lesson.meta_description || lesson.tldr[0] || '' : '';
 const thumb = isComingSoon ? undefined : getArticleThumb(article.id);
+// A transparent 1x1 GIF holds a waiting picture's place, so its frame shows
+// the plain tint until the picture loads; an <img> without a src drew the
+// browser's broken-image icon there.
+const WAITING = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 ---
 
 <article class:list={['li', { 'li-soon': isComingSoon, 'has-thumb': thumb }]}>
@@ -48,13 +52,13 @@ const thumb = isComingSoon ? undefined : getArticleThumb(article.id);
       <>
         <img
           class="li-thumb"
+          src={WAITING}
           data-src={thumb.src}
           data-srcset={thumb.srcset}
           sizes="(max-width: 559px) 40vw, 240px"
           alt=""
           width="320"
           height="180"
-          loading="lazy"
           decoding="async"
         />
         <noscript class="li-thumb-noscript">
