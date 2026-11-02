@@ -213,6 +213,31 @@ test.describe('Topic pages', () => {
     await expect(page.getByRole('heading', { name: /^more in /i })).toHaveCount(0);
   });
 
+  test('lesson-row illustrations load as they near the screen, each its own lesson’s', async ({
+    page,
+  }) => {
+    await page.goto('/traffic/');
+    await page.waitForLoadState('load');
+    const thumbs = page.locator('.li.has-thumb .li-thumb');
+    expect(await thumbs.count()).toBeGreaterThan(10);
+    const loaded = (img: HTMLImageElement) => img.complete && img.naturalWidth > 0;
+    // The first row's shows at once; the last row's waits, far down the page.
+    await expect.poll(() => thumbs.first().evaluate(loaded)).toBe(true);
+    const last = thumbs.last();
+    await expect(last).not.toHaveAttribute('src');
+    await last.scrollIntoViewIfNeeded();
+    await expect.poll(() => last.evaluate(loaded)).toBe(true);
+    // Every row's picture (loaded or still waiting) is its own traffic lesson's file.
+    const files = await thumbs.evaluateAll((imgs) =>
+      imgs.map((img) => {
+        const srcset = img.getAttribute('srcset') ?? (img as HTMLImageElement).dataset.srcset ?? '';
+        return srcset.split(' ', 1)[0]?.split('/').pop() ?? '';
+      }),
+    );
+    expect(files.filter((f) => !/^traffic-\d{3}\.png$/.test(f))).toEqual([]);
+    expect(new Set(files).size).toBe(files.length);
+  });
+
   test('a topic page mixes published and coming-soon articles', async ({ page }) => {
     const found = await findComingSoon(page);
     test.skip(!found, 'every candidate topic is fully published');
@@ -857,7 +882,7 @@ test.describe('Brand: logo, icons and share image', () => {
     const og = (property: string) =>
       page.locator(`meta[property="${property}"]`).getAttribute('content');
     // The topic page, an info page, and a lesson without an illustration.
-    for (const url of ['/', '/traffic/', '/about/', '/traffic/the-case-against-honking/']) {
+    for (const url of ['/', '/traffic/', '/about/', '/water-pools/shower-before-entry/']) {
       await page.goto(url);
       expect(await og('og:image'), url).toBe('https://learncivicsense.in/og-image.png');
       expect(await og('og:image:width'), url).toBe('1200');

@@ -27,8 +27,15 @@ const VARIANT_WIDTH: Record<ImageVariant, number> = {
   og: 1200,
 };
 
-/** Responsive srcset ladder for the hero — the browser picks by slot width × DPR. */
-const HERO_SRCSET_WIDTHS = [400, 640, 800, 1080, 1200, 1600];
+/**
+ * Responsive srcset ladder for the hero, whose slot is the article column:
+ * min(100vw - 32px, 640px). The browser picks the first width at or above
+ * slot × DPR, so the steps stay small where real screens land: a 1x desktop
+ * (640) gets 640, Lighthouse's phone (380 at 1.75x, 665) 680, a 2x laptop
+ * (1280) 1280, a 3x phone (~1080-1140) 1080 or 1160. Wider gaps downloaded
+ * files a third bigger than shown, which Lighthouse fails as oversized.
+ */
+const HERO_SRCSET_WIDTHS = [400, 520, 640, 680, 760, 840, 960, 1080, 1160, 1280];
 
 /** Whether the given article has an image uploaded to ImageKit. */
 export function hasArticleImage(articleId: string): boolean {
@@ -75,53 +82,40 @@ export function getArticleImageSrcset(articleId: string): string | undefined {
   ).join(', ');
 }
 
-/** The `sizes` attribute that pairs with `getArticleImageSrcset`. */
+/**
+ * The `sizes` attribute that pairs with `getArticleImageSrcset`: the hero spans
+ * the article column, the page width less its 16px gutters up to 640px
+ * (measured at 320-1600px wide).
+ */
 export function getArticleImageSizes(): string {
-  return '(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px';
+  return '(max-width: 671px) calc(100vw - 32px), 640px';
 }
 
 /**
- * Widths of the lesson thumbnail beside a row's text (lesson lists, search
- * results): its largest slot is 272px, so 320w
- * serves it at 1x and 640w at 2x; the browser picks by slot × DPR.
+ * Widths of a lesson's picture beside a row's text (topic lists, search
+ * results, the lesson a homepage topic leads with): up to 240px on a desktop
+ * and 40% of the column on a phone (about 130-160px), so up to 560 for a 3x
+ * phone or a 2x desktop. The browser picks the first width at or above
+ * slot × DPR, so the steps stay under ~20%: Lighthouse's desktop (240px at 1x)
+ * gets 240, its phone (152px at 1.75x, 266px) gets 280. A wider gap downloads
+ * unseen bytes: a 320w file for the 240px slot weighed about 60% more, and a
+ * topic list with two dozen illustrated lessons multiplies that.
  */
-const THUMB_1X = 320;
-const THUMB_2X = 640;
+const THUMB_WIDTHS = [240, 280, 320, 360, 400, 480, 560];
+const THUMB_FALLBACK_WIDTH = 320;
 
 export interface ArticleThumb {
   src: string;
   srcset: string;
 }
 
-/** A lesson row's thumbnail, or undefined when the article has no uploaded image. */
+/** A lesson row's picture, or undefined when the article has no uploaded image. */
 export function getArticleThumb(articleId: string): ArticleThumb | undefined {
   const path = registry[articleId];
   if (!path) return undefined;
   const at = (width: number) => imagekitUrl(path, { width, format: 'auto' });
   return {
-    src: at(THUMB_1X),
-    srcset: `${at(THUMB_1X)} ${THUMB_1X}w, ${at(THUMB_2X)} ${THUMB_2X}w`,
-  };
-}
-
-/**
- * Widths of the picture a homepage topic leads with: the lesson lists' size,
- * up to 240px on a desktop and 40% of the column on a phone (about 130-160px),
- * so up to 560 for a 3x phone or a 2x desktop. The browser picks the first
- * width at or above slot × DPR, so the steps stay under ~20%: Lighthouse's
- * desktop (240px at 1x) gets 240, its phone (152px at 1.75x, 266px) gets 280;
- * a wider gap there downloads unseen bytes that Lighthouse fails as an
- * oversized image.
- */
-const LEAD_WIDTHS = [240, 280, 320, 360, 400, 480, 560];
-
-/** A featured topic's lead picture, or undefined when the article has no uploaded image. */
-export function getArticleLeadPicture(articleId: string): ArticleThumb | undefined {
-  const path = registry[articleId];
-  if (!path) return undefined;
-  const at = (width: number) => imagekitUrl(path, { width, format: 'auto' });
-  return {
-    src: at(320),
-    srcset: LEAD_WIDTHS.map((w) => `${at(w)} ${w}w`).join(', '),
+    src: at(THUMB_FALLBACK_WIDTH),
+    srcset: THUMB_WIDTHS.map((w) => `${at(w)} ${w}w`).join(', '),
   };
 }
