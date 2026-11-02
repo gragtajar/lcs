@@ -225,6 +225,10 @@ test.describe('Topic pages', () => {
     await page.waitForLoadState('load');
     const thumbs = page.locator('.li.has-thumb .li-thumb');
     expect(await thumbs.count()).toBeGreaterThan(10);
+    // Script requests them, so the page opens ImageKit's connection up front.
+    await expect(page.locator('link[rel="preconnect"][href="https://ik.imagekit.io"]')).toHaveCount(
+      1,
+    );
     // Loaded from ImageKit (a waiting picture shows a transparent 1x1 placeholder).
     const loaded = (img: HTMLImageElement) =>
       img.complete && img.naturalWidth > 1 && img.currentSrc.includes('ik.imagekit.io');
