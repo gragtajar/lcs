@@ -1,0 +1,8 @@
+{
+  "name": "learncivicsense-lhci",
+  "private": true,
+  "description": "Lighthouse CI, installed apart from the site (see README.md)",
+  "devDependencies": {
+    "@lhci/cli": "0.14.0"
+  }
+}
