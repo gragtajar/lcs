@@ -173,13 +173,17 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci --legacy-peer-deps
+          cache-dependency-path: tools/lhci/package-lock.json
+      # Lighthouse CI has its own package (tools/lhci/README.md): it only
+      # measures the build, so the site's packages aren't installed here.
+      - name: Install Lighthouse CI
+        run: npm ci --prefix tools/lhci
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
       - name: Lighthouse CI
-        run: npx lhci autorun --config=${{ matrix.form == 'desktop' && 'lighthouserc.json' || 'lighthouserc.mobile.json' }}
+        run: tools/lhci/node_modules/.bin/lhci autorun --config=${{ matrix.form == 'desktop' && 'lighthouserc.json' || 'lighthouserc.mobile.json' }}
 
   size-limit:
     name: Size limit

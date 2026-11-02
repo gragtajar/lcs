@@ -97,7 +97,8 @@ decided by `isArticlePublished()` in `src/lib/content.ts`.
 | Lighthouse Performance (mobile)             | ≥ 90    | gated in `lighthouserc.mobile.json` |
 
 Measured with `npm run size` on 2026-09-29. Targets enforced in CI via
-`size-limit` (`.size-limit.json`) and `@lhci/cli` (`lighthouserc{,.mobile}.json`).
+`size-limit` (`.size-limit.json`) and `@lhci/cli` (`lighthouserc{,.mobile}.json`, installed
+from `tools/lhci/`).
 
 ## Where to look for X
 

@@ -9,7 +9,7 @@ Built with Astro, Pagefind, and a tiny set of Preact islands.
 ## Quick start
 
 ```bash
-npm install --legacy-peer-deps    # uses Node 20 — see .nvmrc
+npm install --legacy-peer-deps    # uses Node 24 — see .nvmrc
 npm run dev                       # http://localhost:4321
 npm run build                     # static build to ./dist + Pagefind index
 npm run preview                   # serve the built site at :4321
@@ -100,7 +100,7 @@ back to `public/placeholders/default-article.svg`.
 | `npm run test:e2e`      | Playwright (auto-starts `preview`)       |
 | `npm run test:prod`     | Playwright against the live site         |
 | `npm run verify:deploy` | Live site vs `dist/`, byte for byte      |
-| `npm run lhci`          | Lighthouse CI desktop preset             |
+| `npm run lhci`          | Lighthouse CI desktop (see `tools/lhci`) |
 | `npm run size`          | size-limit budget check                  |
 
 ## License
