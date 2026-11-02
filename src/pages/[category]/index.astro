@@ -13,6 +13,8 @@ import Icon from '../../components/Icon.astro';
 import { getNavCategories, getCategory, loadLessonForArticle } from '../../lib/content';
 import { categoryIconName } from '../../lib/icons';
 import { t } from '../../lib/i18n';
+import { hasArticleImage } from '../../lib/images';
+import { imagekitEndpoint } from '../../lib/imagekit';
 
 // Static path generation covers all 14 navigable categories (clusters + abroad packs).
 export function getStaticPaths() {
@@ -43,9 +45,19 @@ const facts = [
   published.length > 0 ? t('list.totalMinutes', { n: totalMinutes }) : '',
   comingSoonCount > 0 ? t('list.comingSoonCount', { count: comingSoonCount }) : '',
 ].filter(Boolean);
+
+// The lessons' illustrations load by script as they near the screen, so the
+// browser can't see them coming from the HTML: open the connection to
+// ImageKit early when the list shows any.
+const imageOrigin = published.some((a) => hasArticleImage(a.id))
+  ? new URL(imagekitEndpoint()).origin
+  : undefined;
 ---
 
 <BaseLayout title={cat.title} description={cat.description} width="flush">
+  <Fragment slot="head">
+    {imageOrigin && <link rel="preconnect" href={imageOrigin} />}
+  </Fragment>
   <div class="page" data-cluster={cat.id}>
     <button
       class="sidebar-toggle"

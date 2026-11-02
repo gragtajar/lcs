@@ -202,8 +202,13 @@ test.describe('Topic pages', () => {
     const thumb = page.locator('.li.has-thumb .li-thumb').first();
     await thumb.scrollIntoViewIfNeeded();
     await expect
-      .poll(() => thumb.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
-      .toBeGreaterThan(0);
+      .poll(() =>
+        thumb.evaluate(
+          (img: HTMLImageElement) =>
+            img.complete && img.naturalWidth > 1 && img.currentSrc.includes('ik.imagekit.io'),
+        ),
+      )
+      .toBe(true);
     const box = (await thumb.boundingBox())!;
     const row = (await page.locator('.li.has-thumb').first().boundingBox())!;
     // Beside the text, at the row's right edge, and big enough to read.
@@ -220,11 +225,23 @@ test.describe('Topic pages', () => {
     await page.waitForLoadState('load');
     const thumbs = page.locator('.li.has-thumb .li-thumb');
     expect(await thumbs.count()).toBeGreaterThan(10);
-    const loaded = (img: HTMLImageElement) => img.complete && img.naturalWidth > 0;
-    // The first row's shows at once; the last row's waits, far down the page.
+    // Script requests them, so the page opens ImageKit's connection up front.
+    await expect(page.locator('link[rel="preconnect"][href="https://ik.imagekit.io"]')).toHaveCount(
+      1,
+    );
+    // Loaded from ImageKit (a waiting picture shows a transparent 1x1 placeholder).
+    const loaded = (img: HTMLImageElement) =>
+      img.complete && img.naturalWidth > 1 && img.currentSrc.includes('ik.imagekit.io');
+    // The first row's shows at once; the last row's waits, far down the page,
+    // as a plain frame (the placeholder decoded, no broken-image icon).
     await expect.poll(() => thumbs.first().evaluate(loaded)).toBe(true);
     const last = thumbs.last();
-    await expect(last).not.toHaveAttribute('src');
+    expect(
+      await last.evaluate((img: HTMLImageElement) => [
+        img.currentSrc.startsWith('data:image/gif'),
+        img.complete && img.naturalWidth === 1,
+      ]),
+    ).toEqual([true, true]);
     await last.scrollIntoViewIfNeeded();
     await expect.poll(() => last.evaluate(loaded)).toBe(true);
     // Every row's picture (loaded or still waiting) is its own traffic lesson's file.
