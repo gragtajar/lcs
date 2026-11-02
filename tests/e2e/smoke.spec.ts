@@ -673,7 +673,10 @@ test.describe('Language menu', () => {
 
   test('offers English, ticked, and Hindi as coming soon', async ({ page }) => {
     await page.goto('/about/');
+    // The Hindi name is drawn in Hind's Devanagari file, fetched once it shows.
+    const devanagari = page.waitForRequest(/\/fonts\/hind\/hind-\d+-devanagari\.woff2$/);
     const menu = await openLanguageMenu(page);
+    await devanagari;
     const items = menu.getByRole('menuitemradio');
     await expect(items).toHaveCount(2);
     await expect(items.nth(0)).toHaveAccessibleName('English');
@@ -922,6 +925,31 @@ test.describe('Brand: logo, icons and share image', () => {
     expect(data.find((d) => d['@type'] === 'WebSite')).toMatchObject({
       name: 'Learn Civic Sense',
     });
+  });
+});
+
+test.describe('Fonts', () => {
+  test('a rupee sign is drawn in Hind from the Latin file, not the Devanagari one', async ({
+    page,
+  }) => {
+    const fonts: string[] = [];
+    page.on('request', (r) => {
+      if (r.resourceType() === 'font') fonts.push(new URL(r.url()).pathname);
+    });
+    await page.goto('/traffic/');
+    // Lesson excerpts here quote fines in rupees.
+    await expect(page.locator('.article-list')).toContainText('₹');
+    const faces = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const used = await document.fonts.load('400 16px Hind', '₹');
+      return used.map((f) => f.unicodeRange);
+    });
+    // One Hind face draws it: the Latin one (it covers U+0-FF).
+    expect(faces).toHaveLength(1);
+    expect(faces[0]).toMatch(/U\+0-FF\b/i);
+    expect(faces[0]).toMatch(/U\+20B9\b/i);
+    expect(fonts).toContain('/fonts/hind/hind-400-latin-rupee.woff2');
+    expect(fonts.filter((f) => f.includes('devanagari'))).toEqual([]);
   });
 });
 

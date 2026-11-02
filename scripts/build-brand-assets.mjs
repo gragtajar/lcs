@@ -28,7 +28,7 @@ const logo = parseLogo(source);
 const mark = markSvg(source);
 const ratio = logo.width / logo.height;
 
-const hind700 = readFileSync(path.join(PUBLIC, 'fonts/hind/hind-700-latin.woff2')).toString(
+const hind700 = readFileSync(path.join(PUBLIC, 'fonts/hind/hind-700-latin-rupee.woff2')).toString(
   'base64',
 );
 
