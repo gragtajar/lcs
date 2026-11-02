@@ -27,8 +27,15 @@ const VARIANT_WIDTH: Record<ImageVariant, number> = {
   og: 1200,
 };
 
-/** Responsive srcset ladder for the hero — the browser picks by slot width × DPR. */
-const HERO_SRCSET_WIDTHS = [400, 640, 800, 1080, 1200, 1600];
+/**
+ * Responsive srcset ladder for the hero, whose slot is the article column:
+ * min(100vw - 32px, 640px). The browser picks the first width at or above
+ * slot × DPR, so the steps stay small where real screens land: a 1x desktop
+ * (640) gets 640, Lighthouse's phone (380 at 1.75x, 665) 680, a 2x laptop
+ * (1280) 1280, a 3x phone (~1080-1140) 1080 or 1160. Wider gaps downloaded
+ * files a third bigger than shown, which Lighthouse fails as oversized.
+ */
+const HERO_SRCSET_WIDTHS = [400, 520, 640, 680, 760, 840, 960, 1080, 1160, 1280];
 
 /** Whether the given article has an image uploaded to ImageKit. */
 export function hasArticleImage(articleId: string): boolean {
@@ -75,9 +82,13 @@ export function getArticleImageSrcset(articleId: string): string | undefined {
   ).join(', ');
 }
 
-/** The `sizes` attribute that pairs with `getArticleImageSrcset`. */
+/**
+ * The `sizes` attribute that pairs with `getArticleImageSrcset`: the hero spans
+ * the article column, the page width less its 16px gutters up to 640px
+ * (measured at 320-1600px wide).
+ */
 export function getArticleImageSizes(): string {
-  return '(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px';
+  return '(max-width: 671px) calc(100vw - 32px), 640px';
 }
 
 /**

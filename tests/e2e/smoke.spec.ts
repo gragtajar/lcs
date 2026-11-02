@@ -854,7 +854,7 @@ test.describe('Brand: logo, icons and share image', () => {
     const og = (property: string) =>
       page.locator(`meta[property="${property}"]`).getAttribute('content');
     // The topic page, an info page, and a lesson without an illustration.
-    for (const url of ['/', '/traffic/', '/about/', '/traffic/the-case-against-honking/']) {
+    for (const url of ['/', '/traffic/', '/about/', '/water-pools/shower-before-entry/']) {
       await page.goto(url);
       expect(await og('og:image'), url).toBe('https://learncivicsense.in/og-image.png');
       expect(await og('og:image:width'), url).toBe('1200');
