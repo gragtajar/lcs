@@ -26,10 +26,7 @@ const { sources } = Astro.props;
             )}
             {(s.publisher || s.year) && (
               <span class="src-meta">
-                {' — '}
-                {s.publisher && <span>{s.publisher}</span>}
-                {s.publisher && s.year && ', '}
-                {s.year && <span>{s.year}</span>}
+                {` — ${[s.publisher, s.year].filter(Boolean).join(', ')}`}
               </span>
             )}
           </li>

@@ -7,11 +7,11 @@
 import type { APIRoute } from 'astro';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getNavCategories } from '../lib/content';
 import { CONTENT_REPO_PATH, WORKFLOW_REPO_PATH } from '../config';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+// The website root, where builds run (see CONTENT_ROOT in src/lib/content.ts).
+const ROOT = process.cwd();
 
 /** HEAD of the git repository at `dir`, or null when there is none. */
 function headOf(dir: string): string | null {

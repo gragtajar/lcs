@@ -64,4 +64,13 @@ export default defineConfig({
     inlineStylesheets: 'auto',
   },
   compressHTML: true,
+  vite: {
+    build: {
+      // Vite 8 minifies CSS with Lightning CSS, which rewrites syntax for the
+      // newest browsers unless told otherwise: media queries became range syntax
+      // (`width>=768px`), which Safari before 16.4 ignores, losing every
+      // responsive rule on older iPhones. These are Vite's earlier defaults.
+      cssTarget: ['chrome87', 'edge88', 'firefox78', 'safari14'],
+    },
+  },
 });
