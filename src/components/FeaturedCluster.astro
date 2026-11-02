@@ -14,7 +14,7 @@ import Icon from './Icon.astro';
 import { t } from '../lib/i18n';
 import { categoryIconName } from '../lib/icons';
 import { categoryUrl } from '../lib/content';
-import { getArticleLeadPicture } from '../lib/images';
+import { getArticleThumb } from '../lib/images';
 import type { FeaturedCluster } from '../lib/homepage-data';
 
 interface Props {
@@ -27,7 +27,7 @@ const [lead, ...rest] = articles;
 
 const publishedCount = category.articles.filter((a) => a.published).length;
 const headingId = `cluster-${category.id}`;
-const leadPicture = lead ? getArticleLeadPicture(lead.lesson.id) : undefined;
+const leadPicture = lead ? getArticleThumb(lead.lesson.id) : undefined;
 const iconName = categoryIconName(category.icon);
 ---
 

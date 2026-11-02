@@ -94,6 +94,16 @@ async function main() {
   }
 
   const images = buildRegistry(files);
+  // Every image file and what it maps to, so a misnamed upload shows in the
+  // build log instead of silently not appearing. File names only, no secrets.
+  for (const file of files) {
+    const filePath = String(file?.filePath || file?.name || '');
+    const stem = path.posix.basename(filePath).replace(/\.[^.]+$/, '');
+    const mapped = ARTICLE_ID_RE.test(stem) && images[stem] === filePath.replace(/^\/+/, '');
+    console.log(
+      `[imagekit]   ${filePath} -> ${mapped ? stem : 'not used (name is not an article id)'}`,
+    );
+  }
   const existing = existsSync(REGISTRY_PATH) ? JSON.parse(readFileSync(REGISTRY_PATH, 'utf8')) : {};
   const out = {
     _note:

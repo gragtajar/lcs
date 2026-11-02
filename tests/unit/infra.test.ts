@@ -30,7 +30,8 @@ describe('imagekit URL builder', () => {
 describe('article images (ImageKit)', () => {
   it('knows which articles have an uploaded image', () => {
     expect(hasArticleImage('sacred-001')).toBe(true);
-    expect(hasArticleImage('traffic-001')).toBe(false);
+    expect(hasArticleImage('traffic-001')).toBe(true);
+    expect(hasArticleImage('water-001')).toBe(false);
   });
 
   it('builds an ImageKit hero URL for an article with an image', () => {
@@ -49,24 +50,27 @@ describe('article images (ImageKit)', () => {
     const srcset = getArticleImageSrcset('sacred-001');
     expect(srcset).toBeDefined();
     expect(srcset).toContain('tr:w-400,f-auto/sacred-001.png 400w');
-    expect(srcset).toContain('tr:w-1600,f-auto/sacred-001.png 1600w');
-    expect(srcset!.split(', ')).toHaveLength(6);
+    expect(srcset).toContain('tr:w-640,f-auto/sacred-001.png 640w');
+    expect(srcset).toContain('tr:w-1280,f-auto/sacred-001.png 1280w');
+    expect(srcset!.split(', ')).toHaveLength(10);
   });
 
-  it('gives a lesson row a 320w / 640w thumbnail, and none without an image', () => {
+  it('gives a lesson row a 240w-560w picture, and none without an image', () => {
     const thumb = getArticleThumb('sacred-001');
     expect(thumb?.src).toContain('tr:w-320,f-auto/sacred-001.png');
-    expect(thumb?.srcset).toContain('tr:w-320,f-auto/sacred-001.png 320w');
-    expect(thumb?.srcset).toContain('tr:w-640,f-auto/sacred-001.png 640w');
-    expect(getArticleThumb('traffic-001')).toBeUndefined();
+    // An exact width for the 240px desktop slot, up to a 3x phone or 2x desktop.
+    expect(thumb?.srcset).toContain('tr:w-240,f-auto/sacred-001.png 240w');
+    expect(thumb?.srcset).toContain('tr:w-560,f-auto/sacred-001.png 560w');
+    expect(thumb!.srcset.split(', ')).toHaveLength(7);
+    expect(getArticleThumb('water-001')).toBeUndefined();
   });
 
   it("falls back to the site's share image (a PNG) for an article without an image", () => {
-    expect(getArticleImage('traffic-001', 'hero')).toBe('/og-image.png');
-    expect(getArticleImage('traffic-001', 'og', true)).toBe(
+    expect(getArticleImage('water-001', 'hero')).toBe('/og-image.png');
+    expect(getArticleImage('water-001', 'og', true)).toBe(
       'https://learncivicsense.in/og-image.png',
     );
-    expect(getArticleImageSrcset('traffic-001')).toBeUndefined();
+    expect(getArticleImageSrcset('water-001')).toBeUndefined();
   });
 });
 
