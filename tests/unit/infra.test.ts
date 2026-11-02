@@ -98,6 +98,7 @@ describe('zod schemas', () => {
       extra_field: 'ignored',
     });
     expect(parsed.clusters[0]?.id).toBe('traffic');
+    expect(parsed.extra_field).toBe('ignored');
   });
   it('rejects a taxonomy missing version', () => {
     const result = TaxonomySchema.safeParse({ clusters: [] });

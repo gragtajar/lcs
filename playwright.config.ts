@@ -29,7 +29,10 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: 'npm run preview -- --port 4322',
+        // --ignore-lock keeps the server in the foreground, where Playwright
+        // waits for it: under an AI coding agent, Astro 7 otherwise moves it to
+        // the background and the command exits at once.
+        command: 'npm run preview -- --port 4322 --ignore-lock',
         url: 'http://localhost:4322',
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

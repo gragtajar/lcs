@@ -18,7 +18,6 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import yaml from 'js-yaml';
 import {
@@ -30,8 +29,9 @@ import {
 } from '../config.ts';
 import { stripMarkdownToText } from './markdown';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CONTENT_ROOT = path.resolve(HERE, '..', '..', CONTENT_REPO_PATH);
+// From the website root, where builds and tests run: once Astro bundles this
+// module, its own file sits elsewhere (a folder deeper since Astro 7).
+const CONTENT_ROOT = path.resolve(process.cwd(), CONTENT_REPO_PATH);
 const TAXONOMY_PATH = path.join(CONTENT_ROOT, '01-taxonomy', 'taxonomy.json');
 const CLUSTERS_ROOT = path.join(CONTENT_ROOT, '02-clusters');
 const ABROAD_ROOT = path.join(CONTENT_ROOT, '03-abroad');

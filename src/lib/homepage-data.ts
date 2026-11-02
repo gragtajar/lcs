@@ -16,7 +16,6 @@
 
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import {
   getNavCategories,
   loadLessonForArticle,
@@ -40,8 +39,8 @@ import { createLogger } from './logger';
 
 const log = createLogger('homepage-data');
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const MANIFEST_PATH = path.resolve(HERE, '..', '..', WORKFLOW_REPO_PATH, 'PUBLISH-MANIFEST.json');
+// From the website root, where builds and tests run (see CONTENT_ROOT in content.ts).
+const MANIFEST_PATH = path.resolve(process.cwd(), WORKFLOW_REPO_PATH, 'PUBLISH-MANIFEST.json');
 
 /** Baseline quality score used when the manifest (and thus quality_score) is unavailable. */
 const DEFAULT_QUALITY_SCORE = 33;

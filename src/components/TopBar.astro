@@ -94,8 +94,9 @@ import { t } from '../lib/i18n';
     top: 0;
     z-index: var(--z-sticky);
     background: color-mix(in srgb, var(--color-bg) 92%, transparent);
-    backdrop-filter: saturate(180%) blur(8px);
+    /* Prefixed first: the CSS minifier keeps only the later of the two. */
     -webkit-backdrop-filter: saturate(180%) blur(8px);
+    backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid var(--color-border);
   }
   .topbar-inner {
