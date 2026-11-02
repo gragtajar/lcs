@@ -45,20 +45,63 @@ const thumb = isComingSoon ? undefined : getArticleThumb(article.id);
   </p>
   {
     thumb && (
-      <img
-        class="li-thumb"
-        src={thumb.src}
-        srcset={thumb.srcset}
-        sizes="(max-width: 559px) 40vw, 240px"
-        alt=""
-        width="320"
-        height="180"
-        loading="lazy"
-        decoding="async"
-      />
+      <>
+        <img
+          class="li-thumb"
+          data-src={thumb.src}
+          data-srcset={thumb.srcset}
+          sizes="(max-width: 559px) 40vw, 240px"
+          alt=""
+          width="320"
+          height="180"
+          loading="lazy"
+          decoding="async"
+        />
+        <noscript class="li-thumb-noscript">
+          <img
+            class="li-thumb"
+            src={thumb.src}
+            alt=""
+            width="320"
+            height="180"
+            loading="lazy"
+            decoding="async"
+          />
+        </noscript>
+      </>
     )
   }
 </article>
+
+<script>
+  // A row's illustration loads as it comes within about two rows of the
+  // screen, not when the page opens. A topic can list two dozen illustrated
+  // lessons, and the browser's own lazy loading fetched 21 of the 24 on
+  // /traffic/ at once (about 300 KB, past the 200 KB page budget) although a
+  // screen shows four. Without script the <noscript> copy shows instead.
+  const show = (img: HTMLImageElement) => {
+    img.srcset = img.dataset.srcset ?? '';
+    img.src = img.dataset.src ?? '';
+    delete img.dataset.srcset;
+    delete img.dataset.src;
+  };
+  const pending = document.querySelectorAll<HTMLImageElement>('img.li-thumb[data-srcset]');
+  if ('IntersectionObserver' in window) {
+    const near = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          near.unobserve(entry.target);
+          show(entry.target as HTMLImageElement);
+        }
+      },
+      { rootMargin: '400px 0px' },
+    );
+    for (const img of pending) near.observe(img);
+  } else {
+    for (const img of pending) show(img);
+  }
+</script>
 
 <style>
   /* A hairline-separated row, not a bordered card. The whole row is the target:
@@ -93,8 +136,17 @@ const thumb = isComingSoon ? undefined : getArticleThumb(article.id);
   .li.has-thumb .li-meta {
     grid-area: meta;
   }
-  .li.has-thumb .li-thumb {
+  /* (Astro doesn't mark a <noscript> as scoped, hence :global.) */
+  .li.has-thumb .li-thumb,
+  .li.has-thumb > :global(.li-thumb-noscript) {
     grid-area: thumb;
+  }
+  /* Without script the illustration is the <noscript> copy; the deferred one
+     would stay an empty frame. */
+  @media (scripting: none) {
+    .li-thumb[data-srcset] {
+      display: none;
+    }
   }
   /* Phones: the title takes the full width, and the image sits beside the
      excerpt, which gets a third line to match its height. */

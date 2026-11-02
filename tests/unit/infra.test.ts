@@ -55,11 +55,13 @@ describe('article images (ImageKit)', () => {
     expect(srcset!.split(', ')).toHaveLength(10);
   });
 
-  it('gives a lesson row a 320w / 640w thumbnail, and none without an image', () => {
+  it('gives a lesson row a 240w-560w picture, and none without an image', () => {
     const thumb = getArticleThumb('sacred-001');
     expect(thumb?.src).toContain('tr:w-320,f-auto/sacred-001.png');
-    expect(thumb?.srcset).toContain('tr:w-320,f-auto/sacred-001.png 320w');
-    expect(thumb?.srcset).toContain('tr:w-640,f-auto/sacred-001.png 640w');
+    // An exact width for the 240px desktop slot, up to a 3x phone or 2x desktop.
+    expect(thumb?.srcset).toContain('tr:w-240,f-auto/sacred-001.png 240w');
+    expect(thumb?.srcset).toContain('tr:w-560,f-auto/sacred-001.png 560w');
+    expect(thumb!.srcset.split(', ')).toHaveLength(7);
     expect(getArticleThumb('water-001')).toBeUndefined();
   });
 
