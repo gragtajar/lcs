@@ -28,10 +28,14 @@ describe('imagekit URL builder', () => {
 });
 
 describe('article images (ImageKit)', () => {
+  // Not a lesson id, so no upload can give it an image; real lessons gain
+  // pictures with each ImageKit batch (water-001 did on 2026-11-05).
+  const NO_IMAGE = 'none-000';
+
   it('knows which articles have an uploaded image', () => {
     expect(hasArticleImage('sacred-001')).toBe(true);
     expect(hasArticleImage('traffic-001')).toBe(true);
-    expect(hasArticleImage('water-001')).toBe(false);
+    expect(hasArticleImage(NO_IMAGE)).toBe(false);
   });
 
   it('builds an ImageKit hero URL for an article with an image', () => {
@@ -62,15 +66,13 @@ describe('article images (ImageKit)', () => {
     expect(thumb?.srcset).toContain('tr:w-240,f-auto/sacred-001.png 240w');
     expect(thumb?.srcset).toContain('tr:w-560,f-auto/sacred-001.png 560w');
     expect(thumb!.srcset.split(', ')).toHaveLength(7);
-    expect(getArticleThumb('water-001')).toBeUndefined();
+    expect(getArticleThumb(NO_IMAGE)).toBeUndefined();
   });
 
   it("falls back to the site's share image (a PNG) for an article without an image", () => {
-    expect(getArticleImage('water-001', 'hero')).toBe('/og-image.png');
-    expect(getArticleImage('water-001', 'og', true)).toBe(
-      'https://learncivicsense.in/og-image.png',
-    );
-    expect(getArticleImageSrcset('water-001')).toBeUndefined();
+    expect(getArticleImage(NO_IMAGE, 'hero')).toBe('/og-image.png');
+    expect(getArticleImage(NO_IMAGE, 'og', true)).toBe('https://learncivicsense.in/og-image.png');
+    expect(getArticleImageSrcset(NO_IMAGE)).toBeUndefined();
   });
 });
 

@@ -31,6 +31,30 @@ async function findComingSoon(
   return null;
 }
 
+/** Topics that still hold lessons without an illustration. Pictures arrive in
+ *  ImageKit batches, so the share-image test probes this list for a lesson
+ *  without one, instead of pinning a lesson that later gets a picture.
+ *  Refresh the list if all of these fill in. */
+const NO_PICTURE_CANDIDATES = [
+  // Refreshed 2026-11-05: 147 of the 198 published lessons have a picture.
+  '/spitting-and-hygiene/',
+  '/queues-and-waiting/',
+  '/universal-core/',
+  '/singapore-uae-southeast-asia/',
+  '/uk-and-schengen/',
+];
+
+/** The first published lesson without an illustration on the candidate
+ *  topics. Null when every one of them has a picture. */
+async function findLessonWithoutPicture(page: Page): Promise<string | null> {
+  for (const topic of NO_PICTURE_CANDIDATES) {
+    await page.goto(topic);
+    const link = page.locator('article.li:not(.li-soon):not(.has-thumb) .li-title a').first();
+    if ((await link.count()) > 0) return link.getAttribute('href');
+  }
+  return null;
+}
+
 /** A lesson's address has two parts, /{topic}/{lesson}/ (ADR 011). */
 const LESSON_URL = /^\/[a-z0-9-]+\/[a-z0-9-]+\/$/;
 
@@ -898,8 +922,10 @@ test.describe('Brand: logo, icons and share image', () => {
   }) => {
     const og = (property: string) =>
       page.locator(`meta[property="${property}"]`).getAttribute('content');
-    // The topic page, an info page, and a lesson without an illustration.
-    for (const url of ['/', '/traffic/', '/about/', '/water-pools/shower-before-entry/']) {
+    // The homepage, a topic page, an info page, and a lesson without an
+    // illustration while one is left.
+    const plain = await findLessonWithoutPicture(page);
+    for (const url of ['/', '/traffic/', '/about/', ...(plain ? [plain] : [])]) {
       await page.goto(url);
       expect(await og('og:image'), url).toBe('https://learncivicsense.in/og-image.png');
       expect(await og('og:image:width'), url).toBe('1200');
