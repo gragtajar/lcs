@@ -8,7 +8,7 @@
     "dev": "astro dev",
     "sync:images": "node scripts/sync-imagekit-registry.mjs",
     "brand:assets": "node scripts/build-brand-assets.mjs",
-    "build": "npm run sync:images && astro build && pagefind --site dist",
+    "build": "npm run sync:images && astro build && pagefind --site dist && node scripts/csp.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "format": "prettier --write .",

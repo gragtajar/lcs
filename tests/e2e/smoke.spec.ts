@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 /** Topics that still hold unwritten lessons, most-unwritten first.
  *  Coming-soon coverage shrinks with every publish batch, so the
@@ -832,7 +833,7 @@ test.describe('About, Privacy and Terms', () => {
     page,
   }) => {
     await page.goto('/privacy/');
-    await expect(page.locator('.info-facts time')).toHaveAttribute('datetime', '2026-09-29');
+    await expect(page.locator('.info-facts time')).toHaveAttribute('datetime', '2026-11-07');
     const pointer = page.locator('#what-this-site-collects a[href="#what-others-see"]');
     await expect(pointer).toHaveText('What others see');
     await pointer.click();
@@ -955,6 +956,69 @@ test.describe('Brand: logo, icons and share image', () => {
       name: 'Learn Civic Sense',
       publisher: { '@id': 'https://learncivicsense.in/#organization' },
     });
+  });
+});
+
+test.describe('Content-Security-Policy', () => {
+  test("pages work under it; on the live site it blocks only the host's script", async ({
+    page,
+    baseURL,
+  }) => {
+    test.setTimeout(90_000);
+    const live = !/\/\/(localhost|127\.0\.0\.1)[:/]/.test(baseURL ?? '');
+    if (!live) {
+      // Apache sends the header (scripts/csp.mjs writes it into .htaccess);
+      // the preview server doesn't, so the same header is added here.
+      const csp = readFileSync('dist/.htaccess', 'utf8').match(
+        /Header always set Content-Security-Policy "([^"]+)"/,
+      )?.[1];
+      expect(csp, 'dist/.htaccess carries the policy').toBeTruthy();
+      await page.route('**/*', async (route) => {
+        const res = await route.fetch();
+        await route.fulfill({
+          response: res,
+          headers: { ...res.headers(), 'content-security-policy': csp! },
+        });
+      });
+    }
+    await page.addInitScript(() => {
+      const w = window as unknown as { __csp: string[] };
+      w.__csp = [];
+      document.addEventListener('securitypolicyviolation', (e) =>
+        w.__csp.push(`${e.effectiveDirective} ${e.blockedURI} ${e.sample}`),
+      );
+    });
+    // The host's monitoring script: its inline loader (reported with its first
+    // characters, 'report-sample') and the scripts it would load.
+    const isHost = (v: string) =>
+      /img1\.wsimg\.com|secureserver\.net/.test(v) || v.includes("'undefined'=== typeof _trfq");
+    const blocked: string[] = [];
+    const collect = async (where: string) => {
+      const found = await page.evaluate(() => (window as unknown as { __csp: string[] }).__csp);
+      blocked.push(...found.filter((v) => !isHost(v)).map((v) => `${where}: ${v}`));
+    };
+    for (const path of ['/', '/traffic/', '/topics/', '/feedback/', '/no-such-page/']) {
+      await page.goto(path);
+      await collect(path);
+    }
+    // A lesson with its quiz answered, and search (Pagefind runs WebAssembly).
+    await page.goto('/traffic/the-case-against-honking/');
+    const option = page.locator('.quiz-opt').first();
+    // The quiz is an island that hydrates when it comes into view.
+    await expect(async () => {
+      await option.click();
+      await expect(option).toHaveClass(/picked/, { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+    await collect('lesson');
+    await page.goto('/search/?q=queue');
+    await expect(page.locator('.sp-list .search-result').first()).toBeVisible({ timeout: 15_000 });
+    await collect('search');
+    expect(blocked).toEqual([]);
+
+    if (live) {
+      const cookies = (await page.context().cookies()).map((c) => c.name);
+      expect(cookies.filter((n) => /^(_tccl_|_scc_)/.test(n))).toEqual([]);
+    }
   });
 });
 

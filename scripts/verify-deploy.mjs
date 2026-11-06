@@ -356,6 +356,12 @@ async function checkPolicy(files) {
   await expectHeader('/', 'referrer-policy', /strict-origin-when-cross-origin/);
   await expectHeader('/', 'permissions-policy', /camera=\(\)/);
   await expectHeader('/', 'strict-transport-security', /max-age=31536000/);
+  // The Content-Security-Policy the build wrote (scripts/csp.mjs), exactly.
+  const csp = (await readFile(path.join(DIST, '.htaccess'), 'utf8')).match(
+    /Header always set Content-Security-Policy "([^"]+)"/,
+  )?.[1];
+  if (!csp) fail('dist/.htaccess carries no Content-Security-Policy');
+  else await expectHeader('/', 'content-security-policy', { test: (v) => v === csp });
   await expectHeader('/', 'cache-control', /max-age=300/);
   await expectHeader('/build-info.json', 'cache-control', /no-store/);
   await expectHeader('/', 'content-encoding', /gzip|br/, {
