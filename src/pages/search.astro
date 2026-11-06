@@ -16,9 +16,12 @@ const examples = t('search.examples')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+
+// Out of search engines (noindex): results are drawn in the browser, so the
+// page holds no content of its own; /topics/ is the library's index.
 ---
 
-<BaseLayout title={t('search.title')} width="narrow">
+<BaseLayout title={t('search.title')} description={t('search.prompt')} width="narrow" noindex>
   <h1 class="search-h1">{t('search.fullPageHeading')}</h1>
 
   <SearchPage

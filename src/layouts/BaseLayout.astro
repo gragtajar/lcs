@@ -73,7 +73,11 @@ const cfAnalyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string | u
       noindex ? (
         <meta name="robots" content="noindex" />
       ) : (
-        <link rel="canonical" href={meta.canonicalUrl} />
+        <>
+          <link rel="canonical" href={meta.canonicalUrl} />
+          {/* Search engines may show the share image large (Discover, image results). */}
+          <meta name="robots" content="max-image-preview:large" />
+        </>
       )
     }
 

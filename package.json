@@ -33,7 +33,6 @@
   "dependencies": {
     "@amplitude/analytics-browser": "^2.11.0",
     "@astrojs/preact": "^6.1.1",
-    "@astrojs/sitemap": "^3.7.4",
     "@lucide/astro": "^1.48.0",
     "@sentry/astro": "^8.45.0",
     "astro": "^7.4.5",

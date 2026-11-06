@@ -19,21 +19,45 @@
       }
     },
     "assert": {
-      "preset": "lighthouse:no-pwa",
-      "assertions": {
-        "categories:performance": ["error", { "minScore": 0.95 }],
-        "categories:accessibility": ["error", { "minScore": 0.95 }],
-        "categories:best-practices": ["error", { "minScore": 0.95 }],
-        "categories:seo": ["error", { "minScore": 0.95 }],
-        "uses-text-compression": "error",
-        "uses-responsive-images": "warn",
-        "total-byte-weight": ["error", { "maxNumericValue": 200000 }],
-        "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
-        "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }],
-        "lcp-lazy-loaded": "off",
-        "non-composited-animations": "off",
-        "prioritize-lcp-image": "off"
-      }
+      "assertMatrix": [
+        {
+          "matchingUrlPattern": "^(?!.*/(search|visitors)/).*$",
+          "preset": "lighthouse:no-pwa",
+          "assertions": {
+            "categories:performance": ["error", { "minScore": 0.95 }],
+            "categories:accessibility": ["error", { "minScore": 0.95 }],
+            "categories:best-practices": ["error", { "minScore": 0.95 }],
+            "categories:seo": ["error", { "minScore": 0.95 }],
+            "uses-text-compression": "error",
+            "uses-responsive-images": "warn",
+            "total-byte-weight": ["error", { "maxNumericValue": 200000 }],
+            "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
+            "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }],
+            "lcp-lazy-loaded": "off",
+            "non-composited-animations": "off",
+            "prioritize-lcp-image": "off"
+          }
+        },
+        {
+          "matchingUrlPattern": "/(search|visitors)/",
+          "preset": "lighthouse:no-pwa",
+          "assertions": {
+            "categories:performance": ["error", { "minScore": 0.95 }],
+            "categories:accessibility": ["error", { "minScore": 0.95 }],
+            "categories:best-practices": ["error", { "minScore": 0.95 }],
+            "uses-text-compression": "error",
+            "uses-responsive-images": "warn",
+            "total-byte-weight": ["error", { "maxNumericValue": 200000 }],
+            "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
+            "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }],
+            "lcp-lazy-loaded": "off",
+            "non-composited-animations": "off",
+            "prioritize-lcp-image": "off",
+            "categories:seo": "off",
+            "is-crawlable": "off"
+          }
+        }
+      ]
     },
     "upload": { "target": "temporary-public-storage" }
   }

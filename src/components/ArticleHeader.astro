@@ -56,7 +56,9 @@ const { title, format, comingSoon, lesson } = Astro.props;
               <span class="ah-sep" aria-hidden="true">
                 ·
               </span>
-              <span>{t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}</span>
+              <time datetime={lesson.last_updated}>
+                {t('list.lastUpdated', { date: formatDate(lesson.last_updated) })}
+              </time>
             </>
           )}
         </>

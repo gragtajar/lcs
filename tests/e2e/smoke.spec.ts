@@ -946,13 +946,90 @@ test.describe('Brand: logo, icons and share image', () => {
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
     const data = blocks.map((b) => JSON.parse(b) as Record<string, unknown>);
     expect(data.find((d) => d['@type'] === 'Organization')).toMatchObject({
+      '@id': 'https://learncivicsense.in/#organization',
       name: 'Learn Civic Sense',
       url: 'https://learncivicsense.in/',
-      logo: 'https://learncivicsense.in/logo.png',
+      logo: { url: 'https://learncivicsense.in/logo.png' },
     });
     expect(data.find((d) => d['@type'] === 'WebSite')).toMatchObject({
       name: 'Learn Civic Sense',
+      publisher: { '@id': 'https://learncivicsense.in/#organization' },
     });
+  });
+});
+
+test.describe('Search engines', () => {
+  const noindex = /<meta name="robots" content="[^"]*noindex/;
+
+  test('the sitemap lists every indexable page with its own date, and nothing kept out of search', async ({
+    page,
+    request,
+  }, info) => {
+    test.skip(info.project.name !== 'desktop-light', 'It reads the server, not the screen: once.');
+    test.setTimeout(180_000);
+    const xml = await (await request.get('/sitemap-0.xml')).text();
+    const entries = [
+      ...xml.matchAll(/<url><loc>([^<]+)<\/loc>(?:<lastmod>([^<]+)<\/lastmod>)?<\/url>/g),
+    ].map((m) => ({ path: new URL(m[1]!).pathname, lastmod: m[2] }));
+    expect(entries.length).toBeGreaterThan(200);
+    // A lesson's own date, not the build's: calendar dates, and many of them.
+    for (const e of entries.filter((x) => x.lastmod))
+      expect(e.lastmod).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(new Set(entries.map((e) => e.lastmod)).size).toBeGreaterThan(5);
+    const listed = new Set(entries.map((e) => e.path));
+
+    // Every listed page can be indexed, and names itself as canonical.
+    const paths = [...listed];
+    for (let i = 0; i < paths.length; i += 8) {
+      await Promise.all(
+        paths.slice(i, i + 8).map(async (path) => {
+          const html = await (await request.get(path)).text();
+          expect(html, path).not.toMatch(noindex);
+          expect(html, path).toContain(`rel="canonical" href="https://learncivicsense.in${path}"`);
+        }),
+      );
+    }
+
+    // Pages kept out of search are not listed, and say so.
+    for (const path of ['/search/', '/visitors/', '/feedback/']) {
+      expect(listed.has(path), path).toBe(false);
+      expect(await (await request.get(path)).text(), path).toMatch(noindex);
+    }
+
+    // Every lesson a topic lists is in the sitemap when it can be read, and kept
+    // out of search (and the sitemap) while it is coming soon.
+    await page.goto('/traffic/');
+    const topics = await page
+      .locator('.sb-topic')
+      .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
+    expect(topics).toHaveLength(14);
+    const soon: string[] = [];
+    for (const topic of topics) {
+      expect(listed.has(topic), topic).toBe(true);
+      await page.goto(topic);
+      for (const href of await page
+        .locator('article.li:not(.li-soon) .li-title a')
+        .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))) {
+        expect(listed.has(href), href).toBe(true);
+      }
+      soon.push(
+        ...(await page
+          .locator('article.li-soon .li-title a')
+          .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))),
+      );
+    }
+    for (const href of soon) {
+      expect(listed.has(href), href).toBe(false);
+      expect(await (await request.get(href)).text(), href).toMatch(noindex);
+    }
+  });
+
+  test('pages that can be indexed let search engines show their image large', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'max-image-preview:large',
+    );
   });
 });
 

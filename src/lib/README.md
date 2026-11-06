@@ -13,7 +13,8 @@ threshold is 80% statements / 75% branches; new files here need new tests.
 | `content.ts`  | Loads + parses `taxonomy.json`; resolves the v2 nav tree (clusters + abroad packs + visitors); detects which planned articles are real; URL helpers. |
 | `markdown.ts` | Marked-based renderer with anchored h2/h3 headings, scroll-spy TOC extraction, horizontal-scroll table wrapping, inline-only mode, HTML escaping.    |
 | `i18n.ts`     | Tiny `t()` with dotted-path lookup, plural variants by `count`, and `{var}` interpolation. Reads `src/i18n/{locale}.json`.                           |
-| `seo.ts`      | `buildMeta()` for OG/Twitter/canonical; `articleJsonLd()`, `collectionJsonLd()`, `breadcrumbJsonLd()` for schema.org.                                |
+| `seo.ts`      | `buildMeta()` for titles/OG/Twitter/canonical; `snippetDescription()`; `articleJsonLd()`, `collectionJsonLd()`, `breadcrumbJsonLd()` for schema.org. |
+| `sitemap.ts`  | `sitemapEntries()`: the indexable pages and their content dates (`sitemap-0.xml`, the index); XML helpers the image sitemap shares.                  |
 | `search.ts`   | Shared by both search islands: `loadPagefind()` on demand, Pagefind record → result row (`toRow`), stubs-last sort, `?q=` helpers.                   |
 | `icons.ts`    | The Lucide icon catalogue (`ICON_NAMES`) and the taxonomy `icon` → Lucide name map (`categoryIconName`), ADR 009.                                    |
 
