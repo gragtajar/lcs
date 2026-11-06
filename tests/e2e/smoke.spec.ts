@@ -973,13 +973,21 @@ test.describe('Content-Security-Policy', () => {
         /Header always set Content-Security-Policy "([^"]+)"/,
       )?.[1];
       expect(csp, 'dist/.htaccess carries the policy').toBeTruthy();
-      await page.route('**/*', async (route) => {
-        const res = await route.fetch();
-        await route.fulfill({
-          response: res,
-          headers: { ...res.headers(), 'content-security-policy': csp! },
-        });
-      });
+      const origin = new URL(baseURL!).origin;
+      await page.route(
+        (url) => url.origin === origin,
+        async (route) => {
+          try {
+            const res = await route.fetch();
+            await route.fulfill({
+              response: res,
+              headers: { ...res.headers(), 'content-security-policy': csp! },
+            });
+          } catch {
+            // The page moved on, or the test ended, with this request in flight.
+          }
+        },
+      );
     }
     await page.addInitScript(() => {
       const w = window as unknown as { __csp: string[] };
@@ -1013,6 +1021,7 @@ test.describe('Content-Security-Policy', () => {
     await page.goto('/search/?q=queue');
     await expect(page.locator('.sp-list .search-result').first()).toBeVisible({ timeout: 15_000 });
     await collect('search');
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
     expect(blocked).toEqual([]);
 
     if (live) {
