@@ -19,17 +19,24 @@ const GROUND = { light: 'rgb(251, 250, 247)', dark: 'rgb(23, 22, 19)' } as const
 
 // GoDaddy injects its own monitoring script into every page (a loader from
 // img1.wsimg.com that beacons to csp.secureserver.net; see the deploy runbook).
-// Those requests belong to the host, not the site: a beacon cut short by the
-// next navigation is not a site failure. scripts/verify-deploy.mjs reports the
-// injection on every deploy.
+// The site's Content-Security-Policy blocks it (scripts/csp.mjs), and the
+// browser reports each block as a console error and a failed request. Those
+// belong to the host, not the site; the smoke suite's CSP test checks every
+// violation the policy reports, so a block of the site's own code still fails
+// there. scripts/verify-deploy.mjs reports the injection on every deploy.
 const HOST_MONITORING = new Set(['img1.wsimg.com', 'csp.secureserver.net']);
 const isHostMonitoring = (url: string) => HOST_MONITORING.has(new URL(url).host);
+const isHostScriptBlocked = (text: string) =>
+  /Content Security Policy/i.test(text) &&
+  (/img1\.wsimg\.com|secureserver\.net/.test(text) || /inline script/i.test(text));
 
 /** Console errors, page errors, and failed requests seen while the page is open. */
 function watch(page: Page): string[] {
   const problems: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error') problems.push(`console: ${m.text()}`);
+    if (m.type() === 'error' && !isHostScriptBlocked(m.text())) {
+      problems.push(`console: ${m.text()}`);
+    }
   });
   page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
   page.on('requestfailed', (r) => {

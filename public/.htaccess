@@ -226,6 +226,10 @@
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  # The Content-Security-Policy: the build replaces the next line with the
+  # header, listing the hashes of the inline scripts and styles it produced
+  # (scripts/csp.mjs, the last step of npm run build).
+  # @content-security-policy
 
   # Cache lifetimes. Build assets and fonts carry content hashes or never
   # change in place; the search index changes with content; the deploy marker

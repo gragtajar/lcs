@@ -1,7 +1,9 @@
 ---
 // Every statement here was checked against the live site and the code on
-// 2026-09-29: the host's injected script and its cookies, no analytics, no
-// error tracking, what the feedback form keeps. These change it, so update
+// 2026-09-29: no analytics, no error tracking, what the feedback form keeps.
+// The host's injected script on 2026-11-07, when the Content-Security-Policy
+// (scripts/csp.mjs) began blocking it; Verify production checks its cookies
+// stay unset. These change it, so update
 // this page with them: turning on analytics (PUBLIC_CF_ANALYTICS_TOKEN, see
 // BaseLayout) or error tracking (SENTRY_DSN, see astro.config.mjs), changing
 // what public/feedback.php keeps, or adding anything that loads from another
@@ -15,13 +17,14 @@ import InfoSection from '../components/InfoSection.astro';
   description="What Learn Civic Sense collects, what its host and image service see, and what the feedback form keeps."
   heading="Privacy policy"
   lede="What happens to your data when you use this site, in plain words."
-  updated="2026-09-29"
+  updated="2026-11-07"
 >
   <InfoSection heading="What this site collects">
     <p>
       Nothing about you while you read. There are no accounts or logins, no analytics, no
-      advertising and no error tracking, and the site sets no cookies of its own. Our host’s own
-      script does set cookies; see <a href="#what-others-see">What others see</a>.
+      advertising and no error tracking, and the site sets no cookies of its own. Our host adds a
+      script that would set cookies, and the site blocks it; see
+      <a href="#what-others-see">What others see</a>.
     </p>
     <ul>
       <li>
@@ -62,10 +65,12 @@ import InfoSection from '../components/InfoSection.astro';
       </li>
       <li>
         <strong>GoDaddy also adds its own script</strong> to every page, for monitoring performance (loaded
-        from img1.wsimg.com). That script sets three cookies (<code>_tccl_visitor</code>,
-        <code>_tccl_visit</code> and <code>_scc_session</code>) and sends its measurements to
-        GoDaddy (secureserver.net). We did not add it; its own note says opting out goes through
-        GoDaddy’s hosting support.
+        from img1.wsimg.com). The site’s security policy (its Content-Security-Policy) stops that script
+        from running in your browser, so it sets none of its three cookies (<code
+          >_tccl_visitor</code
+        >, <code>_tccl_visit</code> and <code>_scc_session</code>) and sends GoDaddy
+        (secureserver.net) no measurements. We did not add it; its own note says opting out goes
+        through GoDaddy’s hosting support.
       </li>
       <li>
         <strong>Lesson illustrations</strong> come from ImageKit (ik.imagekit.io), an image service. Your
