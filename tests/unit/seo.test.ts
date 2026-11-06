@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   buildMeta,
   articleJsonLd,
-  howToJsonLd,
   collectionJsonLd,
+  snippetDescription,
   breadcrumbJsonLd,
   organizationJsonLd,
   websiteJsonLd,
@@ -71,6 +71,34 @@ describe('buildMeta()', () => {
     // The browser-tab title is unaffected by the OG overrides.
     expect(m.fullTitle).toBe('Honking — Learn Civic Sense');
   });
+
+  it('drops the site-name suffix when it would push the title past 60 characters', () => {
+    const fits = 'x'.repeat(40); // 40 + " — Learn Civic Sense" (20) = 60
+    expect(buildMeta({ title: fits, description: 'd', path: '/' }).fullTitle).toBe(
+      `${fits} — Learn Civic Sense`,
+    );
+    const long = 'x'.repeat(41);
+    expect(buildMeta({ title: long, description: 'd', path: '/' }).fullTitle).toBe(long);
+  });
+});
+
+describe('snippetDescription()', () => {
+  it('keeps a description that fits as it is', () => {
+    expect(snippetDescription('Short. Sweet.')).toBe('Short. Sweet.');
+  });
+
+  it('keeps as many whole opening sentences as fit in 160 characters', () => {
+    const a = 'A'.repeat(70) + '.';
+    const b = 'B'.repeat(70) + '.';
+    const c = 'C'.repeat(70) + '.';
+    expect(snippetDescription(`${a} ${b} ${c}`)).toBe(`${a} ${b}`);
+  });
+
+  it('cuts a first sentence that is already too long at a word, with an ellipsis', () => {
+    const out = snippetDescription(`${'word '.repeat(50)}end.`);
+    expect(out.length).toBeLessThanOrEqual(160);
+    expect(out).toMatch(/word…$/);
+  });
 });
 
 const mockCategory = {
@@ -113,9 +141,17 @@ describe('articleJsonLd()', () => {
       category: mockCategory,
       lesson: mockLesson,
       url: 'https://learncivicsense.in/traffic/the-case-against-honking/',
+      headline: 'The case against honking, as the page shows it',
     });
     expect(ld['@type']).toBe('Article');
-    expect(ld.headline).toBe(mockLesson.title);
+    // The headline is the page's h1, which can differ from the lesson file's title.
+    expect(ld.headline).toBe('The case against honking, as the page shows it');
+    expect(ld['@id']).toBe('https://learncivicsense.in/traffic/the-case-against-honking/#article');
+    expect(ld.url).toBe('https://learncivicsense.in/traffic/the-case-against-honking/');
+    expect(ld.timeRequired).toBe('PT3M');
+    expect(ld.license).toBe('https://creativecommons.org/licenses/by-sa/4.0/');
+    expect(ld.isPartOf).toEqual({ '@id': 'https://learncivicsense.in/#website' });
+    expect(ld.author).toMatchObject({ '@id': 'https://learncivicsense.in/#organization' });
     expect(ld.datePublished).toBe('2026-05-11');
     expect(ld.articleSection).toBe('Traffic and roads');
     expect(ld.wordCount).toBe(5);
@@ -132,6 +168,7 @@ describe('articleJsonLd()', () => {
       category: { ...mockCategory, description: 'fallback' },
       lesson: { ...mockLesson, tldr: [] },
       url: 'https://learncivicsense.in/x',
+      headline: 'h',
     });
     expect(ld.description).toBe('fallback');
   });
@@ -141,6 +178,7 @@ describe('articleJsonLd()', () => {
       category: mockCategory,
       lesson: { ...mockLesson, meta_description: 'A keyword-rich snippet.' },
       url: 'https://learncivicsense.in/x',
+      headline: 'h',
     });
     expect(ld.description).toBe('A keyword-rich snippet.');
   });
@@ -150,6 +188,7 @@ describe('articleJsonLd()', () => {
       category: mockCategory,
       lesson: { ...mockLesson, tags: ['honking', 'urban', 'traffic'] },
       url: 'https://learncivicsense.in/x',
+      headline: 'h',
     });
     expect(withTags.keywords).toBe('honking, urban, traffic');
 
@@ -157,59 +196,68 @@ describe('articleJsonLd()', () => {
       category: mockCategory,
       lesson: mockLesson,
       url: 'https://learncivicsense.in/x',
+      headline: 'h',
     });
     expect(noTags).not.toHaveProperty('keywords');
   });
 
-  it('emits a markdown-stripped, truncated articleBody', () => {
-    const body = ['## The moment', '', 'You **stop** at the [signal](https://x).'].join('\n');
+  it('gives the TL;DR as the abstract, plain text, and no truncated articleBody', () => {
     const ld = articleJsonLd({
       category: mockCategory,
-      lesson: { ...mockLesson, body },
+      lesson: { ...mockLesson, tldr: ['Use the **horn** twice.', 'Never at a red.'] },
       url: 'https://learncivicsense.in/x',
+      headline: 'h',
     });
-    // The `##` marker is stripped but the heading text survives as prose, joined
-    // with the paragraph; emphasis and link syntax are removed.
-    expect(ld.articleBody).toBe('The moment You stop at the signal.');
+    expect(ld.abstract).toBe('Use the horn twice. Never at a red.');
+    expect(ld).not.toHaveProperty('articleBody');
+  });
 
-    const long = articleJsonLd({
+  it('lists the illustration as the image only when the lesson has one', () => {
+    const images = ['https://ik.imagekit.io/civic/tr:w-1200,h-630,f-jpg,q-80/traffic-001.png'];
+    const withImage = articleJsonLd({
       category: mockCategory,
-      lesson: { ...mockLesson, body: 'word '.repeat(400) },
-      url: 'https://learncivicsense.in/x',
-    });
-    expect((long.articleBody as string).length).toBeLessThanOrEqual(601);
-    expect(long.articleBody as string).toMatch(/…$/);
-  });
-});
-
-describe('howToJsonLd()', () => {
-  it('maps rule sections onto HowToSteps with the lesson title + description', () => {
-    const ld = howToJsonLd({
-      lesson: { ...mockLesson, format: 'rule', meta_description: 'How to do X.' },
-      sections: [
-        { heading: 'The rule', text: 'Do X.' },
-        { heading: 'Why this rule exists', text: 'Because Y.' },
-      ],
-    });
-    expect(ld).not.toBeNull();
-    expect(ld!['@type']).toBe('HowTo');
-    expect(ld!.name).toBe(mockLesson.title);
-    expect(ld!.description).toBe('How to do X.');
-    const steps = ld!.step as Array<{ '@type': string; name: string; text: string }>;
-    expect(steps).toHaveLength(2);
-    expect(steps[0]).toEqual({ '@type': 'HowToStep', name: 'The rule', text: 'Do X.' });
-  });
-
-  it('returns null when there are no sections (no empty HowTo)', () => {
-    expect(howToJsonLd({ lesson: mockLesson, sections: [] })).toBeNull();
-  });
-
-  it('falls back to tldr[0] for the description when meta_description is empty', () => {
-    const ld = howToJsonLd({
       lesson: mockLesson,
-      sections: [{ heading: 'The rule', text: 'Do X.' }],
+      url: 'https://learncivicsense.in/x',
+      headline: 'h',
+      images,
     });
-    expect(ld!.description).toBe('First takeaway');
+    expect(withImage.image).toEqual(images);
+    const without = articleJsonLd({
+      category: mockCategory,
+      lesson: mockLesson,
+      url: 'https://learncivicsense.in/x',
+      headline: 'h',
+    });
+    expect(without).not.toHaveProperty('image');
+  });
+
+  it('cites the sources the page lists, skipping any without an address', () => {
+    const ld = articleJsonLd({
+      category: mockCategory,
+      lesson: {
+        ...mockLesson,
+        sources: [
+          {
+            title: 'Motor Vehicles Act',
+            url: 'https://indiacode.nic.in/x',
+            publisher: 'MoRTH',
+            year: 1988,
+          },
+          { title: 'No link' },
+        ],
+      },
+      url: 'https://learncivicsense.in/x',
+      headline: 'h',
+    });
+    expect(ld.citation).toEqual([
+      {
+        '@type': 'CreativeWork',
+        name: 'Motor Vehicles Act',
+        url: 'https://indiacode.nic.in/x',
+        publisher: { '@type': 'Organization', name: 'MoRTH' },
+        datePublished: '1988',
+      },
+    ]);
   });
 });
 
@@ -222,23 +270,44 @@ describe('collectionJsonLd()', () => {
       items: [{ name: 'The case', url: '/x' }],
     });
     expect(ld['@type']).toBe('CollectionPage');
-    expect((ld.hasPart as unknown[]).length).toBe(1);
+    expect(ld.isPartOf).toEqual({ '@id': 'https://learncivicsense.in/#website' });
+    expect(ld.mainEntity).toEqual({
+      '@type': 'ItemList',
+      numberOfItems: 1,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'The case',
+          url: 'https://learncivicsense.in/x',
+        },
+      ],
+    });
   });
 });
 
 describe('organizationJsonLd() / websiteJsonLd()', () => {
   it('names the site and gives search engines its logo', () => {
-    expect(organizationJsonLd()).toEqual({
+    expect(organizationJsonLd('What the site is.')).toEqual({
       '@context': 'https://schema.org',
       '@type': 'Organization',
+      '@id': 'https://learncivicsense.in/#organization',
       name: 'Learn Civic Sense',
       url: 'https://learncivicsense.in/',
-      logo: 'https://learncivicsense.in/logo.png',
+      description: 'What the site is.',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://learncivicsense.in/logo.png',
+        width: 512,
+        height: 512,
+      },
     });
     expect(websiteJsonLd()).toMatchObject({
       '@type': 'WebSite',
+      '@id': 'https://learncivicsense.in/#website',
       name: 'Learn Civic Sense',
       url: 'https://learncivicsense.in/',
+      publisher: { '@id': 'https://learncivicsense.in/#organization' },
     });
   });
 });

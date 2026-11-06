@@ -23,6 +23,7 @@
     "menu": "Menu"
   },
   "home": {
+    "metaDescription": "Practical civic sense for India: {count} short lessons on traffic, queues, hygiene, public spaces, travel and life online. Real situations, cited sources.",
     "introTitle": "Learn civic sense, one lesson at a time.",
     "introBody": "Short, practical lessons on how to share public space in India: roads, transport, queues, markets, monuments, and the internet.",
     "categoriesHeading": "Browse by category",

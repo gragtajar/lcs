@@ -25,10 +25,13 @@ const featured = getFeaturedClusters(locale, buildDate);
 const topics = getTopicIndex(locale);
 ---
 
-<BaseLayout title="" width="flush">
+<BaseLayout title="" description={t('home.metaDescription', { count: lessonCount })} width="flush">
   {/* Search engines read the site's name and logo from its homepage. */}
   <Fragment slot="head">
-    <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd())} />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(organizationJsonLd(t('siteTagline')))}
+    />
     <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd())} />
   </Fragment>
 

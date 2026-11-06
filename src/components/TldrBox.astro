@@ -1,4 +1,6 @@
 ---
+// A <section>, not an <aside>: the summary is the lesson in brief, main
+// content, and text extractors (search engines, AI answers) drop asides.
 import { t } from '../lib/i18n';
 import { renderInline } from '../lib/markdown';
 
@@ -10,7 +12,7 @@ const { items } = Astro.props;
 
 {
   items.length > 0 && (
-    <aside class="tldr" aria-label={t('article.tldr')}>
+    <section class="tldr" aria-label={t('article.tldr')}>
       <p class="tldr-label" data-pagefind-ignore>
         {t('article.tldr')}
       </p>
@@ -19,7 +21,7 @@ const { items } = Astro.props;
           <li set:html={renderInline(item)} />
         ))}
       </ul>
-    </aside>
+    </section>
   )
 }
 

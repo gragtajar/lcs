@@ -7,9 +7,11 @@ import { loadVisitorsModule } from '../../lib/content';
 import { t } from '../../lib/i18n';
 
 const visitors = loadVisitorsModule();
+
+// Out of search engines (noindex) until it has lessons: today it lists only plans.
 ---
 
-<BaseLayout title={visitors.title} description={visitors.description} width="wide">
+<BaseLayout title={visitors.title} description={visitors.description} width="wide" noindex>
   <Breadcrumb items={[{ label: t('nav.home'), href: '/' }, { label: visitors.title }]} />
 
   <section class="vhero">

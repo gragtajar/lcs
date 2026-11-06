@@ -10,11 +10,18 @@ import SidebarNav from '../../components/SidebarNav.astro';
 import ArticleListItem from '../../components/ArticleListItem.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
 import Icon from '../../components/Icon.astro';
-import { getNavCategories, getCategory, loadLessonForArticle } from '../../lib/content';
+import {
+  getNavCategories,
+  getCategory,
+  loadLessonForArticle,
+  categoryUrl,
+  articleUrl,
+} from '../../lib/content';
 import { categoryIconName } from '../../lib/icons';
 import { t } from '../../lib/i18n';
 import { hasArticleImage } from '../../lib/images';
 import { imagekitEndpoint } from '../../lib/imagekit';
+import { breadcrumbJsonLd, collectionJsonLd, snippetDescription } from '../../lib/seo';
 
 // Static path generation covers all 14 navigable categories (clusters + abroad packs).
 export function getStaticPaths() {
@@ -52,11 +59,27 @@ const facts = [
 const imageOrigin = published.some((a) => hasArticleImage(a.id))
   ? new URL(imagekitEndpoint()).origin
   : undefined;
+
+// Structured data: the trail the page shows, and the page as a collection of
+// the lessons it lists that can be read now (in the page's order).
+const pageUrl = new URL(categoryUrl(cat.id), 'https://learncivicsense.in').toString();
+const breadcrumbLd = breadcrumbJsonLd([
+  { name: 'Home', url: '/' },
+  { name: cat.title, url: categoryUrl(cat.id) },
+]);
+const collectionLd = collectionJsonLd({
+  name: cat.title,
+  description: cat.description,
+  url: pageUrl,
+  items: published.map((a) => ({ name: a.title, url: articleUrl(a) })),
+});
 ---
 
-<BaseLayout title={cat.title} description={cat.description} width="flush">
+<BaseLayout title={cat.title} description={snippetDescription(cat.description)} width="flush">
   <Fragment slot="head">
     {imageOrigin && <link rel="preconnect" href={imageOrigin} />}
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(collectionLd)} />
   </Fragment>
   <div class="page" data-cluster={cat.id}>
     <button
