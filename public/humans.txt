@@ -1,5 +1,4 @@
 /* TEAM */
-Author: Rajat Garg
 Site: https://learncivicsense.in
 Contact: <see GitHub>
 

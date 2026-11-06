@@ -22,6 +22,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import https from 'node:https';
 import path from 'node:path';
 import { parseLegacyAddresses } from './legacy-addresses.mjs';
+import { HOST_INJECTION } from './host-injection.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (name, fallback) => {
@@ -48,14 +49,8 @@ const TYPES = {
   '.woff2': /^font\/woff2/,
 };
 
-// GoDaddy inserts its TCCL performance-monitoring loader into every HTML
-// response, immediately before </html>: an inline <script> that queues
-// `_trfd` settings and a <script src> from img1.wsimg.com (found by the first
-// deploy, 2026-09-26; the snippet says opting out means contacting GoDaddy
-// support). It is recognised this narrowly and reported on every run; any other
-// difference between a served page and the build still fails the check.
-const HOST_INJECTION =
-  /<script>'undefined'=== typeof _trfq \|\| \(window\._trfq = \[\]\);[^<]*<\/script><script src='https:\/\/img1\.wsimg\.com\/traffic-assets\/js\/tccl\.min\.js'><\/script>(?=<\/html>)/;
+// GoDaddy's injected monitoring script (scripts/host-injection.mjs) is
+// recognised and reported on every run; any other difference still fails.
 let hostInjected = 0;
 
 const failures = [];

@@ -8,7 +8,8 @@ name: Deploy production
 # every file byte for byte, the redirects, headers and caching, and a browser
 # pass on desktop and mobile in light and dark. A green run means the live site
 # is that build and works; a red run says which step to look at
-# (docs/runbooks/deploy.md).
+# (docs/runbooks/deploy.md). Then it tells Bing, through IndexNow, which pages
+# the deploy changed.
 
 on:
   push:
@@ -43,6 +44,10 @@ jobs:
       name: production
       url: https://learncivicsense.in/
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - name: Download the tested build
         uses: actions/download-artifact@v4
         with:
@@ -64,6 +69,17 @@ jobs:
             }
             console.log(`Deploying ${b.site} with lcs-content ${b.content}${b.workflow ? " and lcs-workflow " + b.workflow : ""}: ${b.lessons.published} of ${b.lessons.planned} lessons published.`);
           '
+      - name: List the pages this deploy adds, changes or removes (IndexNow)
+        # While the old build is still live: every page in the new sitemap is
+        # compared with the served one. The list is sent to Bing once Verify
+        # production passes (scripts/indexnow.mjs). It never fails the deploy.
+        run: node scripts/indexnow.mjs plan --dist dist --out indexnow-urls.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: indexnow-urls
+          path: indexnow-urls.txt
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Write the feedback form's private settings
         # The address feedback goes to is a secret, never in the repo or in the
         # tested build (the dist artifact, which anyone can download from a
@@ -129,6 +145,13 @@ jobs:
         env:
           PROD_URL: https://learncivicsense.in
           EXPECTED_SITE_SHA: ${{ github.sha }}
+      - name: Fetch the list of changed pages
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: indexnow-urls
+      - name: Tell Bing which pages changed (IndexNow)
+        run: node scripts/indexnow.mjs submit indexnow-urls.txt
       - name: Upload the report and screenshots
         if: always()
         uses: actions/upload-artifact@v4
