@@ -36,12 +36,10 @@ async function findComingSoon(
  *  without one, instead of pinning a lesson that later gets a picture.
  *  Refresh the list if all of these fill in. */
 const NO_PICTURE_CANDIDATES = [
-  // Refreshed 2026-11-05: 147 of the 198 published lessons have a picture.
-  '/spitting-and-hygiene/',
-  '/queues-and-waiting/',
-  '/universal-core/',
-  '/singapore-uae-southeast-asia/',
+  // Refreshed 2026-11-07: 183 of the 198 published lessons have a picture;
+  // the other 15 are on these two topics.
   '/uk-and-schengen/',
+  '/singapore-uae-southeast-asia/',
 ];
 
 /** The first published lesson without an illustration on the candidate
