@@ -29,13 +29,18 @@ After a content or workflow merge, start a deploy by hand if it matters.
 2. **Upload to GoDaddy (FTPS)** — the build from step 1, unchanged, plus the
    feedback form's private settings, written from the `FEEDBACK_EMAIL_TO`
    secret into `.lcs-private/` (never in the build, never served; ADR 012).
-   Only changed files are uploaded.
+   Only changed files are uploaded. Before the upload it lists the pages the
+   deploy adds, changes or removes, by comparing each page of the new sitemap
+   with the live one (`scripts/indexnow.mjs plan`).
 3. **Verify production** — every file served byte for byte, redirects (all
    331 addresses from before ADR 011 included), the site's 404 page (status 404) for missing addresses, the feedback endpoint's guards (without
    sending an email), hidden files and the private settings, headers,
    caching, gzip; then a browser pass on the live
    site on desktop and mobile in light and dark, with a screenshot of each key
-   page (artifact `production-report`).
+   page (artifact `production-report`). Last, it sends the list of changed
+   pages to Bing through IndexNow (`scripts/indexnow.mjs submit`; the key file
+   is `public/<key>.txt`). A failed submission is a warning, never a red run:
+   search engines still find changes through the sitemap.
 
 A green run means the live site is the tested build and works. Deploys never
 overlap, and a running upload is never cancelled.

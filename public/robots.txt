@@ -1,8 +1,10 @@
+# Every crawler is welcome, AI crawlers included: search engines, AI answer
+# and assistant bots, and AI training crawlers alike. A deliberate choice
+# (2026-11-07) for a free library whose lessons are licensed CC BY-SA 4.0.
+# There is no Content-Signal line: Lighthouse and PageSpeed Insights reject
+# robots.txt fields they don't know, and no search engine is known to read it.
 User-agent: *
 Allow: /
-
-# LLM-friendly site summary for agentic crawlers
-Allow: /llms.txt
 
 Sitemap: https://learncivicsense.in/sitemap-index.xml
 Sitemap: https://learncivicsense.in/sitemap-images.xml
