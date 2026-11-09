@@ -37,8 +37,10 @@ async function findComingSoon(
  *  without one, instead of pinning a lesson that later gets a picture.
  *  Refresh the list if all of these fill in. */
 const NO_PICTURE_CANDIDATES = [
-  // Refreshed 2026-11-07: 183 of the 198 published lessons have a picture;
-  // the other 15 are on these two topics.
+  // Refreshed 2026-11-09: every one of the 198 published lessons has a
+  // picture, so the probe finds none and the test checks the other pages
+  // only. The abroad packs hold the lessons still being written, so a lesson
+  // published there next is the likeliest to arrive without one.
   '/uk-and-schengen/',
   '/singapore-uae-southeast-asia/',
 ];
